@@ -1,8 +1,13 @@
 # Whistle
 
-Keyboard modes for [Herdr](https://herdr.dev): **TYPE** leaves the keyboard to your terminal,
-**WHISTLE** (Ctrl+Space, or Ctrl+[ in a terminal) lets single keys move between the window's
-fields and run mappings, with an optional which-key hints box. Inspired by vim; not vim.
+A vim-inspired mode for [Herdr](https://herdr.dev): switch out of typing to navigate and
+control the whole interface with simple key sequences.
+
+Like vim, it has two modes. In **TYPE** the keyboard belongs to your terminal, as usual. Press
+Ctrl+Space (or Ctrl+[ in a terminal) and you're in **WHISTLE**: single keys move between
+spaces, agents, tabs, panes and side panels, and short sequences run commands (Space p opens
+the palette, w v splits a pane). A hints box lists the keys that can follow. Press i to type
+again.
 
 ## Install
 
