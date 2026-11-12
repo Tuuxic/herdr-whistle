@@ -9,16 +9,22 @@ import { h_flex, v_flex } from "gpui-base";
 import { theme, shared } from "herdr";
 
 // Row height, side padding, the title row, the gap between columns, a character's width (est.).
-const ROW = 18, PAD = 12, HEAD = 22, GAP = 28, CH = 7.2, KEY = 30;
+const ROW = 18, PAD = 12, HEAD = 22, GAP = 32, CH = 7.2;
 const show = (k) => (k === "space" ? "SPC" : k);
 const labelOf = (i) => (i.group ? `+${i.label}` : i.label);
+// One column's widths: its longest key, and key + arrow + its longest label.
+const keyW = (col) => Math.ceil(Math.max(...col.map((i) => show(i.key).length)) * CH) + 4;
+const colW = (col) => keyW(col) + 8 + 10 + 8 + Math.ceil(Math.max(...col.map((i) => labelOf(i).length)) * CH);
 
-// Columns as wide as the longest entry, as many as fit in width; rows to hold the rest.
+// Columns filled top to bottom, each as wide as its own entries: the most columns that fit.
 function layoutOf(items, width) {
-  const longest = Math.max(4, ...items.map((i) => labelOf(i).length));
-  const colW = Math.ceil(KEY + 8 + 10 + 8 + longest * CH + GAP);
-  const cols = Math.max(1, Math.min(items.length, Math.floor((width - 2 * PAD) / colW)));
-  return { colW, cols, rows: Math.max(1, Math.ceil(items.length / cols)) };
+  for (let cols = Math.max(1, items.length); cols >= 1; cols--) {
+    const rows = Math.ceil(items.length / cols);
+    const columns = Array.from({ length: cols }, (_, c) => items.slice(c * rows, c * rows + rows)).filter((c) => c.length);
+    const used = columns.reduce((sum, col) => sum + colW(col), 0) + GAP * (columns.length - 1);
+    if (used <= width - 2 * PAD || cols === 1) return { columns, rows: Math.max(1, rows) };
+  }
+  return { columns: [items], rows: Math.max(1, items.length) };
 }
 
 export function hintsSize(items, width) {
@@ -30,15 +36,16 @@ export function renderHints(width) {
   const t = theme();
   const v = shared("whistle.leader");
   if (!v) return div().size_full();
-  const { colW, cols, rows } = layoutOf(v.items, width);
-  const columns = Array.from({ length: cols }, (_, c) => v.items.slice(c * rows, c * rows + rows)).filter((c) => c.length);
-  // The top border, drawn in pieces so the title sits in a gap in it.
+  const { columns } = layoutOf(v.items, width);
+  // The top border, drawn in pieces so the title sits in a gap in it. Above the line the
+  // window stays see-through: the background starts at the line, like the border does.
   const half = HEAD / 2;
   const edge = (side) => div().w(10).h_full().flex_none().relative()
     .child(div().absolute().top(half).left(0).right(0).bottom(0).border_t(1).border_color(t.accent)
       .when(side === "left", (el) => el.border_l(1)).when(side === "right", (el) => el.border_r(1)));
   const rule = () => div().flex_1().h_full().relative().child(div().absolute().top(half).left(0).right(0).h(1).bg(t.accent));
-  const top = h_flex().h(HEAD).flex_none().items_center()
+  const top = h_flex().h(HEAD).flex_none().items_center().relative()
+    .child(div().absolute().top(half).left(0).right(0).bottom(0).bg(t.chrome))
     .child(edge("left"))
     .child(h_flex().px(6).gap(8).items_center()
       .child(div().font_bold().text_color(t.accent).child(v.keys))
@@ -46,12 +53,12 @@ export function renderHints(width) {
     .child(rule())
     .child(div().px(6).text_size(11).text_color(t.dim).child("Esc · ⌫"))
     .child(edge("right"));
-  return v_flex().id("whistle-hints").size_full().bg(t.chrome).text_size(12)
+  return v_flex().id("whistle-hints").size_full().text_size(12)
     .child(top)
-    .child(h_flex().flex_1().items_start().px(PAD).pb(8).border_l(1).border_r(1).border_b(1).border_color(t.accent)
-      .children(columns.map((col) => v_flex().w(colW).flex_none()
+    .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8).bg(t.chrome).border_l(1).border_r(1).border_b(1).border_color(t.accent)
+      .children(columns.map((col) => v_flex().w(colW(col)).flex_none()
         .children(col.map((i) => h_flex().h(ROW).gap(8).items_center()
-          .child(div().w(KEY).flex_none().font_bold().text_color(t.accent).child(show(i.key)))
+          .child(div().w(keyW(col)).flex_none().font_bold().text_color(t.accent).child(show(i.key)))
           .child(div().text_color(t.dim).child("→"))
           .child(div().min_w(0).truncate().text_color(i.group ? t.accent : t.foreground).child(labelOf(i))))))));
 }

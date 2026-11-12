@@ -18,11 +18,11 @@ box listing what can follow.
   or "x is not mapped" shows in the `blocked` color in place of the label.
 - **Hints box** (only while a sequence is pending, if hints are on), laid out like which-key's
   classic preset: a borderless window overlay docked on top of the bar, exactly as wide as it,
-  `hintsLift` px (default 6) above it. Background `chrome`, a 1 px `accent` border whose top
+  `hintsLift` px (default 6) above it. Background `chrome` from the top border line down (see-through above it), a 1 px `accent` border whose top
   edge carries, from the left, the keys typed (bold accent) and the group's name, and on the
   right `Esc · ⌫` dim. Inside, 12 px side padding, the group's keys in columns filled top to
-  bottom, as many columns as fit, each as wide as the longest label (about 7.2 px a character
-  plus key, arrow and a 28 px gap); rows 18 px: the key in bold accent (`space` shows as
+  bottom, as many columns as fit, each as wide as its own longest key and label (about 7.2 px
+  a character), 32 px apart; rows 18 px: the key in bold accent (`space` shows as
   `SPC`), a dim `→`, the label (a nested group in accent with a `+`). Commands come before
   groups, each sorted by key. Reopened at the new size when the group changes.
 - **Settings dialog** (640 px wide, 80 % of the window high): "Whistle" and "Esc closes";
