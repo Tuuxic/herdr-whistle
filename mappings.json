@@ -1,0 +1,62 @@
+{
+  "_help": [
+    "Whistle's default mappings: Herdr's own commands only. An update replaces this file; put yours in ~/.config/herdr-app/whistle.json ({ \"enabled\", \"hints\", \"map\" }), which goes over these and over the layout's \"mappings\" prop. A key set to null removes it.",
+    "map: key -> [label, command] or [label, command, {args}], or a group {name, map} whose keys follow (w v).",
+    "Commands keep you in WHISTLE; a 4th item \"type\" ends in TYPE instead: [label, command, null, \"type\"].",
+    "Keys: the character typed (p, /, +, ?) or a key name (space, enter, tab), with ctrl-/alt-/super- in front as in keys.json (ctrl-n). Groups nest; the leader is the group on space.",
+    "A mapped key wins over the built-in WHISTLE keys (i, h/j/k/l, ctrl-h/j/k/l, arrows, enter, and the keys a field handles itself), so leave those free.",
+    "command: any `herdr-app commands` name; name:value fills its first argument, as in keys.json.",
+    "whistle.field:<block> selects the field in that layout block; whistle.focus:<block> shows the block and selects it; whistle.toggle:<block> shows it or takes it away; whistle.settings opens whistle's settings.",
+    "Esc cancels, Backspace goes back one level."
+  ],
+  "enabled": true,
+  "hints": true,
+  "map": {
+    "/": ["Go to tab or space", "mod.open:picker"],
+    "ctrl-n": ["New tab", "tab.new", null, "type"],
+    "tab": ["Next tab", "tab.next"],
+    "shift-tab": ["Previous tab", "tab.prev"],
+    "t": {
+      "name": "Tabs",
+      "map": {
+        "n": ["New tab", "tab.new"],
+        "x": ["Close tab", "tab.close"],
+        "r": ["Rename tab", "tab.rename"]
+      }
+    },
+    "w": {
+      "name": "Panes",
+      "map": {
+        "v": ["Split right", "pane.split", { "direction": "right" }],
+        "s": ["Split down", "pane.split", { "direction": "down" }],
+        "q": ["Close pane", "pane.close"],
+        "z": ["Zoom pane", "pane.zoom"]
+      }
+    },
+    "space": {
+      "name": "Leader",
+      "map": {
+        "p": ["Command palette", "app.palette"],
+        ",": ["Settings", "app.settings"],
+        "?": ["Keys", "app.help"],
+        "w": ["Whistle settings", "whistle.settings"],
+        "s": {
+          "name": "Spaces",
+          "map": {
+            "n": ["New space", "space.new"],
+            "r": ["Rename space", "space.rename"]
+          }
+        },
+        "a": {
+          "name": "App",
+          "map": {
+            "+": ["Zoom in", "app.zoom_in"],
+            "-": ["Zoom out", "app.zoom_out"],
+            "0": ["Reset zoom", "app.zoom_reset"],
+            "q": ["Quit Herdr", "app.quit"]
+          }
+        }
+      }
+    }
+  }
+}
