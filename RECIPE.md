@@ -62,7 +62,7 @@ box listing what can follow.
 
 ## Built from
 
-- **Files**: `main.js` (the view: status bar copy, `part: "hints"` window copy, `part:
+- **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: status bar copy, `part: "hints"` window copy, `part:
   "settings"` dialog copy), `config.js` (mapping layers), `hints.js`, `settings.js`,
   `keynav.js` (the protocol), `mappings.json` (defaults), `keys.json`, `mod.json`
   (`place: bottom`, size 22, `focusable: true`).

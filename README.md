@@ -11,7 +11,7 @@ again.
 
 ## Install
 
-Copy this folder to `~/.config/herdr-app/mods/whistle/` and merge `keys.json` into your
+Copy `mods/whistle/` to `~/.config/herdr-app/mods/whistle/` and merge `keys.json` into your
 `~/.config/herdr-app/keys.json`. On a layout that doesn't place it, whistle docks itself as a
 thin bar at the bottom.
 
@@ -28,7 +28,7 @@ thin bar at the bottom.
 
 Three layers, each over the one before:
 
-1. `mappings.json` here: defaults, Herdr's own commands only (an update replaces it)
+1. `mods/whistle/mappings.json`: defaults, Herdr's own commands only (an update replaces it)
 2. the layout: the whistle block's `"mappings"` prop, and its `"enabled"` / `"hints"` props
    (a layout can ship whistle switched off)
 3. `~/.config/herdr-app/whistle.json`: yours, `{ "enabled", "hints", "bar", "map" }`
