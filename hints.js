@@ -1,7 +1,7 @@
 // The key hints: a window overlay docked on top of the status bar, as wide as the bar, that
 // lists what can follow the keys typed so far (shared("whistle.leader")), the way which-key's
-// classic layout does: the keys and the group's name set into the top border, then columns
-// filled top to bottom, as many as fit. A window doesn't take the keyboard, so WHISTLE keeps
+// classic layout does: a title row with the keys and the group's name, then columns filled
+// top to bottom, as many as fit. A window doesn't take the keyboard, so WHISTLE keeps
 // it. The main copy opens it at the size hintsSize() gives and closes it when done.
 
 import { div } from "gpui-kit";
@@ -37,25 +37,15 @@ export function renderHints(width) {
   const v = shared("whistle.leader");
   if (!v) return div().size_full();
   const { columns } = layoutOf(v.items, width);
-  // The top border, drawn in pieces so the title sits in a gap in it. Above the line the
-  // window stays see-through: the background starts at the line, like the border does.
-  const half = HEAD / 2;
-  const edge = (side) => div().w(10).h_full().flex_none().relative()
-    .child(div().absolute().top(half).left(0).right(0).bottom(0).border_t(1).border_color(t.accent)
-      .when(side === "left", (el) => el.border_l(1)).when(side === "right", (el) => el.border_r(1)));
-  const rule = () => div().flex_1().h_full().relative().child(div().absolute().top(half).left(0).right(0).h(1).bg(t.accent));
-  const top = h_flex().h(HEAD).flex_none().items_center().relative()
-    .child(div().absolute().top(half).left(0).right(0).bottom(0).bg(t.chrome))
-    .child(edge("left"))
-    .child(h_flex().px(6).gap(8).items_center()
-      .child(div().font_bold().text_color(t.accent).child(v.keys))
-      .child(div().text_size(11).font_medium().text_color(t.foreground).child(v.title)))
-    .child(rule())
-    .child(div().px(6).text_size(11).text_color(t.dim).child("Esc · ⌫"))
-    .child(edge("right"));
-  return v_flex().id("whistle-hints").size_full().text_size(12)
+  // One box: the border all round, the title row inside it on the box's background.
+  const top = h_flex().h(HEAD).flex_none().px(PAD).gap(8).items_center()
+    .child(div().font_bold().text_color(t.accent).child(v.keys))
+    .child(div().text_size(11).font_medium().text_color(t.foreground).child(v.title))
+    .child(div().flex_1())
+    .child(div().text_size(11).text_color(t.dim).child("Esc · ⌫"));
+  return v_flex().id("whistle-hints").size_full().bg(t.chrome).border_1().border_color(t.accent).text_size(12)
     .child(top)
-    .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8).bg(t.chrome).border_l(1).border_r(1).border_b(1).border_color(t.accent)
+    .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8)
       .children(columns.map((col) => v_flex().w(colW(col)).flex_none()
         .children(col.map((i) => h_flex().h(ROW).gap(8).items_center()
           .child(div().w(keyW(col)).flex_none().font_bold().text_color(t.accent).child(show(i.key)))
