@@ -41,3 +41,7 @@ taking part in **keynav** (`keynav.js`, copy it into your mod): it announces its
 `shared("keynav.fields")`, draws its own cursor while `shared("keynav").active` names it, and
 handles `<mod>.keynav-up|down|left|right|open|key-<char>` commands. Without a driver like
 whistle, nothing shows.
+
+## License
+
+MIT (`LICENSE`).
