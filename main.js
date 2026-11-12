@@ -401,20 +401,23 @@ export default class Whistle extends View {
       this.hintsAt = null;
       return;
     }
-    // Bottom left, just above this bar; reopened only when its size or spot changes.
+    // Docked on top of this bar and as wide as it; reopened only when its size or spot changes.
+    // The bar reaches the window's right edge, so its left edge is the window's width less its
+    // own. A bar set in from the edge says by how much: "hintsInset" (px from the window's right
+    // edge to the bar's inside), "hintsBorder" (its border, so the box lines up with the outside)
+    // and "hintsLift" (px from the bar's inside top to the box, default 6).
     const vp = globalThis.window?.viewport_size?.();
-    const maxWidth = Math.max(300, (vp?.width ?? this.barW ?? 900) - 16);
-    const { width, height } = hintsSize(v.items.length, maxWidth);
-    // The bar reaches the window's right edge, so its left edge is the window's width less its own.
-    const left = vp && this.barW ? Math.max(0, vp.width - this.barW) : 0;
-    // "hintsLift" (px, default 6): the gap above the bar; more when a border or padding sits below it.
+    const inset = Number(props()?.hintsInset ?? 0), border = Number(props()?.hintsBorder ?? 0);
     const lift = Number(props()?.hintsLift ?? 6);
-    const at = vp ? { x: left + 8, y: Math.max(8, vp.height - (this.barH ?? 22) - height - lift) } : undefined;
+    const barW = this.barW ?? vp?.width ?? 900;
+    const left = vp ? Math.max(0, vp.width - inset - barW - border) : 0;
+    const { width, height } = hintsSize(v.items, Math.round(barW + 2 * border));
+    const at = vp ? { x: left, y: Math.max(8, vp.height - (this.barH ?? 22) - height - lift) } : undefined;
     const spot = JSON.stringify([width, height, at]);
     if (this.hintsId && this.hintsAt === spot) return;
     if (this.hintsId) closeOverlay(this.hintsId);
     this.hintsAt = spot;
-    this.hintsId = openOverlay({ mod: "whistle", kind: "window", frame: "none", width, height, at, props: { part: "hints", maxWidth } });
+    this.hintsId = openOverlay({ mod: "whistle", kind: "window", frame: "none", width, height, at, props: { part: "hints", width } });
   }
 
   // A first key from the map: run it, or wait for the rest of its group.
@@ -554,7 +557,7 @@ export default class Whistle extends View {
   }
 
   render(cx) {
-    if (this.hintsPart) return renderHints(props()?.maxWidth ?? 900);
+    if (this.hintsPart) return renderHints(props()?.width ?? 900);
     if (this.settingsPart) {
       const all = bars().filter((b) => b.name);
       const place = all.length > 1 ? {

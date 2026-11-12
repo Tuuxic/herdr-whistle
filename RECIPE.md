@@ -16,13 +16,15 @@ box listing what can follow.
   selected field's label (`Spaces`, `Agents`, `Files`, ...). While a sequence is pending it
   shows the keys typed so far in bold accent (`SPC a`) and the group's name (`App`). An error
   or "x is not mapped" shows in the `blocked` color in place of the label.
-- **Hints box** (only while a sequence is pending, if hints are on): a borderless window
-  overlay 8 px in from the bar's left edge, 6 px (`hintsLift`) above it. Background `chrome`, 1 px `accent`
-  border, 12 px side padding. A header row: the keys typed (bold accent), the group's name in
-  capitals, and `Esc · ⌫` dim on the right. Below, the group's keys in columns of at most 8
-  rows, 210 px wide, rows 18 px: the key in bold accent (`space` shows as `SPC`), a dim `→`,
-  the label (a nested group in accent with a `+`). Commands come before groups, each sorted by
-  key. At least 260 px wide; reopened at the new size when the group changes.
+- **Hints box** (only while a sequence is pending, if hints are on), laid out like which-key's
+  classic preset: a borderless window overlay docked on top of the bar, exactly as wide as it,
+  `hintsLift` px (default 6) above it. Background `chrome`, a 1 px `accent` border whose top
+  edge carries, from the left, the keys typed (bold accent) and the group's name, and on the
+  right `Esc · ⌫` dim. Inside, 12 px side padding, the group's keys in columns filled top to
+  bottom, as many columns as fit, each as wide as the longest label (about 7.2 px a character
+  plus key, arrow and a 28 px gap); rows 18 px: the key in bold accent (`space` shows as
+  `SPC`), a dim `→`, the label (a nested group in accent with a `+`). Commands come before
+  groups, each sorted by key. Reopened at the new size when the group changes.
 - **Settings dialog** (640 px wide, 80 % of the window high): "Whistle" and "Esc closes";
   two rows with square toggles (36×20, accent when on): **Whistle mode** and **Show key
   hints** (hidden while whistle is off); **Bar position** when the layout has more than one
@@ -93,9 +95,10 @@ box listing what can follow.
   (set from the settings dialog) names the one to show; whistle shows it with `layout.show`
   and hides the rest. A hidden copy stays alive but does nothing. A bar without mappings
   takes the props of the layout's first bar that has them, so they're written once. The
-  hints box goes 8 px in from the bar's left edge, worked out as the window's width less the
-  bar's (a bar always reaches the right edge), and `hintsLift` px (default 6) above the bar's
-  top: raise it for a bar with a border or padding below it.
+  hints box lines up with the bar: its left edge is the window's width less the bar's (a bar
+  always reaches the right edge). A bar set in from the edges says by how much in its props:
+  `hintsInset` (px from the window's right edge to the bar's inside), `hintsBorder` (its
+  border width, so the box covers it) and `hintsLift` (px from the bar's inside top to the box).
 
 ## Watch out
 
