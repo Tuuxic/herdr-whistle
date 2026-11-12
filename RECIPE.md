@@ -25,7 +25,8 @@ box listing what can follow.
   key. At least 260 px wide; reopened at the new size when the group changes.
 - **Settings dialog** (640 px wide, 80 % of the window high): "Whistle" and "Esc closes";
   two rows with square toggles (36×20, accent when on): **Whistle mode** and **Show key
-  hints** (hidden while whistle is off); `MAPPINGS · n` and every mapping in effect, one row
+  hints** (hidden while whistle is off); **Bar position** when the layout has more than one
+  bar: one bordered choice per bar name, the shown one filled in the accent; `MAPPINGS · n` and every mapping in effect, one row
   each: the keys as small bordered chips joined by `›`, the label, the group name dim on the
   right; a note on where your own mappings go.
 - **Fields**: whistle draws nothing in other blocks. Each mod that takes part draws its own
@@ -65,7 +66,7 @@ box listing what can follow.
   (`place: bottom`, size 22, `focusable: true`).
 - **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
-  prop (and its `enabled` / `hints` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, map }`, read every 2 s since
+  prop (and its `enabled` / `hints` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, map }`, read every 2 s since
   it's outside the mod's folder). An entry is `[label, command]`, `[label, command, args]` or
   `[label, command, args, "type"]`; `name:value` fills the command's first argument.
 - **Its own commands** (`whistle.<command>`, from keys.json): `whistle` (toggle), `enter`,
@@ -86,6 +87,14 @@ box listing what can follow.
   `"dialog"` for settings), `readTextFile`/`writeTextFile`, `exec("hc", ...)`; commands
   `pane.focus`, `pane.go`, `layout.show/hide/select`.
 - **Programs**: `hc` (only while whistle is off). No network.
+
+- **Several bars**: a layout can hold more than one whistle block, each named by a `bar`
+  prop (`"Full width"`, `"Under the terminals"`), all but one hidden. `bar` in whistle.json
+  (set from the settings dialog) names the one to show; whistle shows it with `layout.show`
+  and hides the rest. A hidden copy stays alive but does nothing. A bar without mappings
+  takes the props of the layout's first bar that has them, so they're written once. The
+  hints box goes 8 px in from the bar's left edge, worked out as the window's width less the
+  bar's (a bar always reaches the right edge).
 
 ## Watch out
 

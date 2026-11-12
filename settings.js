@@ -20,8 +20,15 @@ const toggle = (t, id, on, onClick) => div().id(id).w(36).h(20).p(2).cursor_poin
 const chip = (t, k) => div().px(5).h(18).flex().items_center().border_1().border_color(t.border).bg(t.background)
   .text_size(11.5).text_color(t.foreground).child(k === "space" ? "SPC" : k);
 
-// conf: what load() returned; set(key, value): writes it.
-export function renderSettings(conf, set) {
+// One choice of several: the picked one in the accent.
+const choice = (t, id, label, on, onClick) => div().id(id).px(10).h(24).flex().items_center().cursor_pointer()
+  .border_1().border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
+  .text_size(12).text_color(on ? t.background : t.muted).hover((s) => (on ? s : s.text_color(t.foreground)))
+  .on_click(onClick).child(label);
+
+// conf: what load() returned; set(key, value): writes it; place: the layout's bars when it has
+// more than one ({ names, current }), else null.
+export function renderSettings(conf, set, place) {
   const t = theme();
   const rows = flatten(conf?.map);
   return v_flex().id("whistle-settings").size_full().min_h(0).p(18).gap(6).bg(t.chrome).text_color(t.foreground)
@@ -34,6 +41,8 @@ export function renderSettings(conf, set) {
       toggle(t, "wh-enabled", conf?.enabled !== false, () => set("enabled", conf?.enabled === false))))
     .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w or Space, a box above the status bar lists the keys that can follow. Off: only the status bar shows what you typed.",
       toggle(t, "wh-hints", conf?.hints !== false, () => set("hints", conf?.hints === false)))))
+    .when(Boolean(place), (el) => el.child(row(t, "Bar position", "Where the status bar with the mode goes. This layout has a spot for each.",
+      h_flex().gap(4).children(place.names.map((name, i) => choice(t, `wh-bar-${i}`, name, name === place.current, () => set("bar", name)))))))
     .child(div().pt(12).pb(4).text_size(11).font_semibold().text_color(t.dim).child(`MAPPINGS · ${rows.length}`))
     .child(v_flex().id("wh-maps").flex_1().min_h(0).overflow_y_scrollbar()
       .children(rows.map((m, i) => h_flex().id(`wh-m-${i}`).h(26).flex_none().px(6).gap(12).items_center().hover((s) => s.bg(t.hover))

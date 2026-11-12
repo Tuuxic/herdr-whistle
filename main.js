@@ -94,6 +94,25 @@ const choices = (map) => Object.entries(map ?? {})
 // A field's keys, sent on as keynav moves.
 const MOVES = { j: "down", down: "down", k: "up", up: "up", h: "left", left: "left", l: "right", right: "right", enter: "open" };
 
+// The layout's whistle bars: its blocks of this mod (not the hints or settings copies), each
+// named by its "bar" prop. A layout with more than one lets whistle's settings pick where the
+// bar goes; the others stay hidden.
+function bars(node = layout(), out = []) {
+  const c = node?.content;
+  if (node?.type === "block" && c?.mod === "whistle" && !c.props?.part)
+    out.push({ id: node.id, hidden: Boolean(node.hidden), name: c.props?.bar ?? null, props: c.props ?? {} });
+  for (const child of node?.children ?? []) bars(child, out);
+  return out;
+}
+
+// Shows the bar named name and hides the others.
+function switchBar(name) {
+  const all = bars(), to = all.find((b) => b.name === name);
+  if (!to) return;
+  if (to.hidden) run("layout.show", { id: to.id });
+  for (const b of all) if (b !== to && !b.hidden) run("layout.hide", { id: b.id });
+}
+
 export default class Whistle extends View {
   init(_props, cx) {
     // The key hints window: draws shared("whistle.leader") and nothing else.
@@ -102,7 +121,10 @@ export default class Whistle extends View {
     if (props()?.part === "settings") {
       this.settingsPart = true;
       const reload = () => load(props()?.mappings, props()).then((c) => { this.conf = c; cx.notify(); });
-      this.set = (key, value) => setUser(key, value).then(reload);
+      this.set = (key, value) => {
+        if (key === "bar") switchBar(value);
+        return setUser(key, value).then(reload);
+      };
       reload();
       return;
     }
@@ -112,6 +134,7 @@ export default class Whistle extends View {
     this.loadLeader().then(() => cx.notify());
     // whistle.json is outside this folder, so saving it doesn't reload the mod: look now and then.
     cx.timer.every(2000, (cx) => {
+      if (!this.live()) return;
       readTextFile(USER_FILE()).then((text) => { if (text !== this.userText) this.loadLeader().then(() => cx.notify()); });
     });
     this.mode = "type";
@@ -131,11 +154,11 @@ export default class Whistle extends View {
           cx.notify();
           continue;
         }
+        // Settings, on or off (off, that's where it's turned back on).
+        if (c === "settings") { if (this.mode === "whistle") { this.endLeader(); this.type(); } this.openSettings(); continue; }
         if (!this.enabledOn()) {
           if (c === "enter") this.passThrough("esc");
           else if (c === "whistle") this.passThrough("ctrl+space");
-          // Settings stay reachable while off: that's where it's turned back on.
-          else if (c === "settings") this.openSettings();
           continue;
         }
         if (c === "whistle") this.mode === "whistle" ? (this.endLeader(), this.type()) : this.whistle();
@@ -157,6 +180,8 @@ export default class Whistle extends View {
     });
     // A click anywhere else takes the keyboard: that ends WHISTLE.
     cx.timer.every(120, (cx) => {
+      // A layout's other bar is the one shown: this copy rests until it shows again.
+      if (!this.live()) return;
       const on = this.handle.is_focused();
       this.requests();
       // A field shown just now: its mod announces itself once it has loaded.
@@ -318,11 +343,34 @@ export default class Whistle extends View {
     }
   }
 
+  // This copy's props over those of the layout's first bar with mappings: a second bar
+  // ({ bar: "Under the terminals" }) needn't repeat the mappings and settings.
+  layoutProps() {
+    const base = bars().find((b) => b.props.mappings)?.props ?? {};
+    return { ...base, ...(props() ?? {}) };
+  }
+
+  // This copy's block among the layout's bars (none: a docked or opened copy).
+  mine() {
+    return bars().find((b) => b.name === (props()?.bar ?? null)) ?? null;
+  }
+
+  live() {
+    return !this.mine()?.hidden;
+  }
+
   async loadLeader() {
-    const c = await load(props()?.mappings, props());
+    const lp = this.layoutProps();
+    const c = await load(lp.mappings, lp);
     this.leaderConf = c;
     this.leaderErr = c.error;
     this.userText = c.userText;
+    // "bar" in whistle.json names another of the layout's bars: show that one instead.
+    const me = this.mine();
+    if (c.bar != null && me && !me.hidden && me.name !== c.bar && bars().some((b) => b.name === c.bar)) {
+      if (this.mode === "whistle") { this.endLeader(); this.type(); }
+      switchBar(c.bar);
+    }
     // For other mods' settings: whether whistle mode is on (see the "on" / "off" commands).
     if (!props()?.part && shared("whistle.enabled") !== this.enabledOn()) setShared("whistle.enabled", this.enabledOn());
   }
@@ -332,7 +380,8 @@ export default class Whistle extends View {
   enabledOn() { return this.leaderConf?.enabled !== false; }
 
   openSettings() {
-    openOverlay({ mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings", mappings: props()?.mappings ?? null, enabled: props()?.enabled ?? null, hints: props()?.hints ?? null } });
+    const lp = this.layoutProps();
+    openOverlay({ mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings", mappings: lp.mappings ?? null, enabled: lp.enabled ?? null, hints: lp.hints ?? null } });
   }
 
   // Off: the key that would have entered WHISTLE, typed into the focused terminal.
@@ -356,7 +405,9 @@ export default class Whistle extends View {
     const vp = globalThis.window?.viewport_size?.();
     const maxWidth = Math.max(300, (vp?.width ?? this.barW ?? 900) - 16);
     const { width, height } = hintsSize(v.items.length, maxWidth);
-    const at = vp ? { x: 8, y: Math.max(8, vp.height - (this.barH ?? 22) - height - 6) } : undefined;
+    // The bar reaches the window's right edge, so its left edge is the window's width less its own.
+    const left = vp && this.barW ? Math.max(0, vp.width - this.barW) : 0;
+    const at = vp ? { x: left + 8, y: Math.max(8, vp.height - (this.barH ?? 22) - height - 6) } : undefined;
     const spot = JSON.stringify([width, height, at]);
     if (this.hintsId && this.hintsAt === spot) return;
     if (this.hintsId) closeOverlay(this.hintsId);
@@ -502,7 +553,11 @@ export default class Whistle extends View {
 
   render() {
     if (this.hintsPart) return renderHints(props()?.maxWidth ?? 900);
-    if (this.settingsPart) return renderSettings(this.conf, this.set);
+    if (this.settingsPart) {
+      const all = bars().filter((b) => b.name);
+      const place = all.length > 1 ? { names: all.map((b) => b.name), current: all.find((b) => !b.hidden)?.name ?? null } : null;
+      return renderSettings(this.conf, this.set, place);
+    }
     const t = theme();
     const on = this.mode === "whistle";
     return h_flex()

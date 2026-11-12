@@ -40,19 +40,22 @@ export async function load(layoutMap, layoutProps) {
     map: merge(merge(base?.map, layoutMap), user?.map),
     enabled: pick("enabled") !== false,
     hints: pick("hints") !== false,
+    bar: typeof user?.bar === "string" ? user.bar : null,
     error: errors[0] ?? null,
     userText,
   };
 }
 
-// Sets one of your settings ("enabled", "hints") in whistle.json, the rest as you wrote it.
+// Sets one of your settings ("enabled", "hints", "bar") in whistle.json, the rest as you wrote it.
 export async function setUser(key, value) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const raw = await readTextFile(USER_FILE());
-    const re = new RegExp(`("${key}"\\s*:\\s*)(true|false|null)`);
+    // The key's value as written: true, false, null or a string.
+    const re = new RegExp(`("${key}"\\s*:\\s*)(true|false|null|"(?:[^"\\\\]|\\\\.)*")`);
+    const v = JSON.stringify(value);
     const next = raw == null || !/\S/.test(raw.replace(/^\s*\{\s*\}\s*$/, ""))
       ? `${JSON.stringify({ [key]: value, map: {} }, null, 2)}\n`
-      : re.test(raw) ? raw.replace(re, `$1${value}`) : raw.replace("{", `{\n  "${key}": ${value},`);
+      : re.test(raw) ? raw.replace(re, (_m, head) => head + v) : raw.replace("{", `{\n  "${key}": ${v},`);
     try { await writeTextFile(USER_FILE(), next, raw); return true; } catch {}
   }
   return false;
