@@ -1,18 +1,18 @@
 // keynav v1: keyboard navigation that any driver mod can offer (whistle is one). A mod that
 // takes part announces each of its copies as a field; while a driver moves through the
 // layout, it names the active field in shared("keynav") and sends that mod "keynav-<move>"
-// commands. The mod keeps its own cursor and draws it. Without a driver, nothing is ever
-// active and none of this shows.
+// commands. The mod keeps its own cursor and decides how its field looks while active.
+// Without a driver, nothing is ever active.
 //
 // A mod can't import from another mod's folder: every taking part mod has a copy of this
 // file. Keep the copies the same.
 //
 // shared("keynav.fields"): { [key]: { v: 1, mod, props, label } }, key = fieldKey(mod, props)
 // shared("keynav"):        { v: 1, active: key | "terminal" | null, pane }  (the driver's)
-// shared("keynav.request"): { to: "terminal", at }  a mod asks the driver to move on
+// shared("keynav.request"): { to: "terminal", at } after the mod focused a terminal: move on
+//                           { hold: true, at }    after it moved the keyboard: keep it
 // moves: up, down, left, right, open, key-<character> (e.g. key-x)
 
-import { div } from "gpui-kit";
 import { shared, setShared } from "herdr";
 
 // Props as text with sorted keys, so the driver and the mod spell the same field the same way.
@@ -36,7 +36,7 @@ export const isActive = (key) => shared("keynav")?.active === key;
 // The move a "keynav-*" command asks for ("down", "open", "key-x"); null for other commands.
 export const move = (c) => (typeof c === "string" && c.startsWith("keynav-") ? c.slice(7) : null);
 
-// True once each time the field becomes active: the mod puts its cursor on its current item.
+// True once each time the field becomes active: the mod puts its cursor where it wants it.
 export function entered(self, key) {
   const on = isActive(key);
   const first = on && !self.keynavWasActive;
@@ -44,16 +44,7 @@ export function entered(self, key) {
   return first;
 }
 
-// One step through a list of ids, staying at the ends.
-export function step(ids, cur, d) {
-  if (!ids.length) return null;
-  const i = ids.indexOf(cur);
-  return ids[i < 0 ? 0 : Math.max(0, Math.min(ids.length - 1, i + d))];
-}
-
-// The active field glows, its cursor item gets an outline in the same color.
-export const glow = (t) => t.foreground + "b3";
-export const frame = (t) => div().absolute().top(0).left(0).right(0).bottom(0).border_2().border_color(glow(t));
-
 // After the mod focused a terminal (an agent, say): the driver should move on to it.
 export const toTerminal = () => setShared("keynav.request", { to: "terminal", at: Date.now() });
+// After the mod moved the keyboard elsewhere (selected another space): the driver keeps it.
+export const keepKeys = () => setShared("keynav.request", { hold: true, at: Date.now() });
