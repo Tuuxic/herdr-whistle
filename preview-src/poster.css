@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=block");
+
+:root {
+  --bg: #121417;
+  --fg: #ffffff;
+  --muted: #a9abb0;
+  --dim: #6c6e73;
+  --line: #2a2d32;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1600px; height: 1000px; overflow: hidden; }
+body {
+  background:
+    radial-gradient(600px 500px at 1240px 520px, var(--glow), transparent 70%),
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 40px 40px,
+    var(--bg);
+  --grid: rgba(255, 255, 255, 0.025);
+  color: var(--fg);
+  font-family: "JetBrains Mono", monospace;
+  position: relative;
+}
+
+.left { position: absolute; left: 96px; top: 64px; width: 760px; }
+
+.motif { height: 150px; position: relative; }
+.rule { width: 560px; height: 6px; background: var(--fg); margin-top: 14px; }
+
+.title { margin-top: 44px; font-weight: 800; line-height: 0.9; letter-spacing: -2px; }
+.title .plain { font-size: 150px; display: block; }
+.title .box {
+  display: inline-block; margin-top: 18px; padding: 4px 22px 10px;
+  font-size: 150px; background: var(--accent); color: #101114;
+  box-shadow: 16px 16px 0 var(--accent-deep);
+}
+
+.head { margin-top: 64px; font-size: 38px; font-weight: 700; letter-spacing: -0.5px; }
+.head em { font-style: normal; color: var(--accent); }
+.body { margin-top: 22px; font-size: 21px; line-height: 32px; color: var(--muted); max-width: 720px; }
+.body b { color: var(--accent); font-weight: 700; }
+
+.chips { margin-top: 36px; display: flex; gap: 14px; }
+.chip { font-size: 19px; font-weight: 700; letter-spacing: 1.5px; padding: 12px 18px; border: 3px solid var(--fg); }
+.chip.solid { background: var(--fg); color: #101114; }
+
+.url { position: absolute; left: 96px; bottom: 44px; font-size: 16px; color: var(--muted); }
+.url b { color: var(--fg); font-weight: 700; }
+
+.shot {
+  position: absolute; overflow: hidden;
+  border: 2px solid #3a3d43; background: #101114;
+  box-shadow: 16px 16px 0 #0a0b0d;
+}
+.shot img { position: absolute; display: block; }
+
+.cap {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 64px; min-width: 64px; padding: 0 16px;
+  border: 3px solid var(--fg); border-bottom-width: 9px;
+  font-size: 22px; font-weight: 700; color: var(--fg); background: #181a1e;
+}
+.cap.hot { background: var(--accent); color: #101114; border-color: var(--accent-deep); }
+.tag {
+  position: absolute; font-size: 14px; font-weight: 700; letter-spacing: 1px;
+  padding: 4px 8px; background: var(--accent-deep); color: var(--fg);
+}
