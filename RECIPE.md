@@ -54,7 +54,7 @@ box listing what can follow.
   in TYPE and lets the terminal the command opened take the keyboard.
 - **Agent statuses**: whistle shows none itself; the fields' own mods do.
 - **Off** (`"enabled": false`): `ctrl-space` and `ctrl-[` are typed into the focused terminal
-  (`hc keys <terminal> ctrl+space|esc`), other whistle commands are ignored, and the status
+  (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings` are ignored, and the status
   bar shows only its label.
 
 ## Built from

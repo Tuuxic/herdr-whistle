@@ -126,6 +126,8 @@ export default class Whistle extends View {
         if (!this.enabledOn()) {
           if (c === "enter") this.passThrough("esc");
           else if (c === "whistle") this.passThrough("ctrl+space");
+          // Settings stay reachable while off: that's where it's turned back on.
+          else if (c === "settings") this.openSettings();
           continue;
         }
         if (c === "whistle") this.mode === "whistle" ? (this.endLeader(), this.type()) : this.whistle();
