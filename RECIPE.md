@@ -17,7 +17,7 @@ box listing what can follow.
   shows the keys typed so far in bold accent (`SPC a`) and the group's name (`App`). An error
   or "x is not mapped" shows in the `blocked` color in place of the label.
 - **Hints box** (only while a sequence is pending, if hints are on): a borderless window
-  overlay 8 px from the left edge, 6 px above the bar. Background `chrome`, 1 px `accent`
+  overlay 8 px in from the bar's left edge, 6 px (`hintsLift`) above it. Background `chrome`, 1 px `accent`
   border, 12 px side padding. A header row: the keys typed (bold accent), the group's name in
   capitals, and `Esc · ⌫` dim on the right. Below, the group's keys in columns of at most 8
   rows, 210 px wide, rows 18 px: the key in bold accent (`space` shows as `SPC`), a dim `→`,
@@ -94,7 +94,8 @@ box listing what can follow.
   and hides the rest. A hidden copy stays alive but does nothing. A bar without mappings
   takes the props of the layout's first bar that has them, so they're written once. The
   hints box goes 8 px in from the bar's left edge, worked out as the window's width less the
-  bar's (a bar always reaches the right edge).
+  bar's (a bar always reaches the right edge), and `hintsLift` px (default 6) above the bar's
+  top: raise it for a bar with a border or padding below it.
 
 ## Watch out
 

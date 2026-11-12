@@ -407,7 +407,9 @@ export default class Whistle extends View {
     const { width, height } = hintsSize(v.items.length, maxWidth);
     // The bar reaches the window's right edge, so its left edge is the window's width less its own.
     const left = vp && this.barW ? Math.max(0, vp.width - this.barW) : 0;
-    const at = vp ? { x: left + 8, y: Math.max(8, vp.height - (this.barH ?? 22) - height - 6) } : undefined;
+    // "hintsLift" (px, default 6): the gap above the bar; more when a border or padding sits below it.
+    const lift = Number(props()?.hintsLift ?? 6);
+    const at = vp ? { x: left + 8, y: Math.max(8, vp.height - (this.barH ?? 22) - height - lift) } : undefined;
     const spot = JSON.stringify([width, height, at]);
     if (this.hintsId && this.hintsAt === spot) return;
     if (this.hintsId) closeOverlay(this.hintsId);
