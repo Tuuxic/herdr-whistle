@@ -3,7 +3,7 @@
 // ~/.config/herdr-app/whistle.json; the main copy notices within a few seconds.
 
 import { div } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
+import { h_flex, v_flex, Popup } from "gpui-base";
 import { theme } from "herdr";
 import { flatten } from "./config.js";
 
@@ -20,14 +20,26 @@ const toggle = (t, id, on, onClick) => div().id(id).w(36).h(20).p(2).cursor_poin
 const chip = (t, k) => div().px(5).h(18).flex().items_center().border_1().border_color(t.border).bg(t.background)
   .text_size(11.5).text_color(t.foreground).child(k === "space" ? "SPC" : k);
 
-// One choice of several: the picked one in the accent.
-const choice = (t, id, label, on, onClick) => div().id(id).px(10).h(24).flex().items_center().cursor_pointer()
-  .border_1().border_color(on ? t.accent : t.border).bg(on ? t.accent : t.background)
-  .text_size(12).text_color(on ? t.background : t.muted).hover((s) => (on ? s : s.text_color(t.foreground)))
-  .on_click(onClick).child(label);
+// A dropdown: the current choice with a ▾; a click lists them all under it.
+// open: whether the list shows; setOpen(bool); pick(name).
+function dropdown(t, id, names, current, open, setOpen, pick) {
+  const trigger = h_flex().id(`${id}-trigger`).w(190).h(26).px(10).gap(8).items_center().cursor_pointer()
+    .border_1().border_color(open ? t.accent : t.border).bg(t.background).hover((s) => s.border_color(t.accent))
+    .on_click(() => setOpen(!open))
+    .child(div().flex_1().min_w(0).truncate().text_size(12.5).text_color(t.foreground).child(current ?? "—"))
+    .child(div().text_size(10).text_color(t.dim).child("▾"));
+  const list = v_flex().id(`${id}-list`).w(190).py(4).border_1().border_color(t.accent).bg(t.chrome)
+    .on_mouse_down_out(() => setOpen(false))
+    .children(names.map((name, i) => h_flex().id(`${id}-${i}`).h(26).px(10).gap(8).items_center().cursor_pointer()
+      .text_size(12.5).text_color(name === current ? t.accent : t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .on_click(() => { setOpen(false); if (name !== current) pick(name); })
+      .child(div().w(10).child(name === current ? "✓" : ""))
+      .child(div().flex_1().min_w(0).truncate().child(name))));
+  return Popup.new(`${id}-popup`, trigger).anchor("top_right").when(open, (el) => el.content(list));
+}
 
 // conf: what load() returned; set(key, value): writes it; place: the layout's bars when it has
-// more than one ({ names, current }), else null.
+// more than one ({ names, current, open, setOpen }), else null.
 export function renderSettings(conf, set, place) {
   const t = theme();
   const rows = flatten(conf?.map);
@@ -42,7 +54,7 @@ export function renderSettings(conf, set, place) {
     .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w or Space, a box above the status bar lists the keys that can follow. Off: only the status bar shows what you typed.",
       toggle(t, "wh-hints", conf?.hints !== false, () => set("hints", conf?.hints === false)))))
     .when(Boolean(place), (el) => el.child(row(t, "Bar position", "Where the status bar with the mode goes. This layout has a spot for each.",
-      h_flex().gap(4).children(place.names.map((name, i) => choice(t, `wh-bar-${i}`, name, name === place.current, () => set("bar", name)))))))
+      dropdown(t, "wh-bar", place.names, place.current, place.open, place.setOpen, (name) => set("bar", name)))))
     .child(div().pt(12).pb(4).text_size(11).font_semibold().text_color(t.dim).child(`MAPPINGS · ${rows.length}`))
     .child(v_flex().id("wh-maps").flex_1().min_h(0).overflow_y_scrollbar()
       .children(rows.map((m, i) => h_flex().id(`wh-m-${i}`).h(26).flex_none().px(6).gap(12).items_center().hover((s) => s.bg(t.hover))

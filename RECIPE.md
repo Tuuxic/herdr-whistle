@@ -26,7 +26,7 @@ box listing what can follow.
 - **Settings dialog** (640 px wide, 80 % of the window high): "Whistle" and "Esc closes";
   two rows with square toggles (36×20, accent when on): **Whistle mode** and **Show key
   hints** (hidden while whistle is off); **Bar position** when the layout has more than one
-  bar: one bordered choice per bar name, the shown one filled in the accent; `MAPPINGS · n` and every mapping in effect, one row
+  bar: a dropdown (190 px, ▾) whose list, under it, ticks the bar shown; `MAPPINGS · n` and every mapping in effect, one row
   each: the keys as small bordered chips joined by `›`, the label, the group name dim on the
   right; a note on where your own mappings go.
 - **Fields**: whistle draws nothing in other blocks. Each mod that takes part draws its own

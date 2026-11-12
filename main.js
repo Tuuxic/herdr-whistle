@@ -551,11 +551,14 @@ export default class Whistle extends View {
       .child(div().flex_none().text_color(t.foreground).child(v.title));
   }
 
-  render() {
+  render(cx) {
     if (this.hintsPart) return renderHints(props()?.maxWidth ?? 900);
     if (this.settingsPart) {
       const all = bars().filter((b) => b.name);
-      const place = all.length > 1 ? { names: all.map((b) => b.name), current: all.find((b) => !b.hidden)?.name ?? null } : null;
+      const place = all.length > 1 ? {
+        names: all.map((b) => b.name), current: all.find((b) => !b.hidden)?.name ?? null,
+        open: Boolean(this.barOpen), setOpen: (v) => { this.barOpen = v; cx.notify(); },
+      } : null;
       return renderSettings(this.conf, this.set, place);
     }
     const t = theme();
