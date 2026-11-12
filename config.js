@@ -1,7 +1,8 @@
 // Whistle's settings and mappings, in three layers, each over the one before:
 //   1. mappings.json in this folder: the defaults, Herdr's own commands only (an update
 //      replaces this file, so don't edit it)
-//   2. the layout: the whistle block's "mappings" prop (keys for that layout's own mods)
+//   2. the layout: the whistle block's "mappings" prop (keys for that layout's own mods), and
+//      its "enabled" and "hints" props (a layout can ship whistle switched off)
 //   3. ~/.config/herdr-app/whistle.json: yours, { enabled, hints, map }; nothing replaces it
 // A key set to null in a later layer takes that key away; a group's map merges key by key.
 
@@ -23,7 +24,7 @@ export function merge(base, over) {
 }
 
 // { map, enabled, hints, error, userText }; error names the first file that didn't parse.
-export async function load(layoutMap) {
+export async function load(layoutMap, layoutProps) {
   const errors = [];
   const parse = (text, name) => {
     if (text == null) return null;
@@ -34,7 +35,7 @@ export async function load(layoutMap) {
   const base = parse(baseText, "mappings.json");
   const userText = await readTextFile(USER_FILE());
   const user = parse(userText, "whistle.json");
-  const pick = (k) => (user && k in user ? user[k] : base?.[k]);
+  const pick = (k) => (user && k in user ? user[k] : layoutProps?.[k] != null ? layoutProps[k] : base?.[k]);
   return {
     map: merge(merge(base?.map, layoutMap), user?.map),
     enabled: pick("enabled") !== false,

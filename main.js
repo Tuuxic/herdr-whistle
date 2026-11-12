@@ -19,7 +19,7 @@
 // groups nest, and the leader is just the group on space. Mapped keys win over the built-in
 // ones above. The pending keys and their choices go to shared("whistle.leader"), listed by
 // this mod's "hints" copy (hints.js, a window above the bar) unless "hints" is false.
-// "enabled": false turns WHISTLE off: ctrl-space and ctrl-[ then go to the terminal (through
+// "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: ctrl-space and ctrl-[ then go to the terminal (through
 // hc) and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
 
 import { View, div } from "gpui-kit";
@@ -101,7 +101,7 @@ export default class Whistle extends View {
     // The settings dialog.
     if (props()?.part === "settings") {
       this.settingsPart = true;
-      const reload = () => load(props()?.mappings).then((c) => { this.conf = c; cx.notify(); });
+      const reload = () => load(props()?.mappings, props()).then((c) => { this.conf = c; cx.notify(); });
       this.set = (key, value) => setUser(key, value).then(reload);
       reload();
       return;
@@ -309,7 +309,7 @@ export default class Whistle extends View {
   }
 
   async loadLeader() {
-    const c = await load(props()?.mappings);
+    const c = await load(props()?.mappings, props());
     this.leaderConf = c;
     this.leaderErr = c.error;
     this.userText = c.userText;
@@ -320,7 +320,7 @@ export default class Whistle extends View {
   enabledOn() { return this.leaderConf?.enabled !== false; }
 
   openSettings() {
-    openOverlay({ mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings", mappings: props()?.mappings ?? null } });
+    openOverlay({ mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings", mappings: props()?.mappings ?? null, enabled: props()?.enabled ?? null, hints: props()?.hints ?? null } });
   }
 
   // Off: the key that would have entered WHISTLE, typed into the focused terminal.

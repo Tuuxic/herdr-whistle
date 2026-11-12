@@ -29,7 +29,8 @@ thin bar at the bottom.
 Three layers, each over the one before:
 
 1. `mappings.json` here: defaults, Herdr's own commands only (an update replaces it)
-2. the layout: the whistle block's `"mappings"` prop
+2. the layout: the whistle block's `"mappings"` prop, and its `"enabled"` / `"hints"` props
+   (a layout can ship whistle switched off)
 3. `~/.config/herdr-app/whistle.json`: yours, `{ "enabled", "hints", "map" }`
 
 A key set to `null` removes it. `mappings.json`'s `_help` lists the entry format.

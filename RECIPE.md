@@ -65,7 +65,7 @@ box listing what can follow.
   (`place: bottom`, size 22, `focusable: true`).
 - **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
-  prop < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, map }`, read every 2 s since
+  prop (and its `enabled` / `hints` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, map }`, read every 2 s since
   it's outside the mod's folder). An entry is `[label, command]`, `[label, command, args]` or
   `[label, command, args, "type"]`; `name:value` fills the command's first argument.
 - **Its own commands** (`whistle.<command>`, from keys.json): `whistle` (toggle), `enter`,
