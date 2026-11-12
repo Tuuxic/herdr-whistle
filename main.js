@@ -123,6 +123,14 @@ export default class Whistle extends View {
     cx.spawn(async (cx) => {
       for (;;) {
         const c = await nextCommand();
+        // "on" / "off": switch whistle mode from outside (another mod's settings), into whistle.json.
+        if (c === "on" || c === "off") {
+          if (c === "off" && this.mode === "whistle") { this.endLeader(); this.type(); }
+          await setUser("enabled", c === "on");
+          await this.loadLeader();
+          cx.notify();
+          continue;
+        }
         if (!this.enabledOn()) {
           if (c === "enter") this.passThrough("esc");
           else if (c === "whistle") this.passThrough("ctrl+space");
@@ -315,6 +323,8 @@ export default class Whistle extends View {
     this.leaderConf = c;
     this.leaderErr = c.error;
     this.userText = c.userText;
+    // For other mods' settings: whether whistle mode is on (see the "on" / "off" commands).
+    if (!props()?.part && shared("whistle.enabled") !== this.enabledOn()) setShared("whistle.enabled", this.enabledOn());
   }
 
   hintsOn() { return this.leaderConf?.hints !== false; }

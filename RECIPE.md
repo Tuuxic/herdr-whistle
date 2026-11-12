@@ -54,7 +54,7 @@ box listing what can follow.
   in TYPE and lets the terminal the command opened take the keyboard.
 - **Agent statuses**: whistle shows none itself; the fields' own mods do.
 - **Off** (`"enabled": false`): `ctrl-space` and `ctrl-[` are typed into the focused terminal
-  (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings` are ignored, and the status
+  (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings`, `on` and `off` are ignored, and the status
   bar shows only its label.
 
 ## Built from
@@ -72,7 +72,8 @@ box listing what can follow.
   `type`, `focus`, `left/down/up/right`, `key-<name>` (as if pressed, for scripts). From
   mappings: `whistle.field:<block>`, `whistle.focus:<block>` (show it, then select it),
   `whistle.toggle:<block>` (show it, or hide the nearest group that holds only it),
-  `whistle.settings`.
+  `whistle.settings`. For other mods' settings: `whistle.on` / `whistle.off` set `enabled`
+  in whistle.json, and the bar keeps `shared("whistle.enabled")` (true/false) current.
 - **keynav v1**: a mod announces each copy in `shared("keynav.fields")` as
   `{ v: 1, mod, props, label }` keyed by `fieldKey(mod, props)`; whistle finds those blocks in
   `layout()`, publishes `shared("keynav") = { v: 1, active, pane }` (`active` is a field key,
