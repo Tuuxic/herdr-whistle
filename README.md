@@ -17,6 +17,8 @@ thin bar at the bottom.
 
 ## Keys in WHISTLE
 
+Defaults; all of them can be changed (see Mappings).
+
 | Key | Does |
 |---|---|
 | Ctrl+H/J/K/L | the field in that direction |
@@ -24,6 +26,10 @@ thin bar at the bottom.
 | i, Enter on a terminal | back to TYPE in the selected pane |
 | p, `,`, ? | palette, settings, keys |
 | t, w, S | the Tabs, Panes and Spaces groups (w v splits right) |
+| Esc, Backspace | cancel a key sequence, go back one level |
+
+Entering and leaving are regular keys in `keys.json`: `whistle.whistle` switches (Ctrl+Space),
+`whistle.enter` only enters (Ctrl+[ in a terminal), `whistle.type` only leaves.
 
 ## Mappings
 
@@ -32,7 +38,12 @@ Three layers, each over the one before:
 1. `mods/whistle/mappings.json`: defaults, Herdr's own commands only (an update replaces it)
 2. the layout: the whistle block's `"mappings"` prop, and its `"enabled"` / `"hints"` props
    (a layout can ship whistle switched off)
-3. `~/.config/herdr-app/whistle.json`: yours, `{ "enabled", "hints", "bar", "map" }`
+3. `~/.config/herdr-app/whistle.json`: yours, `{ "enabled", "hints", "bar", "keys", "map" }`
+
+`"map"` holds the mappings, `"keys"` whistle's own keys (action → keys, e.g.
+`"type": ["i"]`; your list replaces the default one). Chords among them (Ctrl/Alt/Super) only
+reach whistle if `keys.json` lets them through, so whistle keeps a `"mod:whistle"` section
+there in sync, sending each to itself. Your own entries in that section stay and win.
 
 A layout can offer more than one spot for the bar: give each whistle block a `"bar"` prop
 with a name and hide all but one. Whistle's settings then let you pick where it goes.

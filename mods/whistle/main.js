@@ -2,9 +2,11 @@
 // shows them.
 //
 // TYPE: the keyboard is in a terminal (or anywhere else); this mod stays out of the way.
-// WHISTLE: this mod holds the keyboard. ctrl-h/j/k/l pick the field in that direction; h/j/k/l,
-// arrows and enter act inside it; i types in the selected pane. ctrl-space switches between
-// the two, ctrl-[ in a terminal enters WHISTLE (keys.json). Clicking elsewhere ends WHISTLE.
+// WHISTLE: this mod holds the keyboard. Its own keys (the "keys" section of the mappings, by
+// default ctrl-h/j/k/l pick the field in that direction; h/j/k/l, arrows and enter act inside
+// it; i types in the selected pane) are configurable like the mappings. Entering and leaving
+// are regular keys.json keys: ctrl-space switches between the two, ctrl-[ in a terminal enters
+// WHISTLE. Clicking elsewhere ends WHISTLE.
 //
 // Fields (the keynav protocol, keynav.js): the terminal is built in (h/j/k/l move between split
 // panes). Any other block is a field once its mod announces itself in shared("keynav.fields");
@@ -16,17 +18,17 @@
 //
 // Mappings (config.js: defaults < the layout's "mappings" prop < ~/.config/herdr-app/whistle.json):
 // in WHISTLE a key from the map runs a command or starts a group whose keys follow (w v);
-// groups nest. Mapped keys win over the built-in
-// ones above. The pending keys and their choices go to shared("whistle.leader"), listed by
+// groups nest. Mapped keys win over whistle's own keys. Chords among either are claimed in
+// keys.json's "mod:whistle" section (config.js: syncKeys), since keys.json runs first. The pending keys and their choices go to shared("whistle.leader"), listed by
 // this mod's "hints" copy (hints.js, a window above the bar) unless "hints" is false.
-// "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: ctrl-space and ctrl-[ then go to the terminal (through
-// hc) and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
+// "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: the keys
+// keys.json binds to whistle.whistle and whistle.enter then go to the terminal (through hc) and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
 
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { panes, focused, run, theme, shared, setShared, nextCommand, layout, props, readTextFile, commands, exec, openOverlay, closeOverlay } from "herdr";
 import { fieldKey } from "./keynav.js";
-import { load, setUser, USER_FILE, isGroup } from "./config.js";
+import { load, setUser, USER_FILE, isGroup, syncKeys, boundKey } from "./config.js";
 import { renderHints, hintsSize } from "./hints.js";
 import { renderSettings } from "./settings.js";
 
@@ -91,8 +93,6 @@ const show = (k) => (k === "space" ? "SPC" : k);
 const choices = (map) => Object.entries(map ?? {})
   .map(([key, v]) => ({ key, label: isGroup(v) ? v.name ?? key : Array.isArray(v) ? v[0] : "?", group: Boolean(isGroup(v)) }))
   .sort((a, b) => a.group - b.group || a.key.localeCompare(b.key));
-// A field's keys, sent on as keynav moves.
-const MOVES = { j: "down", down: "down", k: "up", up: "up", h: "left", left: "left", l: "right", right: "right", enter: "open" };
 
 // The layout's whistle bars: its blocks of this mod (not the hints or settings copies), each
 // named by its "bar" prop. A layout with more than one lets whistle's settings pick where the
@@ -120,7 +120,12 @@ export default class Whistle extends View {
     // The settings dialog.
     if (props()?.part === "settings") {
       this.settingsPart = true;
-      const reload = () => load(props()?.mappings, props()).then((c) => { this.conf = c; cx.notify(); });
+      // The key keys.json binds to whistle.whistle, for the dialog to name (or warn there's none).
+      const reload = () => load(props()?.mappings, props()).then(async (c) => {
+        c.entry = await boundKey("whistle.whistle", [`layout:${shared("layout")}`, "global"]);
+        this.conf = c;
+        cx.notify();
+      });
       this.set = (key, value) => {
         if (key === "bar") switchBar(value);
         return setUser(key, value).then(reload);
@@ -157,8 +162,8 @@ export default class Whistle extends View {
         // Settings, on or off (off, that's where it's turned back on).
         if (c === "settings") { if (this.mode === "whistle") { this.endLeader(); this.type(); } this.openSettings(); continue; }
         if (!this.enabledOn()) {
-          if (c === "enter") this.passThrough("esc");
-          else if (c === "whistle") this.passThrough("ctrl+space");
+          if (c === "enter") this.passThrough("whistle.enter", ["terminal", `layout:${shared("layout")}`, "global"]);
+          else if (c === "whistle") this.passThrough("whistle.whistle", [`layout:${shared("layout")}`, "global"]);
           continue;
         }
         if (c === "whistle") this.mode === "whistle" ? (this.endLeader(), this.type()) : this.whistle();
@@ -365,6 +370,7 @@ export default class Whistle extends View {
     this.leaderConf = c;
     this.leaderErr = c.error;
     this.userText = c.userText;
+    if (!props()?.part) syncKeys(c);
     // "bar" in whistle.json names another of the layout's bars: show that one instead.
     const me = this.mine();
     if (c.bar != null && me && !me.hidden && me.name !== c.bar && bars().some((b) => b.name === c.bar)) {
@@ -385,15 +391,30 @@ export default class Whistle extends View {
   }
 
   // Off: the key that would have entered WHISTLE, typed into the focused terminal.
-  passThrough(key) {
+  // The key is whichever keys.json binds to command (ctrl-[ is Esc to a terminal).
+  async passThrough(command, sections) {
     const term = focused()?.terminal;
-    if (term) exec("hc", ["keys", term, key]).catch(() => {});
+    const k = await boundKey(command, sections);
+    if (!term || !k) return;
+    exec("hc", ["keys", term, k === "ctrl-[" ? "esc" : k.replace(/-(?=.)/g, "+")]).catch(() => {});
+  }
+
+  // Whistle's own keys: key name -> action (config.js ACTIONS).
+  own(name) {
+    const keys = this.leaderConf?.keys;
+    if (this.ownFor !== keys) {
+      this.ownFor = keys;
+      this.ownMap = new Map(Object.entries(keys ?? {}).flatMap(([action, ks]) => ks.map((k) => [k, action])));
+    }
+    return this.ownMap.get(name);
   }
 
   // Publishes the pending sequence; the hints window shows while one is pending.
   showLeader() {
     const p = this.pending;
-    const v = p ? { keys: p.path.map(show).join(" "), title: p.title, items: choices(p.node) } : null;
+    const ks = this.leaderConf?.keys ?? {};
+    const exit = [ks.cancel?.[0], ks.back?.[0]].filter(Boolean).map((k) => ({ escape: "Esc", backspace: "⌫" })[k] ?? k).join(" · ");
+    const v = p ? { keys: p.path.map(show).join(" "), title: p.title, items: choices(p.node), exit } : null;
     setShared("whistle.leader", v);
     if (!v || !this.hintsOn()) {
       if (this.hintsId) closeOverlay(this.hintsId);
@@ -436,8 +457,9 @@ export default class Whistle extends View {
 
   leaderKey(e, name) {
     const p = this.pending;
-    if (name === "escape" || name === "ctrl-[") return this.endLeader();
-    if (name === "backspace") {
+    const act = this.own(name);
+    if (act === "cancel") return this.endLeader();
+    if (act === "back") {
       if (p.path.length <= 1) return this.endLeader();
       p.path.pop();
       let node = this.leaderConf.map, title = "";
@@ -510,29 +532,28 @@ export default class Whistle extends View {
   }
 
   key(e) {
-    const k = e.key, m = e.modifiers ?? {};
+    const m = e.modifiers ?? {};
     const name = keyName(e);
     if (this.pending) return this.leaderKey(e, name), true;
     const mapped = this.leaderConf?.map?.[name];
     if (mapped) return this.startMapping(name, mapped), true;
-    if (this.leaderErr && name === "space") return (this.flash = this.leaderErr), true;
     this.flash = null;
-    if (m.control && !m.alt && "hjkl".includes(k) && k.length === 1) return this.move(k), true;
-    if (m.control || m.alt || m.platform) return false;
-    if (k === "i") return this.type(), true;
+    const act = this.own(name);
+    if (act?.startsWith("field-") && DIRS[act.slice(6)]) return this.move(DIRS[act.slice(6)]), true;
+    if (act === "type") return this.type(), true;
+    if (!act && (m.control || m.alt || m.platform)) return false;
     let f = this.current();
     // The selected field went away (a panel closed by mouse): back to the terminal.
     if (!f) { this.enter(this.terminalBlock()); f = this.current(); }
     if (!f) return false;
     if (f.key === TERMINAL) {
-      const dir = { h: "left", j: "down", k: "up", l: "right", left: "left", down: "down", up: "up", right: "right" }[k];
-      if (dir) this.paneGo(dir);
-      else if (k === "enter") this.type();
+      if (DIRS[act]) this.paneGo(act);
+      else if (act === "open") this.type();
       else return false;
       return true;
     }
     const c = e.key_char;
-    const mv = MOVES[k] ?? (c && c.length === 1 && c.trim() ? `key-${c}` : null);
+    const mv = DIRS[act] || act === "open" ? act : !act && c && c.length === 1 && c.trim() ? `key-${c}` : null;
     if (!mv) return false;
     run(`${f.mod}.keynav-${mv}`);
     return true;

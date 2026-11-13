@@ -42,7 +42,7 @@ export function renderHints(width) {
     .child(div().font_bold().text_color(t.accent).child(v.keys))
     .child(div().text_size(11).font_medium().text_color(t.foreground).child(v.title))
     .child(div().flex_1())
-    .child(div().text_size(11).text_color(t.dim).child("Esc · ⌫"));
+    .child(div().text_size(11).text_color(t.dim).child(v.exit ?? ""));
   return v_flex().id("whistle-hints").size_full().bg(t.chrome).border_1().border_color(t.accent).text_size(12)
     .child(top)
     .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8)

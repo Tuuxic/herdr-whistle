@@ -37,11 +37,15 @@ box listing what can follow.
 
 ## How it behaves
 
-- **Modes**: `ctrl-space` toggles; `ctrl-[` in a terminal only enters (it's Esc in vim, so it
-  never leaves). Entering selects the terminal pane the keyboard just left. `i` (or Enter on
+- **Modes**: regular keys.json keys. `ctrl-space` toggles; `ctrl-[` in a terminal only enters
+  (it's Esc in vim, so it never leaves). Entering selects the terminal pane the keyboard just left. `i` (or Enter on
   the terminal) goes back to TYPE in the selected pane. A click anywhere else ends WHISTLE.
   Commands that open a dialog, the palette or a rename prompt hand the keyboard over and end
   in TYPE.
+- **Own keys** (the `keys` section, action → keys, configurable in every mapping layer): the
+  defaults are named below. Chords among them and the map are claimed in keys.json's
+  `mod:whistle` section, each as `whistle.key-<chord>`, which whistle keeps in sync (adds,
+  and removes the ones it no longer uses; other entries there are left alone).
 - **Moving between fields**: `ctrl-h/j/k/l` pick the field in that direction from the
   layout's rows and columns; entering a group of blocks lands on the field used there last,
   else its terminal, else its first. Hidden blocks and the unselected children of a stack
@@ -52,12 +56,12 @@ box listing what can follow.
   `key-<char>`.
 - **Mappings**: a key from the map runs its command, or starts a group whose keys follow
   (`w v`); groups nest. Esc cancels, Backspace goes back a
-  level. A mapped key beats the built-in keys above. Pane and terminal commands act on the
+  level. A mapped key beats the own keys above. Pane and terminal commands act on the
   pane whistle has selected. Commands keep you in WHISTLE; an entry's 4th item `"type"` ends
   in TYPE and lets the terminal the command opened take the keyboard.
 - **Agent statuses**: whistle shows none itself; the fields' own mods do.
-- **Off** (`"enabled": false`): `ctrl-space` and `ctrl-[` are typed into the focused terminal
-  (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings`, `on` and `off` are ignored, and the status
+- **Off** (`"enabled": false`): the keys keys.json binds to `whistle.whistle` and
+  `whistle.enter` are typed into the focused terminal (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings`, `on` and `off` are ignored, and the status
   bar shows only its label.
 
 ## Built from
@@ -68,7 +72,7 @@ box listing what can follow.
   (`place: bottom`, size 22, `focusable: true`).
 - **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
-  prop (and its `enabled` / `hints` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, map }`, read every 2 s since
+  prop (and its `enabled` / `hints` / `keys` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, keys, map }`, read every 2 s since
   it's outside the mod's folder). An entry is `[label, command]`, `[label, command, args]` or
   `[label, command, args, "type"]`; `name:value` fills the command's first argument.
 - **Its own commands** (`whistle.<command>`, from keys.json): `whistle` (toggle), `enter`,
@@ -113,8 +117,9 @@ box listing what can follow.
   re-announce from `render` when they find themselves missing.
 - Fields only exist for mods that copy `keynav.js`; a layout of Herdr's own mods gives the
   terminal field and the mappings, nothing else.
-- `ctrl-h/j/k/l` mean something else in many layouts (tabs, panes); keys.json's `mod:whistle`
-  section wins only while whistle has the keyboard.
+- keys.json runs before whistle sees a key, so a chord bound in any active section (a
+  layout's `ctrl-h → tab.prev`) never reaches it; keys.json's `mod:whistle` section wins only
+  while whistle has the keyboard. Hence the synced section.
 - Saving a file in the mod's folder reloads it, back to TYPE.
 
 ## Done when
