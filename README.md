@@ -64,6 +64,12 @@ taking part in **keynav** (`keynav.js`, copy it into your mod): it announces its
 handles `<mod>.keynav-up|down|left|right|open|key-<char>` commands. Without a driver like
 whistle, nothing shows.
 
+## Tests
+
+`bash tests/run.sh` checks the key resolver (`keymap.js`) and key names against a table of
+cases. It needs only `herdr-app` on the PATH: it loads the tests as a throwaway mod with
+`herdr-app check`, which fails and lists the failing cases.
+
 ## License
 
 MIT (`LICENSE`).

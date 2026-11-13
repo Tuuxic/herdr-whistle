@@ -80,10 +80,14 @@ box listing what can follow.
 
 - **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: status bar
   copy, `part: "hints"` window copy, `part: "settings"` dialog copy), `config.js` (mapping
-  layers, own keys), `keysync.js` (keys.json: the claimed keys, the key bound to a command),
-  `keynames.js` (key names and labels), `hints.js`, `settings.js`, `keynav.js` (the
-  protocol), `mappings.json` (defaults), `keys.json`, `mod.json` (`place: bottom`, size 22,
-  `focusable: true`).
+  layers, own keys), `keymap.js` (pure key resolver: what a key means in WHISTLE, and the
+  hints for a pending sequence; `main.js` carries it out), `keysync.js` (keys.json: the
+  claimed keys, the key bound to a command), `keynames.js` (key names and labels),
+  `hints.js`, `settings.js`, `keynav.js` (the protocol), `mappings.json` (defaults),
+  `keys.json`, `mod.json` (`place: bottom`, size 22, `focusable: true`).
+- **Tests**: `tests/run.sh` copies `config.js`, `keynames.js`, `keymap.js` and the test mod in
+  `tests/` into a temp folder and loads it with `herdr-app check`; a failing case throws, so
+  the check fails listing every failure. `tests/` isn't part of the shipped mod.
 - **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
   prop (and its `enabled` / `hints` / `keys` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, keys, map }`, read every 2 s since

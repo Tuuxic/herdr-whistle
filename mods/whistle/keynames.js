@@ -20,6 +20,9 @@ export const isChord = (k) => /^(ctrl|alt|super)-./.test(k);
 // The parts of a key's name: "ctrl-shift-x" -> ["ctrl", "shift", "x"], "ctrl--" -> ["ctrl", "-"].
 export const keyParts = (k) => k.split(/-(?=.)/);
 
+// A key as `hc keys` spells it: "ctrl-space" -> "ctrl+space"; ctrl-[ is Esc to a terminal.
+export const hcKey = (k) => (k === "ctrl-[" ? "esc" : keyParts(k).join("+"));
+
 const NAMES = { space: "SPC", escape: "Esc", backspace: "⌫", enter: "Enter", tab: "Tab", left: "←", right: "→", up: "↑", down: "↓" };
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 

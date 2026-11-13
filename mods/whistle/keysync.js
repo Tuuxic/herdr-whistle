@@ -9,10 +9,13 @@
 // Writing keys.json makes it yours for Herdr: an untouched file no longer gets new default
 // shortcuts on upgrade. Whistle writes only when its entries change, leaves the file alone
 // while keys.error reports a problem, and puts the old text back if Herdr rejects the new one.
+//
+// It also answers which key runs a command from a terminal (entryKey), so callers needn't know
+// keys.json's section precedence.
 
 import { readTextFile, writeTextFile, appHome, shared } from "herdr";
 import { isGroup } from "./config.js";
-import { isChord, keyParts } from "./keynames.js";
+import { isChord } from "./keynames.js";
 
 const KEYS_FILE = () => `${appHome()}/keys.json`;
 const ERROR_FILE = () => `${appHome()}/keys.error`;
@@ -28,7 +31,7 @@ async function readKeys() {
 
 // The sections that apply in a place, most specific first: the given ones, then the shown
 // layout's, then global.
-export const sectionsFor = (...first) => [...first, `layout:${shared("layout")}`, "global"];
+const sectionsFor = (...first) => [...first, `layout:${shared("layout")}`, "global"];
 
 // The entry whistle itself writes for a key.
 const isOwnEntry = (key, value) => value === `whistle.key-${key}`;
@@ -76,7 +79,7 @@ export async function syncKeys(conf, sleep) {
 
 // The key that runs command in the given sections (most specific first): one bound to it
 // that no more specific section binds to something else. Null if there's none.
-export async function boundKey(command, sections) {
+async function boundKey(command, sections) {
   const { all } = await readKeys();
   if (!all) return null;
   const runs = (key) => sections.map((s) => all[s]?.[key]).find((v) => v !== undefined);
@@ -84,5 +87,5 @@ export async function boundKey(command, sections) {
   return null;
 }
 
-// A key as `hc keys` spells it: "ctrl-space" -> "ctrl+space"; ctrl-[ is Esc to a terminal.
-export const hcKey = (k) => (k === "ctrl-[" ? "esc" : keyParts(k).join("+"));
+// The key that runs command from a terminal, as keys.json binds it there. Null if there's none.
+export const entryKey = (command) => boundKey(command, sectionsFor("terminal"));

@@ -59,8 +59,23 @@ export function merge(base, over) {
   return out;
 }
 
-// { map, keys, own, enabled, hints, bar, error, userText }; error names the first file that
-// didn't parse.
+// The parsed layers (mappings.json, the layout's map and props, whistle.json; any may be
+// null) as one config: { map, keys, own, enabled, hints, bar }. Pure, so tests can build one.
+export function compose(base, layoutMap, layoutProps, user) {
+  const keys = mergeKeys(base?.keys, layoutProps?.keys, user?.keys);
+  const pick = (k) => (user && k in user ? user[k] : layoutProps?.[k] != null ? layoutProps[k] : base?.[k]);
+  return {
+    map: merge(merge(base?.map, layoutMap), user?.map),
+    keys,
+    own: ownIndex(keys),
+    enabled: pick("enabled") !== false,
+    hints: pick("hints") !== false,
+    bar: typeof user?.bar === "string" ? user.bar : null,
+  };
+}
+
+// { map, keys, own, enabled, hints, bar, error, userText }: the files read, then composed;
+// error names the first file that didn't parse.
 export async function load(layoutMap, layoutProps) {
   const errors = [];
   const parse = (text, name) => {
@@ -72,18 +87,7 @@ export async function load(layoutMap, layoutProps) {
   const base = parse(baseText, "mappings.json");
   const userText = await readTextFile(USER_FILE());
   const user = parse(userText, "whistle.json");
-  const keys = mergeKeys(base?.keys, layoutProps?.keys, user?.keys);
-  const pick = (k) => (user && k in user ? user[k] : layoutProps?.[k] != null ? layoutProps[k] : base?.[k]);
-  return {
-    map: merge(merge(base?.map, layoutMap), user?.map),
-    keys,
-    own: ownIndex(keys),
-    enabled: pick("enabled") !== false,
-    hints: pick("hints") !== false,
-    bar: typeof user?.bar === "string" ? user.bar : null,
-    error: errors[0] ?? null,
-    userText,
-  };
+  return { ...compose(base, layoutMap, layoutProps, user), error: errors[0] ?? null, userText };
 }
 
 // Sets one of your settings ("enabled", "hints", "bar") in whistle.json, the rest as you wrote it.
