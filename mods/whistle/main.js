@@ -1,4 +1,4 @@
-// Whistle: keyboard modes for Herdr (an idea borrowed from vim), and the status bar that
+// Whistle: keyboard modes for Herdr (an idea borrowed from vim), and the bar that
 // shows them.
 //
 // TYPE: the keyboard is in a terminal (or anywhere else); this mod stays out of the way.
@@ -20,11 +20,11 @@
 // in WHISTLE a key from the map runs a command or starts a group whose keys follow (w v);
 // groups nest. Mapped keys win over whistle's own keys. keys.json runs first, so whistle claims
 // the keys it needs in keys.json's "mod:whistle" section (keysync.js). The pending keys and
-// their choices go to shared("whistle.leader"), listed by this mod's "hints" copy (hints.js, a
+// their choices go to shared("whistle.sequence"), listed by this mod's "hints" copy (hints.js, a
 // window above the bar) unless "hints" is false.
 // "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: the keys
 // keys.json binds to whistle.whistle and whistle.enter then go to the terminal (through hc)
-// and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
+// and the bar shows no mode. Settings: this mod's "settings" copy (settings.js).
 
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
@@ -104,7 +104,7 @@ function switchBar(name) {
 
 export default class Whistle extends View {
   init(_props, cx) {
-    // The key hints window: draws shared("whistle.leader") and nothing else.
+    // The key hints window: draws shared("whistle.sequence") and nothing else.
     if (props()?.part === "hints") { this.hintsPart = true; return; }
     // The settings dialog.
     if (props()?.part === "settings") {
@@ -125,12 +125,12 @@ export default class Whistle extends View {
     this.handle = cx.focus_handle();
     this.cx = cx; // init's context outlives init: syncKeys sleeps on it
     this.pending = null;
-    setShared("whistle.leader", null);
-    this.loadLeader().then(() => cx.notify());
+    setShared("whistle.sequence", null);
+    this.loadConfig().then(() => cx.notify());
     // whistle.json is outside this folder, so saving it doesn't reload the mod: look now and then.
     cx.timer.every(2000, (cx) => {
       if (!this.live()) return;
-      readTextFile(USER_FILE()).then((text) => { if (text !== this.userText) this.loadLeader().then(() => cx.notify()); });
+      readTextFile(USER_FILE()).then((text) => { if (text !== this.userText) this.loadConfig().then(() => cx.notify()); });
     });
     this.mode = "type";
     this.field = null; // the selected field's block id
@@ -143,23 +143,23 @@ export default class Whistle extends View {
         const c = await nextCommand();
         // "on" / "off": switch whistle mode from outside (another mod's settings), into whistle.json.
         if (c === "on" || c === "off") {
-          if (c === "off" && this.mode === "whistle") { this.endLeader(); this.type(); }
+          if (c === "off" && this.mode === "whistle") { this.endSequence(); this.type(); }
           await setUser("enabled", c === "on");
-          await this.loadLeader();
+          await this.loadConfig();
           cx.notify();
           continue;
         }
         // Settings, on or off (off, that's where it's turned back on).
-        if (c === "settings") { if (this.mode === "whistle") { this.endLeader(); this.type(); } this.openSettings(); continue; }
+        if (c === "settings") { if (this.mode === "whistle") { this.endSequence(); this.type(); } this.openSettings(); continue; }
         if (!this.enabledOn()) {
           if (c === "enter") this.passThrough("whistle.enter");
           else if (c === "whistle") this.passThrough("whistle.whistle");
           continue;
         }
-        if (c === "whistle") this.mode === "whistle" ? (this.endLeader(), this.type()) : this.whistle();
+        if (c === "whistle") this.mode === "whistle" ? (this.endSequence(), this.type()) : this.whistle();
         else if (c === "focus") this.whistle(this.field);
         // "enter" (ctrl-[ in a terminal): into WHISTLE, never out; in WHISTLE it only cancels a sequence.
-        else if (c === "enter") this.mode === "whistle" ? this.endLeader() : this.whistle();
+        else if (c === "enter") this.mode === "whistle" ? this.endSequence() : this.whistle();
         else if (c === "type") this.type();
         else if (c in DIRS) this.move(DIRS[c]);
         // "key-j", "key-enter", ...: the same as pressing it in WHISTLE (scripts, tests).
@@ -201,7 +201,7 @@ export default class Whistle extends View {
       }
       if (on !== (this.mode === "whistle")) {
         this.mode = on ? "whistle" : "type";
-        if (!on) this.endLeader();
+        if (!on) this.endSequence();
         this.publish();
         cx.notify();
       }
@@ -354,26 +354,26 @@ export default class Whistle extends View {
     return !this.mine()?.hidden;
   }
 
-  async loadLeader() {
+  async loadConfig() {
     const lp = this.layoutProps();
     const c = await load(lp.mappings, lp);
-    this.leaderConf = c;
-    this.leaderErr = c.error;
+    this.config = c;
+    this.configErr = c.error;
     this.userText = c.userText;
     if (!props()?.part) syncKeys(c, (ms) => this.cx.sleep(ms)).then((err) => { this.keysErr = err; });
     // "bar" in whistle.json names another of the layout's bars: show that one instead.
     const me = this.mine();
     if (c.bar != null && me && !me.hidden && me.name !== c.bar && bars().some((b) => b.name === c.bar)) {
-      if (this.mode === "whistle") { this.endLeader(); this.type(); }
+      if (this.mode === "whistle") { this.endSequence(); this.type(); }
       switchBar(c.bar);
     }
     // For other mods' settings: whether whistle mode is on (see the "on" / "off" commands).
     if (!props()?.part && shared("whistle.enabled") !== this.enabledOn()) setShared("whistle.enabled", this.enabledOn());
   }
 
-  hintsOn() { return this.leaderConf?.hints !== false; }
+  hintsOn() { return this.config?.hints !== false; }
   // "enabled": false (whistle's settings) turns WHISTLE off; its keys go to the terminal instead.
-  enabledOn() { return this.leaderConf?.enabled !== false; }
+  enabledOn() { return this.config?.enabled !== false; }
 
   openSettings() {
     const lp = this.layoutProps();
@@ -389,9 +389,9 @@ export default class Whistle extends View {
   }
 
   // Publishes the pending sequence; the hints window shows while one is pending.
-  showLeader() {
-    const v = describe(this.leaderConf, this.pending);
-    setShared("whistle.leader", v);
+  showSequence() {
+    const v = describe(this.config, this.pending);
+    setShared("whistle.sequence", v);
     if (!v || !this.hintsOn()) {
       if (this.hintsId) closeOverlay(this.hintsId);
       this.hintsId = null;
@@ -417,10 +417,10 @@ export default class Whistle extends View {
     this.hintsId = openOverlay({ mod: "whistle", kind: "window", frame: "none", width, height, at, props: { part: "hints", width } });
   }
 
-  endLeader() {
-    if (!this.pending && shared("whistle.leader") == null) return;
+  endSequence() {
+    if (!this.pending && shared("whistle.sequence") == null) return;
     this.pending = null;
-    this.showLeader();
+    this.showSequence();
   }
 
   // [label, "command" | "command:value", args?, "type"?]
@@ -443,7 +443,7 @@ export default class Whistle extends View {
     // A 4th item "type": end in TYPE and let the terminal the command opened take the keyboard
     // (the focus timer waits a moment for it, then hands it over itself).
     if (then === "type") {
-      this.endLeader();
+      this.endSequence();
       this.mode = "type";
       this.releaseUntil = Date.now() + 1000;
       return this.publish();
@@ -487,10 +487,10 @@ export default class Whistle extends View {
     const f = this.pending ? null : this.current();
     const field = this.pending ? null : f ? (f.key === TERMINAL ? "terminal" : "keynav") : this.terminalBlock() ? "terminal" : null;
     const was = this.pending;
-    const { pending, act } = resolve(this.leaderConf ?? {}, was, field, name);
+    const { pending, act } = resolve(this.config ?? {}, was, field, name);
     this.pending = pending;
     this.flash = act?.flash ?? null;
-    if (pending !== was) this.showLeader();
+    if (pending !== was) this.showSequence();
     if (!act) return false;
     if (!f && !was && (act.pane || act.type)) this.enter(this.terminalBlock());
     if (act.run) this.runEntry(act.run);
@@ -514,13 +514,13 @@ export default class Whistle extends View {
   // The bar's text: a message from the last key, else a config problem (in any mode: a
   // whistle.json that doesn't parse can leave whistle off), else where the keyboard is.
   status(t) {
-    const problem = this.flash ?? this.leaderErr ?? this.keysErr;
+    const problem = this.flash ?? this.configErr ?? this.keysErr;
     return div().flex_1().min_w(0).truncate().text_color(problem ? t.blocked : t.muted).child(problem ?? this.label());
   }
 
   // The pending keys and their group (the popup, when on, lists the choices).
-  leaderLine(t) {
-    const v = shared("whistle.leader");
+  sequenceLine(t) {
+    const v = shared("whistle.sequence");
     return h_flex().flex_1().min_w(0).gap(12).items_center().overflow_hidden()
       .child(div().flex_none().font_bold().text_color(t.accent).child(v.keys))
       .child(div().flex_none().text_color(t.foreground).child(v.title));
@@ -557,7 +557,7 @@ export default class Whistle extends View {
         .bg(on ? t.accent : t.done).text_color(t.background).tooltip("Whistle settings")
         .on_click(() => this.openSettings())
         .child(on ? "WHISTLE" : "TYPE")))
-      .child(shared("whistle.leader") ? this.leaderLine(t)
+      .child(shared("whistle.sequence") ? this.sequenceLine(t)
         : this.status(t));
   }
 }

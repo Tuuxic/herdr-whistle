@@ -1,7 +1,7 @@
 # Whistle
 
 A vim-inspired mode for Herdr: switch out of typing to navigate and control the whole
-interface with simple key sequences. A thin status bar shows which mode you're in; in WHISTLE,
+interface with simple key sequences. A thin bar shows which mode you're in; in WHISTLE,
 single keys move between the window's fields and short sequences run commands, with a hints
 box listing what can follow.
 
@@ -9,7 +9,7 @@ box listing what can follow.
 
 ## What you see
 
-- **Status bar** (a block the layout places, else docked at the bottom, 22 px): on the left a
+- **Bar** (a block the layout places, else docked at the bottom, 22 px): on the left a
   mode badge, bold, 10 px side padding: **TYPE** on the theme's `done` color or **WHISTLE**
   on `accent`, text in `background`. A click on it opens whistle's settings. Then, muted, what
   has the keyboard: `Terminal`, `Terminal · <pane title>` (up to 40 characters), or the
@@ -42,7 +42,7 @@ box listing what can follow.
   the terminal) goes back to TYPE in the selected pane. A click anywhere else ends WHISTLE.
   Commands that open a dialog, the palette or a rename prompt hand the keyboard over and end
   in TYPE.
-- **Own keys** (the `keys` section, action → keys, configurable in every mapping layer;
+- **Own keys** (the `keys` section, action → keys, configurable in every config layer;
   `null` removes an action): the defaults are named below.
 - **Claimed keys**: keys.json's `mod:whistle` section holds `"<key>": "whistle.key-<key>"` for
   every ctrl/alt/super chord among the own keys and the map, and for any other of those keys
@@ -70,7 +70,7 @@ box listing what can follow.
 - **Off** (`"enabled": false`): the keys keys.json binds to `whistle.whistle` and
   `whistle.enter` (as they resolve from a terminal: terminal, then layout, then global) are
   typed into the focused terminal (`hc keys <terminal> ctrl+space|esc`), other whistle
-  commands except `settings`, `on` and `off` are ignored, and the status bar shows only its
+  commands except `settings`, `on` and `off` are ignored, and the bar shows only its
   label.
 - **Config problems**: while mappings.json or whistle.json doesn't parse, or keys.json
   can't take whistle's keys, the bar shows the problem (in any mode); the settings dialog
@@ -78,7 +78,7 @@ box listing what can follow.
 
 ## Built from
 
-- **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: status bar
+- **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: bar
   copy, `part: "hints"` window copy, `part: "settings"` dialog copy), `config.js` (mapping
   layers, own keys), `keymap.js` (pure key resolver: what a key means in WHISTLE, and the
   hints for a pending sequence; `main.js` carries it out), `keysync.js` (keys.json: the
@@ -88,7 +88,7 @@ box listing what can follow.
 - **Tests**: `tests/run.sh` copies `config.js`, `keynames.js`, `keymap.js` and the test mod in
   `tests/` into a temp folder and loads it with `herdr-app check`; a failing case throws, so
   the check fails listing every failure. `tests/` isn't part of the shipped mod.
-- **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
+- **Config layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
   prop (and its `enabled` / `hints` / `keys` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, keys, map }`, read every 2 s since
   it's outside the mod's folder). An entry is `[label, command]`, `[label, command, args]` or
@@ -104,7 +104,7 @@ box listing what can follow.
   `layout()`, publishes `shared("keynav") = { v: 1, active, pane }` (`active` is a field key,
   `"terminal"` or null outside WHISTLE) and runs `<mod>.keynav-<move>`. A mod asks for
   `{ to: "terminal" }` (it focused a terminal) or `{ hold: true }` (it moved the keyboard,
-  keep it) in `shared("keynav.request")`. `shared("whistle.leader")` carries the pending
+  keep it) in `shared("keynav.request")`. `shared("whistle.sequence")` carries the pending
   sequence to the hints window.
 - **Herdr API**: `focused()`, `panes()`, `layout()`, `commands()`, `shared`/`setShared`,
   `nextCommand()`, `openOverlay`/`closeOverlay` (`kind: "window", frame: "none"` for the hints,
@@ -146,7 +146,7 @@ box listing what can follow.
 
 ## Done when
 
-- The status bar shows a TYPE badge; `ctrl-space` turns it into WHISTLE with `Terminal ·
+- The bar shows a TYPE badge; `ctrl-space` turns it into WHISTLE with `Terminal ·
   <title>`, `ctrl-space` again (or `i`) goes back.
 - In WHISTLE, `w` opens the hints box above the bar listing the Panes group, Esc closes
   it; the bar shows `w Panes` meanwhile. `p` opens the command palette.

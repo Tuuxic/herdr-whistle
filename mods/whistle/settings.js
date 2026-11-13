@@ -60,13 +60,13 @@ export function renderSettings(conf, set, place, entryKey) {
       .child(div().flex_1())
       .child(div().text_size(11).text_color(t.dim).child("Esc closes")))
     .when(Boolean(conf?.error), (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked).child(conf.error)))
-    .child(row(t, "Whistle mode", `${entry ?? "The key keys.json binds to whistle.whistle"} leaves the terminal to move around and run mappings with single keys. Off: that key goes to the terminal and the status bar shows no mode.`,
+    .child(row(t, "Whistle mode", `${entry ?? "The key keys.json binds to whistle.whistle"} leaves the terminal to move around and run mappings with single keys. Off: that key goes to the terminal and the bar shows no mode.`,
       toggle(t, "wh-enabled", conf?.enabled !== false, () => set("enabled", conf?.enabled === false))))
     .when(conf != null && !entryKey, (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked)
       .child("No key enters WHISTLE: add one to keys.json, e.g. \"global\": { \"ctrl-space\": \"whistle.whistle\" }.")))
-    .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w, a box above the status bar lists the keys that can follow. Off: only the status bar shows what you typed.",
+    .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w, a box above the bar lists the keys that can follow. Off: only the bar shows what you typed.",
       toggle(t, "wh-hints", conf?.hints !== false, () => set("hints", conf?.hints === false)))))
-    .when(Boolean(place), (el) => el.child(row(t, "Bar position", "Where the status bar with the mode goes. This layout has a spot for each.",
+    .when(Boolean(place), (el) => el.child(row(t, "Bar position", "Where the bar with the mode goes. This layout has a spot for each.",
       dropdown(t, "wh-bar", place.names, place.current, place.open, place.setOpen, (name) => set("bar", name)))))
     .child(v_flex().id("wh-maps").flex_1().min_h(0).overflow_y_scrollbar()
       .child(heading(`KEYS IN WHISTLE · ${own.length}`))

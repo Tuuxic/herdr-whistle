@@ -1,5 +1,5 @@
-// The key hints: a window overlay docked on top of the status bar, as wide as the bar, that
-// lists what can follow the keys typed so far (shared("whistle.leader")), the way which-key's
+// The key hints: a window overlay docked on top of the bar, as wide as the bar, that
+// lists what can follow the keys typed so far (shared("whistle.sequence")), the way which-key's
 // classic layout does: a title row with the keys and the group's name, then columns filled
 // top to bottom, as many as fit. A window doesn't take the keyboard, so WHISTLE keeps
 // it. The main copy opens it at the size hintsSize() gives and closes it when done.
@@ -34,7 +34,7 @@ export function hintsSize(items, width) {
 
 export function renderHints(width) {
   const t = theme();
-  const v = shared("whistle.leader");
+  const v = shared("whistle.sequence");
   if (!v) return div().size_full();
   const { columns } = layoutOf(v.items, width);
   // One box: the border all round, the title row inside it on the box's background.
