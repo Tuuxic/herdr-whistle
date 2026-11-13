@@ -1,11 +1,13 @@
 // Whistle's own settings: a dialog (whistle.settings, or a click on the mode badge)
-// with WHISTLE on/off, the key hints on/off, whistle's own keys and every mapping in effect. The toggles write
-// ~/.config/herdr-app/whistle.json; the main copy notices within a few seconds.
+// with WHISTLE on/off, the key hints on/off, whistle's own keys and every mapping in effect.
+// The toggles write ~/.config/herdr-app/whistle.json; the main copy notices within a few
+// seconds.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex, Popup } from "gpui-base";
 import { theme } from "herdr";
 import { flatten, ACTIONS } from "./config.js";
+import { keyLabel } from "./keynames.js";
 
 const row = (t, title, about, control) => h_flex().w_full().gap(16).py(10).items_center().border_b(1).border_color(t.border)
   .child(v_flex().flex_1().min_w(0).gap(3)
@@ -17,10 +19,8 @@ const toggle = (t, id, on, onClick) => div().id(id).w(36).h(20).p(2).cursor_poin
   .when(on, (el) => el.justify_end()).on_click(onClick)
   .child(div().w(16).h(16).bg(on ? t.accent_foreground : t.muted));
 
-const pretty = (k) => k.split(/-(?=.)/).map((p) => p.length === 1 ? p.toUpperCase() : p[0].toUpperCase() + p.slice(1)).join("+");
-
 const chip = (t, k) => div().px(5).h(18).flex().items_center().border_1().border_color(t.border).bg(t.background)
-  .text_size(11.5).text_color(t.foreground).child(k === "space" ? "SPC" : k);
+  .text_size(11.5).text_color(t.foreground).child(keyLabel(k));
 
 // A dropdown: the current choice with a ▾; a click lists them all under it.
 // open: whether the list shows; setOpen(bool); pick(name).
@@ -41,12 +41,13 @@ function dropdown(t, id, names, current, open, setOpen, pick) {
 }
 
 // conf: what load() returned; set(key, value): writes it; place: the layout's bars when it has
-// more than one ({ names, current, open, setOpen }), else null.
-export function renderSettings(conf, set, place) {
+// more than one ({ names, current, open, setOpen }), else null; entryKey: the key that enters
+// WHISTLE from a terminal, null if none does.
+export function renderSettings(conf, set, place, entryKey) {
   const t = theme();
   const rows = flatten(conf?.map);
-  const own = Object.keys(ACTIONS).filter((a) => conf?.keys?.[a]?.length).map((a) => ({ seq: conf.keys[a], action: ACTIONS[a] }));
-  const entry = conf?.entry ? pretty(conf.entry) : null;
+  const own = Object.keys(ACTIONS).filter((a) => conf?.keys?.[a]?.length).map((a) => ({ seq: conf.keys[a], action: ACTIONS[a].label }));
+  const entry = entryKey ? keyLabel(entryKey) : null;
   const line = (m, id) => h_flex().id(id).h(26).flex_none().px(6).gap(12).items_center().hover((s) => s.bg(t.hover))
     .child(h_flex().w(150).flex_none().gap(3).items_center().children(m.seq.flatMap((p, j) => [
       ...(j ? [div().text_size(11).text_color(t.dim).child(m.or ? "/" : "›")] : []), chip(t, p)])))
@@ -61,7 +62,7 @@ export function renderSettings(conf, set, place) {
     .when(Boolean(conf?.error), (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked).child(conf.error)))
     .child(row(t, "Whistle mode", `${entry ?? "The key keys.json binds to whistle.whistle"} leaves the terminal to move around and run mappings with single keys. Off: that key goes to the terminal and the status bar shows no mode.`,
       toggle(t, "wh-enabled", conf?.enabled !== false, () => set("enabled", conf?.enabled === false))))
-    .when(!conf?.entry, (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked)
+    .when(conf != null && !entryKey, (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked)
       .child("No key enters WHISTLE: add one to keys.json, e.g. \"global\": { \"ctrl-space\": \"whistle.whistle\" }.")))
     .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w, a box above the status bar lists the keys that can follow. Off: only the status bar shows what you typed.",
       toggle(t, "wh-hints", conf?.hints !== false, () => set("hints", conf?.hints === false)))))
@@ -73,5 +74,5 @@ export function renderSettings(conf, set, place) {
       .child(heading(`MAPPINGS · ${rows.length}`))
       .children(rows.map((m, i) => line(m, `wh-m-${i}`))))
     .child(div().pt(8).text_size(11.5).line_height("17px").text_color(t.dim)
-      .child("Yours go in ~/.config/herdr-app/whistle.json, over the defaults and this layout's: { \"map\": { \"x\": [\"Label\", \"command\"] }, \"keys\": { \"type\": [\"i\"] } }. A mapping set to null removes it."));
+      .child("Yours go in ~/.config/herdr-app/whistle.json, over the defaults and this layout's: { \"map\": { \"x\": [\"Label\", \"command\"] }, \"keys\": { \"type\": [\"i\"] } }. A mapping or own key set to null removes it."));
 }

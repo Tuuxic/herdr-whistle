@@ -42,10 +42,17 @@ box listing what can follow.
   the terminal) goes back to TYPE in the selected pane. A click anywhere else ends WHISTLE.
   Commands that open a dialog, the palette or a rename prompt hand the keyboard over and end
   in TYPE.
-- **Own keys** (the `keys` section, action → keys, configurable in every mapping layer): the
-  defaults are named below. Chords among them and the map are claimed in keys.json's
-  `mod:whistle` section, each as `whistle.key-<chord>`, which whistle keeps in sync (adds,
-  and removes the ones it no longer uses; other entries there are left alone).
+- **Own keys** (the `keys` section, action → keys, configurable in every mapping layer;
+  `null` removes an action): the defaults are named below.
+- **Claimed keys**: keys.json's `mod:whistle` section holds `"<key>": "whistle.key-<key>"` for
+  every ctrl/alt/super chord among the own keys and the map, and for any other of those keys
+  a global or layout section binds. Whistle owns only entries of exactly that form: it adds
+  and removes them, the rest of the section stays as written. It writes only on a change,
+  not while `keys.error` exists, and restores the old text if a `keys.error` appears after
+  its write; the bar shows the problem.
+- **Key names**: the character typed (`?`, `X`), else the key's name (`f2`, `shift-tab`);
+  with ctrl/alt/super held, the lowercase key with every modifier in front, shift included
+  (`ctrl-shift-x`), as keys.json spells it.
 - **Moving between fields**: `ctrl-h/j/k/l` pick the field in that direction from the
   layout's rows and columns; entering a group of blocks lands on the field used there last,
   else its terminal, else its first. Hidden blocks and the unselected children of a stack
@@ -61,15 +68,22 @@ box listing what can follow.
   in TYPE and lets the terminal the command opened take the keyboard.
 - **Agent statuses**: whistle shows none itself; the fields' own mods do.
 - **Off** (`"enabled": false`): the keys keys.json binds to `whistle.whistle` and
-  `whistle.enter` are typed into the focused terminal (`hc keys <terminal> ctrl+space|esc`), other whistle commands except `settings`, `on` and `off` are ignored, and the status
-  bar shows only its label.
+  `whistle.enter` (as they resolve from a terminal: terminal, then layout, then global) are
+  typed into the focused terminal (`hc keys <terminal> ctrl+space|esc`), other whistle
+  commands except `settings`, `on` and `off` are ignored, and the status bar shows only its
+  label.
+- **Config problems**: while mappings.json or whistle.json doesn't parse, or keys.json
+  can't take whistle's keys, the bar shows the problem (in any mode); the settings dialog
+  shows parse errors and warns when no key enters WHISTLE.
 
 ## Built from
 
-- **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: status bar copy, `part: "hints"` window copy, `part:
-  "settings"` dialog copy), `config.js` (mapping layers), `hints.js`, `settings.js`,
-  `keynav.js` (the protocol), `mappings.json` (defaults), `keys.json`, `mod.json`
-  (`place: bottom`, size 22, `focusable: true`).
+- **Files** (in `mods/whistle/`; `keys.json` at the top): `main.js` (the view: status bar
+  copy, `part: "hints"` window copy, `part: "settings"` dialog copy), `config.js` (mapping
+  layers, own keys), `keysync.js` (keys.json: the claimed keys, the key bound to a command),
+  `keynames.js` (key names and labels), `hints.js`, `settings.js`, `keynav.js` (the
+  protocol), `mappings.json` (defaults), `keys.json`, `mod.json` (`place: bottom`, size 22,
+  `focusable: true`).
 - **Mapping layers**, each over the one before; a key set to `null` removes it, groups merge
   key by key: `mappings.json` (Herdr's own commands only) < the whistle block's `mappings`
   prop (and its `enabled` / `hints` / `keys` props, so a layout can ship whistle off) < `~/.config/herdr-app/whistle.json` (`{ enabled, hints, bar, keys, map }`, read every 2 s since
@@ -117,9 +131,13 @@ box listing what can follow.
   re-announce from `render` when they find themselves missing.
 - Fields only exist for mods that copy `keynav.js`; a layout of Herdr's own mods gives the
   terminal field and the mappings, nothing else.
-- keys.json runs before whistle sees a key, so a chord bound in any active section (a
-  layout's `ctrl-h → tab.prev`) never reaches it; keys.json's `mod:whistle` section wins only
-  while whistle has the keyboard. Hence the synced section.
+- keys.json runs before whistle sees a key, so a key bound in any active section (a layout's
+  `ctrl-h → tab.prev`) never reaches it; keys.json's `mod:whistle` section wins only while
+  whistle has the keyboard. Hence the claimed keys.
+- Editing keys.json makes it the person's for Herdr: an untouched file stops getting new
+  default shortcuts. Whistle writes it only when its claims change.
+- Through a junction or symlink, saving a file in the mod's folder doesn't reload it (seen
+  on Windows); recreate the link or restart Herdr.
 - Saving a file in the mod's folder reloads it, back to TYPE.
 
 ## Done when

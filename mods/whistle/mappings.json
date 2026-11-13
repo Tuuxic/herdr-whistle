@@ -8,7 +8,7 @@
     "command: any `herdr-app commands` name; name:value fills its first argument, as in keys.json.",
     "whistle.field:<block> selects the field in that layout block; whistle.focus:<block> shows the block and selects it; whistle.toggle:<block> shows it or takes it away; whistle.settings opens whistle's settings.",
     "keys: whistle's own keys in WHISTLE, action -> list of keys: field-left/down/up/right pick the field in that direction, left/down/up/right move inside it, open opens (in a terminal: back to typing there), type goes back to TYPE, cancel ends a key sequence, back goes up one level. A list in whistle.json replaces the default one; null removes the action.",
-    "Chords (ctrl-/alt-/super-) in keys or map are claimed in keys.json's mod:whistle section, which whistle keeps in sync; your own entries there win.",
+    "keys.json runs before whistle sees a key, so whistle claims every ctrl-/alt-/super- chord in keys or map, and any other of their keys a global or layout section binds, in keys.json's mod:whistle section (\"<key>\": \"whistle.key-<key>\"); your own entries there stay and win.",
     "Entering and leaving WHISTLE are regular keys.json keys: whistle.whistle (switches), whistle.enter (only enters), whistle.type (only leaves)."
   ],
   "enabled": true,

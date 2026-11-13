@@ -7,13 +7,13 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, shared } from "herdr";
+import { keyLabel } from "./keynames.js";
 
 // Row height, side padding, the title row, the gap between columns, a character's width (est.).
 const ROW = 18, PAD = 12, HEAD = 22, GAP = 32, CH = 7.2;
-const show = (k) => (k === "space" ? "SPC" : k);
 const labelOf = (i) => (i.group ? `+${i.label}` : i.label);
 // One column's widths: its longest key, and key + arrow + its longest label.
-const keyW = (col) => Math.ceil(Math.max(...col.map((i) => show(i.key).length)) * CH) + 4;
+const keyW = (col) => Math.ceil(Math.max(...col.map((i) => keyLabel(i.key).length)) * CH) + 4;
 const colW = (col) => keyW(col) + 8 + 10 + 8 + Math.ceil(Math.max(...col.map((i) => labelOf(i).length)) * CH);
 
 // Columns filled top to bottom, each as wide as its own entries: the most columns that fit.
@@ -48,7 +48,7 @@ export function renderHints(width) {
     .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8)
       .children(columns.map((col) => v_flex().w(colW(col)).flex_none()
         .children(col.map((i) => h_flex().h(ROW).gap(8).items_center()
-          .child(div().w(keyW(col)).flex_none().font_bold().text_color(t.accent).child(show(i.key)))
+          .child(div().w(keyW(col)).flex_none().font_bold().text_color(t.accent).child(keyLabel(i.key)))
           .child(div().text_color(t.dim).child("→"))
           .child(div().min_w(0).truncate().text_color(i.group ? t.accent : t.foreground).child(labelOf(i))))))));
 }

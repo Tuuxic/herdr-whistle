@@ -18,17 +18,21 @@
 //
 // Mappings (config.js: defaults < the layout's "mappings" prop < ~/.config/herdr-app/whistle.json):
 // in WHISTLE a key from the map runs a command or starts a group whose keys follow (w v);
-// groups nest. Mapped keys win over whistle's own keys. Chords among either are claimed in
-// keys.json's "mod:whistle" section (config.js: syncKeys), since keys.json runs first. The pending keys and their choices go to shared("whistle.leader"), listed by
-// this mod's "hints" copy (hints.js, a window above the bar) unless "hints" is false.
+// groups nest. Mapped keys win over whistle's own keys. keys.json runs first, so whistle claims
+// the keys it needs in keys.json's "mod:whistle" section (keysync.js). The pending keys and
+// their choices go to shared("whistle.leader"), listed by this mod's "hints" copy (hints.js, a
+// window above the bar) unless "hints" is false.
 // "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: the keys
-// keys.json binds to whistle.whistle and whistle.enter then go to the terminal (through hc) and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
+// keys.json binds to whistle.whistle and whistle.enter then go to the terminal (through hc)
+// and the status bar shows no mode. Settings: this mod's "settings" copy (settings.js).
 
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { panes, focused, run, theme, shared, setShared, nextCommand, layout, props, readTextFile, commands, exec, openOverlay, closeOverlay } from "herdr";
 import { fieldKey } from "./keynav.js";
-import { load, setUser, USER_FILE, isGroup, syncKeys, boundKey } from "./config.js";
+import { load, setUser, USER_FILE, isGroup } from "./config.js";
+import { syncKeys, boundKey, sectionsFor, hcKey } from "./keysync.js";
+import { keyName, keyLabel } from "./keynames.js";
 import { renderHints, hintsSize } from "./hints.js";
 import { renderSettings } from "./settings.js";
 
@@ -78,17 +82,6 @@ function hideTarget(idx, id) {
   return n?.id;
 }
 
-// A key's name as mappings.json spells it: the character it types ("?", "+"), else its name.
-// With ctrl/alt/super held it's the key's name with those in front, as keys.json spells them
-// ("ctrl-n"); shift only shows on named keys ("shift-tab"), a character already carries it.
-const keyName = (e) => {
-  const m = e.modifiers ?? {}, c = e.key_char;
-  const held = [m.control && "ctrl", m.alt && "alt", m.platform && "super"].filter(Boolean);
-  if (!held.length && (c === " " || e.key === "space")) return "space";
-  if (!held.length && c && c.length === 1 && c.trim()) return c;
-  return [...held, ...(m.shift && e.key.length > 1 ? ["shift"] : []), e.key].join("-");
-};
-const show = (k) => (k === "space" ? "SPC" : k);
 // The choices at one level, commands before groups, each sorted by key.
 const choices = (map) => Object.entries(map ?? {})
   .map(([key, v]) => ({ key, label: isGroup(v) ? v.name ?? key : Array.isArray(v) ? v[0] : "?", group: Boolean(isGroup(v)) }))
@@ -120,9 +113,9 @@ export default class Whistle extends View {
     // The settings dialog.
     if (props()?.part === "settings") {
       this.settingsPart = true;
-      // The key keys.json binds to whistle.whistle, for the dialog to name (or warn there's none).
+      // The key that enters WHISTLE from a terminal, for the dialog to name (or warn there's none).
       const reload = () => load(props()?.mappings, props()).then(async (c) => {
-        c.entry = await boundKey("whistle.whistle", [`layout:${shared("layout")}`, "global"]);
+        this.entryKey = await boundKey("whistle.whistle", sectionsFor("terminal"));
         this.conf = c;
         cx.notify();
       });
@@ -134,6 +127,7 @@ export default class Whistle extends View {
       return;
     }
     this.handle = cx.focus_handle();
+    this.cx = cx; // init's context outlives init: syncKeys sleeps on it
     this.pending = null;
     setShared("whistle.leader", null);
     this.loadLeader().then(() => cx.notify());
@@ -162,8 +156,8 @@ export default class Whistle extends View {
         // Settings, on or off (off, that's where it's turned back on).
         if (c === "settings") { if (this.mode === "whistle") { this.endLeader(); this.type(); } this.openSettings(); continue; }
         if (!this.enabledOn()) {
-          if (c === "enter") this.passThrough("whistle.enter", ["terminal", `layout:${shared("layout")}`, "global"]);
-          else if (c === "whistle") this.passThrough("whistle.whistle", [`layout:${shared("layout")}`, "global"]);
+          if (c === "enter") this.passThrough("whistle.enter");
+          else if (c === "whistle") this.passThrough("whistle.whistle");
           continue;
         }
         if (c === "whistle") this.mode === "whistle" ? (this.endLeader(), this.type()) : this.whistle();
@@ -370,7 +364,7 @@ export default class Whistle extends View {
     this.leaderConf = c;
     this.leaderErr = c.error;
     this.userText = c.userText;
-    if (!props()?.part) syncKeys(c);
+    if (!props()?.part) syncKeys(c, (ms) => this.cx.sleep(ms)).then((err) => { this.keysErr = err; });
     // "bar" in whistle.json names another of the layout's bars: show that one instead.
     const me = this.mine();
     if (c.bar != null && me && !me.hidden && me.name !== c.bar && bars().some((b) => b.name === c.bar)) {
@@ -390,31 +384,26 @@ export default class Whistle extends View {
     openOverlay({ mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings", mappings: lp.mappings ?? null, enabled: lp.enabled ?? null, hints: lp.hints ?? null } });
   }
 
-  // Off: the key that would have entered WHISTLE, typed into the focused terminal.
-  // The key is whichever keys.json binds to command (ctrl-[ is Esc to a terminal).
-  async passThrough(command, sections) {
+  // Off: the key that would have run command (whichever keys.json binds to it in a terminal),
+  // typed into the focused terminal.
+  async passThrough(command) {
     const term = focused()?.terminal;
-    const k = await boundKey(command, sections);
-    if (!term || !k) return;
-    exec("hc", ["keys", term, k === "ctrl-[" ? "esc" : k.replace(/-(?=.)/g, "+")]).catch(() => {});
+    const k = await boundKey(command, sectionsFor("terminal"));
+    if (term && k) exec("hc", ["keys", term, hcKey(k)]).catch(() => {});
   }
 
-  // Whistle's own keys: key name -> action (config.js ACTIONS).
-  own(name) {
-    const keys = this.leaderConf?.keys;
-    if (this.ownFor !== keys) {
-      this.ownFor = keys;
-      this.ownMap = new Map(Object.entries(keys ?? {}).flatMap(([action, ks]) => ks.map((k) => [k, action])));
-    }
-    return this.ownMap.get(name);
+  // What a key does as one of whistle's own keys: { action, kind, dir } (config.js ACTIONS),
+  // or undefined.
+  ownKey(name) {
+    return this.leaderConf?.own?.get(name);
   }
 
   // Publishes the pending sequence; the hints window shows while one is pending.
   showLeader() {
     const p = this.pending;
     const ks = this.leaderConf?.keys ?? {};
-    const exit = [ks.cancel?.[0], ks.back?.[0]].filter(Boolean).map((k) => ({ escape: "Esc", backspace: "⌫" })[k] ?? k).join(" · ");
-    const v = p ? { keys: p.path.map(show).join(" "), title: p.title, items: choices(p.node), exit } : null;
+    const exit = [ks.cancel?.[0], ks.back?.[0]].filter(Boolean).map(keyLabel).join(" · ");
+    const v = p ? { keys: p.path.map(keyLabel).join(" "), title: p.title, items: choices(p.node), exit } : null;
     setShared("whistle.leader", v);
     if (!v || !this.hintsOn()) {
       if (this.hintsId) closeOverlay(this.hintsId);
@@ -457,9 +446,9 @@ export default class Whistle extends View {
 
   leaderKey(e, name) {
     const p = this.pending;
-    const act = this.own(name);
-    if (act === "cancel") return this.endLeader();
-    if (act === "back") {
+    const kind = this.ownKey(name)?.kind;
+    if (kind === "cancel") return this.endLeader();
+    if (kind === "back") {
       if (p.path.length <= 1) return this.endLeader();
       p.path.pop();
       let node = this.leaderConf.map, title = "";
@@ -469,7 +458,7 @@ export default class Whistle extends View {
     }
     const v = p.node?.[name];
     if (isGroup(v)) { p.path.push(name); p.node = v.map; p.title = v.name ?? name; return this.showLeader(); }
-    const keys = [...p.path, name].map(show).join(" ");
+    const keys = [...p.path, name].map(keyLabel).join(" ");
     this.endLeader();
     if (!Array.isArray(v)) { this.flash = `${keys} is not mapped`; return; }
     this.flash = null;
@@ -538,22 +527,23 @@ export default class Whistle extends View {
     const mapped = this.leaderConf?.map?.[name];
     if (mapped) return this.startMapping(name, mapped), true;
     this.flash = null;
-    const act = this.own(name);
-    if (act?.startsWith("field-") && DIRS[act.slice(6)]) return this.move(DIRS[act.slice(6)]), true;
-    if (act === "type") return this.type(), true;
-    if (!act && (m.control || m.alt || m.platform)) return false;
+    const own = this.ownKey(name);
+    if (own?.kind === "field") return this.move(DIRS[own.dir]), true;
+    if (own?.kind === "type") return this.type(), true;
+    if (!own && (m.control || m.alt || m.platform)) return false;
     let f = this.current();
     // The selected field went away (a panel closed by mouse): back to the terminal.
     if (!f) { this.enter(this.terminalBlock()); f = this.current(); }
     if (!f) return false;
     if (f.key === TERMINAL) {
-      if (DIRS[act]) this.paneGo(act);
-      else if (act === "open") this.type();
+      if (own?.kind === "move") this.paneGo(own.dir);
+      else if (own?.kind === "open") this.type();
       else return false;
       return true;
     }
     const c = e.key_char;
-    const mv = DIRS[act] || act === "open" ? act : !act && c && c.length === 1 && c.trim() ? `key-${c}` : null;
+    // A field gets moves as keynav-<dir> / keynav-open, any other character as keynav-key-<char>.
+    const mv = own?.kind === "move" ? own.dir : own?.kind === "open" ? "open" : !own && c?.length === 1 && c.trim() ? `key-${c}` : null;
     if (!mv) return false;
     run(`${f.mod}.keynav-${mv}`);
     return true;
@@ -567,6 +557,13 @@ export default class Whistle extends View {
       return p ? `Terminal · ${(p.title || p.program?.name || "").slice(0, 40)}` : "Terminal";
     }
     return f?.label ?? "";
+  }
+
+  // The bar's text: a message from the last key, else a config problem (in any mode: a
+  // whistle.json that doesn't parse can leave whistle off), else where the keyboard is.
+  status(t) {
+    const problem = this.flash ?? this.leaderErr ?? this.keysErr;
+    return div().flex_1().min_w(0).truncate().text_color(problem ? t.blocked : t.muted).child(problem ?? this.label());
   }
 
   // The pending keys and their group (the popup, when on, lists the choices).
@@ -585,7 +582,7 @@ export default class Whistle extends View {
         names: all.map((b) => b.name), current: all.find((b) => !b.hidden)?.name ?? null,
         open: Boolean(this.barOpen), setOpen: (v) => { this.barOpen = v; cx.notify(); },
       } : null;
-      return renderSettings(this.conf, this.set, place);
+      return renderSettings(this.conf, this.set, place, this.entryKey);
     }
     const t = theme();
     const on = this.mode === "whistle";
@@ -609,7 +606,7 @@ export default class Whistle extends View {
         .on_click(() => this.openSettings())
         .child(on ? "WHISTLE" : "TYPE")))
       .child(shared("whistle.leader") ? this.leaderLine(t)
-        : div().flex_1().min_w(0).truncate().text_color(this.flash ? t.blocked : t.muted).child(this.flash ?? this.label()));
+        : this.status(t));
   }
 }
 
