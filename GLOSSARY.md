@@ -54,14 +54,21 @@ _Avoid_: mapping layer, override
 ## Fields
 
 **Field**:
-A part of the window whistle can select in WHISTLE: the terminal, or a mod that takes part in
-keynav.
+A part of the window whistle can select in WHISTLE: the terminal, or a copy of a keynav mod.
 _Avoid_: panel, block, pane
 
 **Keynav**:
 The agreement through which a mod becomes a field: it announces itself, draws its own cursor
 while selected, and takes moves from whoever drives it.
 _Avoid_: field protocol, navigation API
+
+**Keynav mod**:
+A mod that takes part in keynav; each of its copies in a layout is a field.
+_Avoid_: taking-part mod, participant
+
+**Driver**:
+A mod that moves the keyboard between fields through keynav; whistle is one.
+_Avoid_: controller, host, navigator
 
 ## Display
 

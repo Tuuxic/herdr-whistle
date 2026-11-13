@@ -4,7 +4,7 @@
 // commands. The mod keeps its own cursor and decides how its field looks while active.
 // Without a driver, nothing is ever active.
 //
-// A mod can't import from another mod's folder: every taking part mod has a copy of this
+// A mod can't import from another mod's folder: every keynav mod has a copy of this
 // file. Keep the copies the same.
 //
 // shared("keynav.fields"): { [key]: { v: 1, mod, props, label } }, key = fieldKey(mod, props)
