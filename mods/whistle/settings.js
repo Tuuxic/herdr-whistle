@@ -41,13 +41,13 @@ function dropdown(t, id, names, current, open, setOpen, pick) {
 }
 
 // conf: what load() returned; set(key, value): writes it; place: the layout's bars when it has
-// more than one ({ names, current, open, setOpen }), else null; entryKey: the key that enters
+// more than one ({ names, current, open, setOpen }), else null; switchKey: the key that enters
 // WHISTLE from a terminal, null if none does.
-export function renderSettings(conf, set, place, entryKey) {
+export function renderSettings(conf, set, place, switchKey) {
   const t = theme();
   const rows = flatten(conf?.map);
   const own = Object.keys(ACTIONS).filter((a) => conf?.keys?.[a]?.length).map((a) => ({ seq: conf.keys[a], action: ACTIONS[a].label }));
-  const entry = entryKey ? keyLabel(entryKey) : null;
+  const entry = switchKey ? keyLabel(switchKey) : null;
   const line = (m, id) => h_flex().id(id).h(26).flex_none().px(6).gap(12).items_center().hover((s) => s.bg(t.hover))
     .child(h_flex().w(150).flex_none().gap(3).items_center().children(m.seq.flatMap((p, j) => [
       ...(j ? [div().text_size(11).text_color(t.dim).child(m.or ? "/" : "›")] : []), chip(t, p)])))
@@ -62,7 +62,7 @@ export function renderSettings(conf, set, place, entryKey) {
     .when(Boolean(conf?.error), (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked).child(conf.error)))
     .child(row(t, "Whistle mode", `${entry ?? "The key keys.json binds to whistle.whistle"} leaves the terminal to move around and run mappings with single keys. Off: that key goes to the terminal and the bar shows no mode.`,
       toggle(t, "wh-enabled", conf?.enabled !== false, () => set("enabled", conf?.enabled === false))))
-    .when(conf != null && !entryKey, (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked)
+    .when(conf != null && !switchKey, (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked)
       .child("No key enters WHISTLE: add one to keys.json, e.g. \"global\": { \"ctrl-space\": \"whistle.whistle\" }.")))
     .when(conf?.enabled !== false, (el) => el.child(row(t, "Show key hints", "After a group key like w, a box above the bar lists the keys that can follow. Off: only the bar shows what you typed.",
       toggle(t, "wh-hints", conf?.hints !== false, () => set("hints", conf?.hints === false)))))

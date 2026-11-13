@@ -35,49 +35,49 @@ const plain = compose({ keys: KEYS, map: { p: MAP.p, w: MAP.w } }, null, null, n
 const W = { path: ["w"], node: MAP.w.map, title: "Panes" };
 const WM = { path: ["w", "m"], node: MAP.w.map.m.map, title: "More" };
 
-// [name, conf, pending, field, key, expected { pending, act }]
+// [name, conf, sequence, field, key, expected { sequence, act }]
 const RESOLVE = [
-  ["mapped key beats own key", conf, null, "keynav", "j", { pending: null, act: { run: MAP.j } }],
-  ["own key when not mapped", plain, null, "keynav", "j", { pending: null, act: { keynav: "down" } }],
-  ["mapped entry runs", conf, null, "terminal", "p", { pending: null, act: { run: MAP.p } }],
-  ["mapped chord runs", conf, null, "terminal", "ctrl-n", { pending: null, act: { run: MAP["ctrl-n"] } }],
-  ["group starts a sequence", conf, null, "terminal", "w", { pending: W, act: { show: true } }],
+  ["mapped key beats own key", conf, null, "keynav", "j", { sequence: null, act: { run: MAP.j } }],
+  ["own key when not mapped", plain, null, "keynav", "j", { sequence: null, act: { keynav: "down" } }],
+  ["mapped entry runs", conf, null, "terminal", "p", { sequence: null, act: { run: MAP.p } }],
+  ["mapped chord runs", conf, null, "terminal", "ctrl-n", { sequence: null, act: { run: MAP["ctrl-n"] } }],
+  ["group starts a sequence", conf, null, "terminal", "w", { sequence: W, act: { show: true } }],
   ["group without name: key is title", conf, null, null, "t",
-    { pending: { path: ["t"], node: MAP.t.map, title: "t" }, act: { show: true } }],
-  ["entry in sequence runs", conf, W, null, "v", { pending: null, act: { run: SPLIT } }],
-  ["nested group", conf, W, null, "m", { pending: WM, act: { show: true } }],
-  ["entry two levels down", conf, WM, null, "z", { pending: null, act: { run: MAP.w.map.m.map.z } }],
-  ["cancel ends sequence", conf, WM, null, "escape", { pending: null, act: { show: true } }],
-  ["ctrl-[ cancels too", conf, W, null, "ctrl-[", { pending: null, act: { show: true } }],
-  ["back goes up a level", conf, WM, null, "backspace", { pending: W, act: { show: true } }],
-  ["back at first level ends", conf, W, null, "backspace", { pending: null, act: { show: true } }],
-  ["not mapped flash", conf, W, null, "x", { pending: null, act: { flash: "w x is not mapped" } }],
+    { sequence: { path: ["t"], node: MAP.t.map, title: "t" }, act: { show: true } }],
+  ["entry in sequence runs", conf, W, null, "v", { sequence: null, act: { run: SPLIT } }],
+  ["nested group", conf, W, null, "m", { sequence: WM, act: { show: true } }],
+  ["entry two levels down", conf, WM, null, "z", { sequence: null, act: { run: MAP.w.map.m.map.z } }],
+  ["cancel ends sequence", conf, WM, null, "escape", { sequence: null, act: { show: true } }],
+  ["ctrl-[ cancels too", conf, W, null, "ctrl-[", { sequence: null, act: { show: true } }],
+  ["back goes up a level", conf, WM, null, "backspace", { sequence: W, act: { show: true } }],
+  ["back at first level ends", conf, W, null, "backspace", { sequence: null, act: { show: true } }],
+  ["not mapped flash", conf, W, null, "x", { sequence: null, act: { flash: "w x is not mapped" } }],
   ["not mapped flash, labels", conf, WM, null, "ctrl-h",
-    { pending: null, act: { flash: "w m Ctrl+H is not mapped" } }],
+    { sequence: null, act: { flash: "w m Ctrl+H is not mapped" } }],
   ["own move key in sequence is not mapped", conf, W, "terminal", "h",
-    { pending: null, act: { flash: "w h is not mapped" } }],
-  ["field own key", conf, null, "terminal", "ctrl-l", { pending: null, act: { field: "right" } }],
-  ["field own key, no field", conf, null, null, "ctrl-h", { pending: null, act: { field: "left" } }],
-  ["type own key", conf, null, "keynav", "i", { pending: null, act: { type: true } }],
-  ["unmapped chord not handled", conf, null, "keynav", "ctrl-x", { pending: null, act: null }],
-  ["unmapped chord on terminal", conf, null, "terminal", "alt-q", { pending: null, act: null }],
-  ["terminal: move between panes", conf, null, "terminal", "h", { pending: null, act: { pane: "left" } }],
-  ["terminal: arrow moves", conf, null, "terminal", "down", { pending: null, act: { pane: "down" } }],
-  ["terminal: open types", conf, null, "terminal", "enter", { pending: null, act: { type: true } }],
-  ["terminal: other char not handled", conf, null, "terminal", "x", { pending: null, act: null }],
-  ["terminal: cancel outside sequence", conf, null, "terminal", "escape", { pending: null, act: null }],
-  ["keynav: move", conf, null, "keynav", "k", { pending: null, act: { keynav: "up" } }],
-  ["keynav: arrow", conf, null, "keynav", "left", { pending: null, act: { keynav: "left" } }],
-  ["keynav: open", conf, null, "keynav", "enter", { pending: null, act: { keynav: "open" } }],
-  ["keynav: char", conf, null, "keynav", "x", { pending: null, act: { keynav: "key-x" } }],
-  ["keynav: shifted char", conf, null, "keynav", "X", { pending: null, act: { keynav: "key-X" } }],
-  ["keynav: punctuation", conf, null, "keynav", "?", { pending: null, act: { keynav: "key-?" } }],
-  ["keynav: space not passed", conf, null, "keynav", "space", { pending: null, act: null }],
-  ["keynav: named key not passed", conf, null, "keynav", "f2", { pending: null, act: null }],
-  ["keynav: back key not passed", conf, null, "keynav", "backspace", { pending: null, act: null }],
-  ["null field: move not handled", conf, null, null, "h", { pending: null, act: null }],
-  ["null field: char not handled", conf, null, null, "x", { pending: null, act: null }],
-  ["null field: mapped still runs", conf, null, null, "p", { pending: null, act: { run: MAP.p } }],
+    { sequence: null, act: { flash: "w h is not mapped" } }],
+  ["field own key", conf, null, "terminal", "ctrl-l", { sequence: null, act: { field: "right" } }],
+  ["field own key, no field", conf, null, null, "ctrl-h", { sequence: null, act: { field: "left" } }],
+  ["type own key", conf, null, "keynav", "i", { sequence: null, act: { type: true } }],
+  ["unmapped chord not handled", conf, null, "keynav", "ctrl-x", { sequence: null, act: null }],
+  ["unmapped chord on terminal", conf, null, "terminal", "alt-q", { sequence: null, act: null }],
+  ["terminal: move between panes", conf, null, "terminal", "h", { sequence: null, act: { pane: "left" } }],
+  ["terminal: arrow moves", conf, null, "terminal", "down", { sequence: null, act: { pane: "down" } }],
+  ["terminal: open types", conf, null, "terminal", "enter", { sequence: null, act: { type: true } }],
+  ["terminal: other char not handled", conf, null, "terminal", "x", { sequence: null, act: null }],
+  ["terminal: cancel outside sequence", conf, null, "terminal", "escape", { sequence: null, act: null }],
+  ["keynav: move", conf, null, "keynav", "k", { sequence: null, act: { keynav: "up" } }],
+  ["keynav: arrow", conf, null, "keynav", "left", { sequence: null, act: { keynav: "left" } }],
+  ["keynav: open", conf, null, "keynav", "enter", { sequence: null, act: { keynav: "open" } }],
+  ["keynav: char", conf, null, "keynav", "x", { sequence: null, act: { keynav: "key-x" } }],
+  ["keynav: shifted char", conf, null, "keynav", "X", { sequence: null, act: { keynav: "key-X" } }],
+  ["keynav: punctuation", conf, null, "keynav", "?", { sequence: null, act: { keynav: "key-?" } }],
+  ["keynav: space not passed", conf, null, "keynav", "space", { sequence: null, act: null }],
+  ["keynav: named key not passed", conf, null, "keynav", "f2", { sequence: null, act: null }],
+  ["keynav: back key not passed", conf, null, "keynav", "backspace", { sequence: null, act: null }],
+  ["null field: move not handled", conf, null, null, "h", { sequence: null, act: null }],
+  ["null field: char not handled", conf, null, null, "x", { sequence: null, act: null }],
+  ["null field: mapped still runs", conf, null, null, "p", { sequence: null, act: { run: MAP.p } }],
 ];
 
 // A key event as Herdr sends it: key, key_char, modifiers.
@@ -124,12 +124,12 @@ function runAll() {
     total++;
     if (show(got) !== show(want)) fails.push(`${name}: got ${show(got)}, want ${show(want)}`);
   };
-  for (const [name, c, pending, field, key, want] of RESOLVE) {
-    const before = show(pending);
-    check(`resolve: ${name}`, resolve(c, pending, field, key), want);
-    if (show(pending) !== before) fails.push(`resolve: ${name}: mutated the pending sequence`);
+  for (const [name, c, sequence, field, key, want] of RESOLVE) {
+    const before = show(sequence);
+    check(`resolve: ${name}`, resolve(c, sequence, field, key), want);
+    if (show(sequence) !== before) fails.push(`resolve: ${name}: mutated the key sequence`);
   }
-  check("describe: nothing pending", describe(conf, null), null);
+  check("describe: nothing sequence", describe(conf, null), null);
   check("describe: Panes", describe(conf, W), {
     keys: "w", title: "Panes", exit: "Esc · ⌫",
     items: [

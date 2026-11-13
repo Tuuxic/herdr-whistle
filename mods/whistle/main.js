@@ -19,8 +19,8 @@
 // Mappings (config.js: defaults < the layout's "mappings" prop < ~/.config/herdr-app/whistle.json):
 // in WHISTLE a key from the map runs a command or starts a group whose keys follow (w v);
 // groups nest. Mapped keys win over whistle's own keys. keys.json runs first, so whistle claims
-// the keys it needs in keys.json's "mod:whistle" section (keysync.js). The pending keys and
-// their choices go to shared("whistle.sequence"), listed by this mod's "hints" copy (hints.js, a
+// the keys it needs in keys.json's "mod:whistle" section (keysync.js). The key sequence and
+// its choices go to shared("whistle.sequence"), listed by this mod's "hints" copy (hints.js, a
 // window above the bar) unless "hints" is false.
 // "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: the keys
 // keys.json binds to whistle.whistle and whistle.enter then go to the terminal (through hc)
@@ -32,7 +32,7 @@ import { panes, focused, run, theme, shared, setShared, nextCommand, layout, pro
 import { fieldKey } from "./keynav.js";
 import { resolve, describe } from "./keymap.js";
 import { load, setUser, USER_FILE } from "./config.js";
-import { syncKeys, entryKey } from "./keysync.js";
+import { syncKeys, terminalKey } from "./keysync.js";
 import { keyName, hcKey } from "./keynames.js";
 import { renderHints, hintsSize } from "./hints.js";
 import { renderSettings } from "./settings.js";
@@ -111,7 +111,7 @@ export default class Whistle extends View {
       this.settingsPart = true;
       // The key that enters WHISTLE from a terminal, for the dialog to name (or warn there's none).
       const reload = () => load(props()?.mappings, props()).then(async (c) => {
-        this.entryKey = await entryKey("whistle.whistle");
+        this.switchKey = await terminalKey("whistle.whistle");
         this.conf = c;
         cx.notify();
       });
@@ -124,7 +124,7 @@ export default class Whistle extends View {
     }
     this.handle = cx.focus_handle();
     this.cx = cx; // init's context outlives init: syncKeys sleeps on it
-    this.pending = null;
+    this.sequence = null;
     setShared("whistle.sequence", null);
     this.loadConfig().then(() => cx.notify());
     // whistle.json is outside this folder, so saving it doesn't reload the mod: look now and then.
@@ -384,13 +384,13 @@ export default class Whistle extends View {
   // typed into the focused terminal.
   async passThrough(command) {
     const term = focused()?.terminal;
-    const k = await entryKey(command);
+    const k = await terminalKey(command);
     if (term && k) exec("hc", ["keys", term, hcKey(k)]).catch(() => {});
   }
 
-  // Publishes the pending sequence; the hints window shows while one is pending.
+  // Publishes the key sequence; the hints window shows while there is one.
   showSequence() {
-    const v = describe(this.config, this.pending);
+    const v = describe(this.config, this.sequence);
     setShared("whistle.sequence", v);
     if (!v || !this.hintsOn()) {
       if (this.hintsId) closeOverlay(this.hintsId);
@@ -418,8 +418,8 @@ export default class Whistle extends View {
   }
 
   endSequence() {
-    if (!this.pending && shared("whistle.sequence") == null) return;
-    this.pending = null;
+    if (!this.sequence && shared("whistle.sequence") == null) return;
+    this.sequence = null;
     this.showSequence();
   }
 
@@ -484,13 +484,13 @@ export default class Whistle extends View {
     const name = keyName(e);
     // The selected field; if it went away (a panel closed by mouse), the terminal stands in,
     // selected only when a key acts inside the field (below).
-    const f = this.pending ? null : this.current();
-    const field = this.pending ? null : f ? (f.key === TERMINAL ? "terminal" : "keynav") : this.terminalBlock() ? "terminal" : null;
-    const was = this.pending;
-    const { pending, act } = resolve(this.config ?? {}, was, field, name);
-    this.pending = pending;
+    const f = this.sequence ? null : this.current();
+    const field = this.sequence ? null : f ? (f.key === TERMINAL ? "terminal" : "keynav") : this.terminalBlock() ? "terminal" : null;
+    const was = this.sequence;
+    const { sequence, act } = resolve(this.config ?? {}, was, field, name);
+    this.sequence = sequence;
     this.flash = act?.flash ?? null;
-    if (pending !== was) this.showSequence();
+    if (sequence !== was) this.showSequence();
     if (!act) return false;
     if (!f && !was && (act.pane || act.type)) this.enter(this.terminalBlock());
     if (act.run) this.runEntry(act.run);
@@ -518,7 +518,7 @@ export default class Whistle extends View {
     return div().flex_1().min_w(0).truncate().text_color(problem ? t.blocked : t.muted).child(problem ?? this.label());
   }
 
-  // The pending keys and their group (the popup, when on, lists the choices).
+  // The key sequence and its group (the hints, when on, list the choices).
   sequenceLine(t) {
     const v = shared("whistle.sequence");
     return h_flex().flex_1().min_w(0).gap(12).items_center().overflow_hidden()
@@ -534,7 +534,7 @@ export default class Whistle extends View {
         names: all.map((b) => b.name), current: all.find((b) => !b.hidden)?.name ?? null,
         open: Boolean(this.barOpen), setOpen: (v) => { this.barOpen = v; cx.notify(); },
       } : null;
-      return renderSettings(this.conf, this.set, place, this.entryKey);
+      return renderSettings(this.conf, this.set, place, this.switchKey);
     }
     const t = theme();
     const on = this.mode === "whistle";

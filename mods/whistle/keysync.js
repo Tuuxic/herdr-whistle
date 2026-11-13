@@ -10,7 +10,7 @@
 // shortcuts on upgrade. Whistle writes only when its entries change, leaves the file alone
 // while keys.error reports a problem, and puts the old text back if Herdr rejects the new one.
 //
-// It also answers which key runs a command from a terminal (entryKey), so callers needn't know
+// It also answers which key runs a command from a terminal (terminalKey), so callers needn't know
 // keys.json's section precedence.
 
 import { readTextFile, writeTextFile, appHome, shared } from "herdr";
@@ -88,4 +88,4 @@ async function boundKey(command, sections) {
 }
 
 // The key that runs command from a terminal, as keys.json binds it there. Null if there's none.
-export const entryKey = (command) => boundKey(command, sectionsFor("terminal"));
+export const terminalKey = (command) => boundKey(command, sectionsFor("terminal"));

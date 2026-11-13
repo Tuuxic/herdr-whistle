@@ -30,7 +30,11 @@ _Avoid_: menu, leader group, submap
 
 **Key sequence**:
 The keys typed so far inside groups, before a command runs or the sequence is cancelled.
-_Avoid_: leader, pending keys, chord
+_Avoid_: leader, pending keys
+
+**Chord**:
+A key pressed with Ctrl, Alt or Super held, such as Ctrl+H; one key, not a key sequence.
+_Avoid_: combo, modifier key, hotkey
 
 **Own key**:
 A key for one of whistle's own actions in WHISTLE, such as selecting a field or going back to
