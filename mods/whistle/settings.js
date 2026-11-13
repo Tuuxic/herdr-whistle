@@ -1,4 +1,4 @@
-// Whistle's own settings: a dialog (whistle.settings, Space w, or a click on the mode badge)
+// Whistle's own settings: a dialog (whistle.settings, or a click on the mode badge)
 // with WHISTLE on/off, the key hints on/off and every mapping in effect. The toggles write
 // ~/.config/herdr-app/whistle.json; the main copy notices within a few seconds.
 

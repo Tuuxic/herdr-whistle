@@ -5,8 +5,8 @@ control the whole interface with simple key sequences.
 
 Like vim, it has two modes. In **TYPE** the keyboard belongs to your terminal, as usual. Press
 Ctrl+Space (or Ctrl+[ in a terminal) and you're in **WHISTLE**: single keys move between
-spaces, agents, tabs, panes and side panels, and short sequences run commands (Space p opens
-the palette, w v splits a pane). A hints box lists the keys that can follow. Press i to type
+spaces, agents, tabs, panes and side panels, and short sequences run commands (p opens the
+palette, w v splits a pane). A hints box lists the keys that can follow. Press i to type
 again.
 
 ## Install
@@ -22,7 +22,8 @@ thin bar at the bottom.
 | Ctrl+H/J/K/L | the field in that direction |
 | h/j/k/l, arrows, Enter | move and open inside the field |
 | i, Enter on a terminal | back to TYPE in the selected pane |
-| Space | the leader group (Space w: whistle's settings) |
+| p, `,`, ? | palette, settings, keys |
+| t, w, S | the Tabs, Panes and Spaces groups (w v splits right) |
 
 ## Mappings
 

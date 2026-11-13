@@ -51,7 +51,7 @@ box listing what can follow.
   `up`, `left`, `right`, `open`); any other plain character that isn't mapped goes as
   `key-<char>`.
 - **Mappings**: a key from the map runs its command, or starts a group whose keys follow
-  (`w v`); groups nest, the leader is the group on `space`. Esc cancels, Backspace goes back a
+  (`w v`); groups nest. Esc cancels, Backspace goes back a
   level. A mapped key beats the built-in keys above. Pane and terminal commands act on the
   pane whistle has selected. Commands keep you in WHISTLE; an entry's 4th item `"type"` ends
   in TYPE and lets the terminal the command opened take the keyboard.
@@ -121,12 +121,12 @@ box listing what can follow.
 
 - The status bar shows a TYPE badge; `ctrl-space` turns it into WHISTLE with `Terminal ·
   <title>`, `ctrl-space` again (or `i`) goes back.
-- In WHISTLE, `Space` opens the hints box above the bar listing the leader group, `a`
-  switches it to that group's keys, Esc closes it; the bar shows `SPC a App` meanwhile.
+- In WHISTLE, `w` opens the hints box above the bar listing the Panes group, Esc closes
+  it; the bar shows `w Panes` meanwhile. `p` opens the command palette.
 - `w v` splits the selected pane and whistle stays in WHISTLE.
 - With a keynav mod in the layout, `ctrl-h` selects it (its own highlight shows, the bar
   shows its label) and `j` moves its cursor.
-- `Space w` (or a click on the badge) opens the settings dialog; turning Whistle mode off
+- A click on the badge (or `whistle.settings`) opens the settings dialog; turning Whistle mode off
   removes the badge, after which `ctrl-[` in a terminal types Esc.
 - A key set in `~/.config/herdr-app/whistle.json` works within a few seconds of saving, and
   shows in the settings dialog's list.

@@ -16,7 +16,7 @@
 //
 // Mappings (config.js: defaults < the layout's "mappings" prop < ~/.config/herdr-app/whistle.json):
 // in WHISTLE a key from the map runs a command or starts a group whose keys follow (w v);
-// groups nest, and the leader is just the group on space. Mapped keys win over the built-in
+// groups nest. Mapped keys win over the built-in
 // ones above. The pending keys and their choices go to shared("whistle.leader"), listed by
 // this mod's "hints" copy (hints.js, a window above the bar) unless "hints" is false.
 // "enabled": false (whistle.json, else the whistle block's props) turns WHISTLE off: ctrl-space and ctrl-[ then go to the terminal (through
