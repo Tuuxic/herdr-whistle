@@ -33,7 +33,7 @@ sending undeclared characters to the field anyway.
 - Moves stay up, down, left, right and open. At its edge a field decides what to do, and
   nothing spills into the next field. Leaving a field is always the driver's job.
 - A declared key that clashes with an own key is ignored and shown in settings.
-- The driver publishes `shared("keynav") = { v: 2, active, pane }`. Only one driver is assumed
-  at a time.
+- The driver publishes `shared("keynav") = { v: 2, active }` (`pane` moved to whistle's own
+  state, ADR 0010). Only one driver is assumed at a time.
 - Authors get a written spec, the reference `keynav.js`, and a checker test mod run with
   `herdr-app check` that plays the driver.

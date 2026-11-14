@@ -117,3 +117,9 @@ _Avoid_: toast, notification, error
 Something wrong in whistle's config or in keys.json that whistle works around and lists in its
 settings until it is fixed, such as a file that doesn't parse or a mapping to an unknown command.
 _Avoid_: error, warning, issue
+
+**Whistle state**:
+What whistle tells other mods about itself: the mode, whether WHISTLE is switched on, the key
+sequence so far and the terminal it has selected. Which field is selected is keynav's to say,
+not whistle state's.
+_Avoid_: status, whistle API, public state
