@@ -45,7 +45,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, terminal, neighbour, TERMINAL } from "./fields.js";
+import { fieldAt, fields, terminal, neighbour, modBlocks, declaredKeys, requestKey, TERMINAL, KEYNAV, KEYNAV_V } from "./fields.js";
 import { canonicalKey } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
@@ -65,9 +65,13 @@ export const start = () => ({
 
 // The model with block selected as the field (or the field inside it), if one shows.
 function select(model, world, block) {
-  const f = fieldAt(world.layout, block, model.recent);
+  const f = fieldAt(world.layout, block, model.recent, world.shared);
   if (!f) return null;
-  return { ...model, field: f.block, recent: [f.block, ...model.recent.filter((b) => b !== f.block)].slice(0, 20) };
+  return {
+    ...model, field: f.block, recent: [f.block, ...model.recent.filter((b) => b !== f.block)].slice(0, 20),
+    // A field's requests count from when it was selected (keynav's request slot).
+    requestAt: f.block === model.field ? model.requestAt : world.now,
+  };
 }
 
 // WHISTLE on the terminal (the one used last), its pane the one the keyboard just left.
@@ -77,7 +81,7 @@ function whistle(model, world) {
   return { model: { ...m, mode: "whistle", pane: world.focused?.pane ?? m.pane }, effects: [{ focusBar: true }] };
 }
 
-const onTerminal = (model, world) => fieldAt(world.layout, model.field, model.recent)?.kind === TERMINAL;
+const onTerminal = (model, world) => fieldAt(world.layout, model.field, model.recent, world.shared)?.kind === TERMINAL;
 
 // Back to TYPE, the keyboard to the terminal's selected pane (else the focused one).
 function type(model, world) {
@@ -160,16 +164,21 @@ function runMapping(model, world, e) {
   return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects, handled: true };
 }
 
+// A move or a declared key sent to a keynav field as <mod>.keynav-<what>; the bar holds the
+// keyboard, as after a mapping.
+const toField = (model, world, field, what) => runMapping(model, world, { run: `${field.mod}.keynav-${what}`, args: {} });
+
 // An own key's action.
 function ownKey(model, world, action) {
   const own = ACTIONS[action];
   const done = { model, effects: [], handled: true };
   if (own.kind === "type") return { ...type(model, world), handled: true };
   if (own.kind === "field") {
-    const next = neighbour(world.layout, model.field, own.dir, model.recent);
+    const next = neighbour(world.layout, model.field, own.dir, model.recent, world.shared);
     return { ...done, model: (next && select(model, world, next.block)) || model };
   }
-  const field = fieldAt(world.layout, model.field, model.recent);
+  const field = fieldAt(world.layout, model.field, model.recent, world.shared);
+  if (field?.kind === KEYNAV && (own.kind === "open" || own.kind === "move")) return toField(model, world, field, own.dir ?? "open");
   if (own.kind === "open") return !field || field.kind === TERMINAL ? { ...type(model, world), handled: true } : done;
   if (own.kind !== "move") return done; // cancel, back: nothing pending
   // A move acts inside the field; with none selected, the terminal stands in.
@@ -179,12 +188,35 @@ function ownKey(model, world, action) {
   return { model, effects: [], handled: false };
 }
 
+// The model with its keynav problems (model.fieldProblems) brought in line with the fields
+// that show: declared keys whistle ignores, and copies still on keynav v1. Unchanged when they
+// are the same.
+function fieldsChecked(model, world) {
+  const out = [];
+  const all = fields(world.layout, world.shared);
+  for (const f of all) {
+    if (f.kind !== KEYNAV) continue;
+    for (const detail of declaredKeys(f, model.config?.own, world.platform).problems) out.push({ source: "keynav", detail });
+  }
+  const v1 = world.shared?.["keynav.fields"] ?? {};
+  const seen = new Set();
+  for (const b of modBlocks(world.layout)) {
+    if (seen.has(b.key) || v1[b.key]?.v !== 1 || all.some((f) => f.key === b.key)) continue;
+    seen.add(b.key);
+    out.push({ source: "keynav", detail: `${b.mod} speaks keynav v1, which whistle no longer drives; update its keynav.js` });
+  }
+  return JSON.stringify(out) === JSON.stringify(model.fieldProblems ?? []) ? model : { ...model, fieldProblems: out };
+}
+
 // A key pressed in WHISTLE: a flash lasts until the next key.
 function key(model, world, name) {
-  const m0 = configured(model, world);
-  const r = resolve(m0.config, m0.sequence, name);
+  const m0 = fieldsChecked(configured(model, world), world);
+  const field = fieldAt(world.layout, m0.field, m0.recent, world.shared);
+  const declared = field?.kind === KEYNAV ? declaredKeys(field, m0.config.own, world.platform).keys : null;
+  const r = resolve(m0.config, m0.sequence, name, declared);
   const m = { ...m0, sequence: r.sequence, flash: r.act?.flash ?? null };
   if (!r.act) return { model: m, effects: [], handled: false };
+  if (r.act.declared !== undefined) return toField(m, world, field, `key-${r.act.declared}`);
   if (r.act.run) return runMapping(m, world, r.act.run);
   if (r.act.own) return ownKey(m, world, r.act.own);
   return { model: m, effects: [], handled: true };
@@ -249,8 +281,32 @@ function modeTick(model, world) {
   return none;
 }
 
+// A selected field that left (its block gone, or its keynav entry): the terminal instead.
+function stillThere(model, world) {
+  if (model.mode !== "whistle" || !model.field || fieldAt(world.layout, model.field, model.recent, world.shared)) return model;
+  const t = terminal(world.layout, model.recent);
+  return (t && select(model, world, t.block)) ?? { ...model, field: null };
+}
+
+// The selected keynav field's request slot, shared("keynav.request:<fieldKey>"), once per
+// request made since it was selected: { to: "terminal" } (it focused one: whistle selects the
+// terminal on that pane) or { hold: true } (it moved the keyboard: whistle takes it back).
+// Either way the bar holds the keyboard for HOLD_MS; modeTick takes it back.
+function requests(model, world) {
+  if (model.mode !== "whistle") return model;
+  const f = fieldAt(world.layout, model.field, model.recent, world.shared);
+  const r = f?.kind === KEYNAV ? world.shared?.[requestKey(f.key)] : null;
+  if (!r || typeof r.at !== "number" || !(r.at > (model.requestAt ?? 0))) return model;
+  let m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
+  if (r.to === TERMINAL) {
+    const t = terminal(world.layout, m.recent);
+    if (t) m = { ...select(m, world, t.block), pane: world.focused?.pane ?? m.pane };
+  }
+  return m;
+}
+
 function tick(model, world) {
-  const m = modeTick(configured(model, world), world);
+  const m = modeTick(fieldsChecked(requests(stillThere(configured(model, world), world), world), world), world);
   const c = claimsTick(m.model, world);
   return { model: c.model, effects: [...m.effects, ...c.effects] };
 }
@@ -303,8 +359,25 @@ export function step(model, input, world) {
   return input.tick ? chores(out, world, why) : out;
 }
 
-// A step while whistle runs.
+// A step while whistle runs, then keynav told which field is selected.
 function active(model, input, world) {
+  return publish(running(model, input, world), world);
+}
+
+// shared("keynav") = { v: 2, active }: the selected keynav field's key while in WHISTLE, else
+// null. Written only when it changes (model.keynavActive: what whistle last wrote; before its
+// first write, what the world says).
+function publish(out, world) {
+  const m = out.model;
+  const f = m.mode === "whistle" ? fieldAt(world.layout, m.field, m.recent, world.shared) : null;
+  const want = f?.kind === KEYNAV ? f.key : null;
+  const known = m.keynavActive !== undefined ? m.keynavActive : (world.shared?.keynav?.active ?? null);
+  if (m.keynavActive === want && known === want) return out;
+  const effects = known === want ? out.effects : [...out.effects, { setShared: "keynav", value: { v: KEYNAV_V, active: want } }];
+  return { ...out, model: { ...m, keynavActive: want }, effects };
+}
+
+function running(model, input, world) {
   // A flash lasts until the next key, the switch key included.
   if ("command" in input && model.flash) model = { ...model, flash: null };
   const none = { model, effects: [] };
@@ -318,16 +391,16 @@ function active(model, input, world) {
   return none;
 }
 
-// Every config problem, for settings: [{ source, detail }], whistle's config first, then
-// keys.json's.
+// Every config problem, for settings: [{ source, detail }], whistle's config first, then the
+// keynav fields', then keys.json's.
 export function problems(model) {
-  return [...(model.problems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
+  return [...(model.problems ?? []), ...(model.fieldProblems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
 }
 
 // Where the keyboard is, for the bar's label.
 function where(model, world) {
   if (model.mode !== "whistle") return world.focused?.pane ? "Terminal" : "";
-  const f = fieldAt(world.layout, model.field, model.recent);
+  const f = fieldAt(world.layout, model.field, model.recent, world.shared);
   if (f?.kind !== TERMINAL) return f?.label ?? "";
   const p = (world.panes ?? []).find((x) => x.pane === model.pane);
   const name = (p?.title || p?.program?.name || "").slice(0, 40);

@@ -1,10 +1,35 @@
 // Fields: the parts of the window whistle can select in WHISTLE, found in the layout, and the
 // field in a direction. Pure: it reads only the layout it is given (world.layout).
 //
-// A field is { block, kind, label }. For now the terminal is the only kind: each block that
-// shows a pane is one. Keynav and stock fields join here as later kinds.
+// A field is { block, kind, label }, and a keynav field also { mod, key }. Kinds:
+//   - the terminal: each block that shows a pane;
+//   - keynav (docs/contracts/keynav.md): a mod's block whose entry
+//     shared("keynav.field:<fieldKey>") says v 2. `shared` is the shared state the shell read
+//     ({ "<shared key>": value }); stale entries for blocks not in the layout never count.
+// Stock fields join here as a later kind.
+
+import { canonicalKey, isChord } from "./keynames.js";
 
 export const TERMINAL = "terminal";
+export const KEYNAV = "keynav";
+
+// keynav's version, and the shared keys of a field's entry and request slot.
+export const KEYNAV_V = 2;
+export const entryKey = (key) => `keynav.field:${key}`;
+export const requestKey = (key) => `keynav.request:${key}`;
+
+// A field's key: the mod and its props, as text with sorted keys, so the driver and the mod
+// spell the same field the same way (keynav.js repeats it).
+const stable = (v) => (v && typeof v === "object" && !Array.isArray(v)
+  ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`
+  : JSON.stringify(v ?? null));
+export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
+
+// A keynav field's entry, if it is one this driver speaks: { label, keys }.
+export function entryOf(shared, key) {
+  const e = shared?.[entryKey(key)];
+  return e && typeof e === "object" && e.v === KEYNAV_V ? e : null;
+}
 
 // One look at the layout: each node by id and each node's parent.
 function index(layout) {
@@ -37,15 +62,49 @@ function inside(idx, node, id) {
 }
 
 // Every field that shows, in layout order.
-function list(idx) {
+function list(idx, shared) {
   const out = [];
   for (const [id, n] of idx.nodes) {
-    if (n.content?.pane && shows(idx, id)) out.push({ block: id, kind: TERMINAL, label: "Terminal" });
+    const c = n.content;
+    if (!c || !shows(idx, id)) continue;
+    if (c.pane) out.push({ block: id, kind: TERMINAL, label: "Terminal" });
+    else if (c.mod) {
+      const key = fieldKey(c.mod, c.props);
+      const e = entryOf(shared, key);
+      if (e) out.push({ block: id, kind: KEYNAV, label: typeof e.label === "string" ? e.label : c.mod, mod: c.mod, key, keys: e.keys });
+    }
   }
   return out;
 }
 
-export const fields = (layout) => list(index(layout));
+export const fields = (layout, shared) => list(index(layout), shared);
+
+// Every mod's block that shows, keynav field or not: [{ block, mod, key }]. The shell reads
+// their entries and request slots from these.
+export function modBlocks(layout) {
+  const idx = index(layout), out = [];
+  for (const [id, n] of idx.nodes) {
+    if (n.content?.mod && shows(idx, id)) out.push({ block: id, mod: n.content.mod, key: fieldKey(n.content.mod, n.content.props) });
+  }
+  return out;
+}
+
+// A keynav field's declared keys, against whistle's own keys (own: key -> action):
+// { keys: { <canonical key>: <the key as the field wrote it> }, problems: [detail] }. A chord,
+// a key that isn't one, or an own key is left out and named in problems.
+export function declaredKeys(field, own, platform) {
+  const keys = {}, problems = [];
+  const decl = field.keys && typeof field.keys === "object" && !Array.isArray(field.keys) ? field.keys : {};
+  const who = `${field.label} (${field.mod})`;
+  for (const written of Object.keys(decl)) {
+    const k = canonicalKey(written, platform);
+    if (!k) problems.push(`${who} declares ${written}, which isn't a key`);
+    else if (isChord(k)) problems.push(`${who} declares ${written}, a chord; fields declare only keys without Ctrl, Alt or Super`);
+    else if (own?.[k]) problems.push(`${who} declares ${written}, one of whistle's own keys; it's ignored`);
+    else keys[k] = written;
+  }
+  return { keys, problems };
+}
 
 // Of several fields, the one used last (recent: block ids, the last first), else a terminal,
 // else the first.
@@ -56,23 +115,23 @@ function pick(all, recent) {
 
 // The field a block names: the block itself, or the field to enter in a group of blocks (a
 // stack, a column); null if none shows.
-export function fieldAt(layout, block, recent) {
+export function fieldAt(layout, block, recent, shared) {
   if (!block) return null;
   const idx = index(layout);
-  const all = list(idx);
+  const all = list(idx, shared);
   const node = idx.nodes.get(block);
   return all.find((f) => f.block === block)
     ?? (node ? pick(all.filter((f) => inside(idx, node, f.block)), recent) : null);
 }
 
 // The terminal to fall back on: the one used last, else the first.
-export const terminal = (layout, recent) => pick(fields(layout).filter((f) => f.kind === TERMINAL), recent);
+export const terminal = (layout, recent) => pick(fields(layout, null).filter((f) => f.kind === TERMINAL), recent);
 
 // The field in a direction ("left", "down", "up", "right") from the block `from`: the
 // layout's rows and columns, entering a group at the field used last.
-export function neighbour(layout, from, dir, recent) {
+export function neighbour(layout, from, dir, recent, shared) {
   const idx = index(layout);
-  const all = list(idx);
+  const all = list(idx, shared);
   const axis = dir === "left" || dir === "right" ? "row" : "column";
   const d = dir === "right" || dir === "down" ? 1 : -1;
   for (let n = idx.nodes.get(from); n; n = idx.parent.get(n)) {
