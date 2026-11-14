@@ -22,7 +22,13 @@
 //     ],
 //   }
 
-export const DEFAULT_WORLD = { now: 0, layout: null, focused: null, panes: [], barFocused: false };
+import { VERSION, MIN_HERDR } from "./version.js";
+
+// A world whistle runs in: the minimum Herdr, this copy in mods/whistle/ and announced.
+export const DEFAULT_WORLD = {
+  now: 0, layout: null, focused: null, panes: [], barFocused: false, keys: [],
+  herdr: MIN_HERDR, folder: "whistle", copies: { whistle: VERSION },
+};
 
 // JSON with object keys sorted, so two values compare equal whatever order their fields were
 // made in.
