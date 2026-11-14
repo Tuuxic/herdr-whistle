@@ -14,7 +14,9 @@
 //          files: { defaults, user }: mappings.json's and whistle.json's last good versions
 //          ({ text, json } | null), config: the layers composed (config.js) and whether a
 //          source is broken, problems: config problems [{ source, detail }] for the views,
-//          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null }
+//          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null,
+//          enabled: whether WHISTLE is switched on, published: the whistle state last
+//          published (state() below, as JSON) | null }
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
@@ -38,7 +40,8 @@
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command
 //   { focusBar: true }                  the bar takes the keyboard
-//   { setShared: key, value }           set shared state
+//   { setShared: key, value }           set shared state; step adds { setShared: "whistle" }
+//                                       last whenever the public state changes (state())
 //   { write: path, text, expected }     write a file (path relative to Herdr's home: "keys.json");
 //                                       the outcome comes back as { wrote }
 //   { openOverlay: name, spec }         open an overlay, known by name
@@ -50,7 +53,7 @@
 import { fieldAt, terminal, neighbour, TERMINAL, STOCK, STOCK_FIELDS } from "./fields.js";
 import { canonicalKey } from "./keynames.js";
 import { claim } from "./claims.js";
-import { compose, readFile, usedKeys, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
+import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
 import { resolve } from "./keymap.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
@@ -63,6 +66,7 @@ const CLAIMS = { pending: null, check: null, failed: null };
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], sequence: null, flash: null,
+  enabled: true, published: null,
 });
 
 // The model with block selected as the field (or the field inside it), if one shows.
@@ -330,7 +334,34 @@ export function step(model, input, world) {
   if ("ran" in input) return { model: { ...model, flash: `${input.ran} failed: ${input.error ?? "unknown error"}` }, effects: [] };
   const why = inert(world);
   const out = why ? inertStep(model, input, world) : active(model, input, world);
-  return input.tick ? chores(out, world, why) : out;
+  const done = input.tick ? chores(out, world, why) : out;
+  return why ? done : publish(done);
+}
+
+// The shared key whistle's public state goes in (docs/contracts/state.md).
+export const STATE = "whistle";
+
+// Whistle's public state (ADR 0010): { v: 1, mode, enabled, sequence: null | { keys, group },
+// pane }. mode is "type" while WHISTLE is switched off; group is the name of the group the
+// sequence has reached.
+export function state(model) {
+  const enabled = model.enabled !== false;
+  const keys = model.sequence ?? null;
+  let group = null, map = model.config?.map ?? {};
+  for (const k of keys ?? []) { group = isGroup(map[k]) ? map[k] : null; map = group?.map ?? {}; }
+  return {
+    v: 1, mode: enabled && model.mode === "whistle" ? "whistle" : "type", enabled,
+    sequence: keys && keys.length ? { keys: [...keys], group: group?.name ?? null } : null,
+    pane: model.pane ?? null,
+  };
+}
+
+// The state published after a step, when it changed (and only then).
+function publish(out) {
+  const value = state(out.model);
+  const sig = JSON.stringify(value);
+  if (out.model.published === sig) return out;
+  return { ...out, model: { ...out.model, published: sig }, effects: [...out.effects, { setShared: STATE, value }] };
 }
 
 // A step while whistle runs.
