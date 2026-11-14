@@ -4,7 +4,9 @@
 // the effects.
 //
 // model: { mode: "type" | "whistle", field: block id | null, recent: block ids (the field used
-//          last first), pane: the terminal's selected pane | null, holdUntil: ms,
+//          last first), pane: the terminal's selected pane | null, holdUntil: ms until which
+//          whistle holds the keyboard (in WHISTLE: for the bar; in TYPE, after a mapping that
+//          ends in TYPE: for the terminal Herdr focused),
 //          claims: keys.json as whistle keeps it (claimsTick below), claimProblem: what went
 //          wrong keeping it, for the views | null,
 //          aside: whether this copy stands aside for another (inert.js), hid: the bars it
@@ -48,7 +50,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, terminal, neighbour, TERMINAL } from "./fields.js";
+import { fieldAt, terminal, neighbour, TERMINAL, STOCK, STOCK_FIELDS } from "./fields.js";
 import { canonicalKey } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
@@ -153,15 +155,34 @@ function configured(model, world) {
 const takesKeyboard = (name) => /^(mod\.open|app\.)/.test(name) || /rename/.test(name);
 
 // A mapping pressed: its command (pane and terminal commands on the terminal's selected pane),
-// then the bar holds the keyboard.
+// then the bar holds the keyboard. A mapping that ends in TYPE goes to TYPE instead, and holds
+// the keyboard for the terminal (modeTick): the command may have made one, which Herdr focuses.
 function runMapping(model, world, e) {
   const effects = [];
   const pane = onTerminal(model, world) && model.pane;
   if (/^(pane|terminal)\./.test(e.run) && pane) effects.push({ run: "pane.focus", args: { pane } });
   effects.push({ run: e.run, args: e.args });
+  if (e.then === "type") return { model: { ...model, mode: "type", holdUntil: world.now + HOLD_MS }, effects, handled: true };
   if (takesKeyboard(e.run)) return { model, effects, handled: true };
   effects.push({ focusBar: true });
   return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects, handled: true };
+}
+
+// A move on a stock field: Herdr's command for that way, if it has one, then the bar holds the
+// keyboard (the command shows another space, tab or agent).
+function stockMove(model, world, field, dir) {
+  if (dir === "right" && STOCK_FIELDS[field.stock].open === "terminal") return toTerminal(model, world);
+  const command = STOCK_FIELDS[field.stock][dir];
+  if (!command) return { model, effects: [], handled: true };
+  return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [{ run: command, args: {} }, { focusBar: true }], handled: true };
+}
+
+// From a stock field into what its item shows: the terminal field, at the pane Herdr focused
+// (the agent's).
+function toTerminal(model, world) {
+  const t = terminal(world.layout, model.recent);
+  const m = (t && select(model, world, t.block)) ?? model;
+  return { model: { ...m, pane: world.focused?.pane ?? m.pane }, effects: [], handled: true };
 }
 
 // An own key's action.
@@ -174,11 +195,15 @@ function ownKey(model, world, action) {
     return { ...done, model: (next && select(model, world, next.block)) || model };
   }
   const field = fieldAt(world.layout, model.field, model.recent);
-  if (own.kind === "open") return !field || field.kind === TERMINAL ? { ...type(model, world), handled: true } : done;
+  if (own.kind === "open") {
+    if (!field || field.kind === TERMINAL) return { ...type(model, world), handled: true };
+    return field.kind === STOCK && STOCK_FIELDS[field.stock].open === "terminal" ? toTerminal(model, world) : done;
+  }
   if (own.kind !== "move") return done; // cancel, back: nothing pending
   // A move acts inside the field; with none selected, the terminal stands in.
   const t = field ? null : terminal(world.layout, model.recent);
   if (field?.kind === TERMINAL) return paneMove(model, world, own.dir);
+  if (field?.kind === STOCK) return stockMove(model, world, field, own.dir);
   if (t) return paneMove(select(model, world, t.block), world, own.dir);
   return { model, effects: [], handled: false };
 }
@@ -244,6 +269,11 @@ function wrote(model, world, input) {
 // The shell's timer: the bar losing or taking the keyboard.
 function modeTick(model, world) {
   const none = { model, effects: [] };
+  // After a mapping that ends in TYPE: the keyboard to the pane Herdr focused, not WHISTLE.
+  if (model.mode === "type" && world.now < model.holdUntil) {
+    const pane = world.barFocused && world.focused?.pane;
+    return pane ? { model, effects: [{ run: "pane.focus", args: { pane } }] } : none;
+  }
   if (model.mode === "whistle" && world.now < model.holdUntil) {
     const m = onTerminal(model, world) && world.focused?.pane ? { ...model, pane: world.focused.pane } : model;
     return { model: m, effects: world.barFocused ? [] : [{ focusBar: true }] };
