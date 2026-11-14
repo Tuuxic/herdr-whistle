@@ -70,7 +70,8 @@ Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
 2. **The layout's whistle block**: its `mappings` and `keys` props, for keys that suit that
-   layout's mods.
+   layout's mods. The block's other props (`enabled`, `hints`, `nav`, `bar`) are in
+   [The layout's whistle block](contracts/layout-block.md).
 3. **Yours**: `whistle.json` in Herdr's home (`~/.config/herdr-app/whistle.json`). Nothing
    replaces it.
 
@@ -172,3 +173,11 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
   ]
 }
 ```
+
+## Switching whistle off
+
+`"enabled": false` in whistle.json (or in a layout's whistle block; yours wins) switches WHISTLE
+off: the switch key types into the terminal as if whistle weren't there, and the bar shows
+"Whistle off". `whistle.off` and `whistle.on` (bind them in keys.json, or map them) write that
+setting for you; `whistle.settings` opens the settings. Every command whistle answers to is in
+[Whistle's commands](contracts/commands.md).

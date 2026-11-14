@@ -10,8 +10,8 @@
 // Its config comes from mappings.json (this folder) and whistle.json (Herdr's home), read on
 // the same poll as keys.json; the core keeps each file's last good version.
 
-import { View } from "gpui-kit";
-import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec } from "herdr";
+import { View, div } from "gpui-kit";
+import { props, layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
 import { start, step, bar } from "./step.js";
@@ -33,6 +33,10 @@ const home = (path) => `${appHome()}/${path}`;
 
 export default class Whistle extends View {
   init(_props, cx) {
+    // One of whistle's own overlay copies (the "part" prop, private): no core of its own. The
+    // settings view comes with #28; until then it only says what it is.
+    this.part = props()?.part ?? null;
+    if (this.part) return;
     this.handle = cx.focus_handle();
     this.model = start();
     this.overlays = new Map(); // overlay name -> id
@@ -119,6 +123,7 @@ export default class Whistle extends View {
   }
 
   render(cx) {
+    if (this.part) return div().p(16).text_color(theme().muted).child("Whistle's settings");
     return renderBar(bar(this.model, this.world()), theme(), this.handle, (e, cx) => {
       if (this.model.mode !== "whistle") return;
       const out = this.feed({ key: keyName(e) });
