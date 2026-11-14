@@ -51,9 +51,9 @@
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
 import { fieldAt, terminal, neighbour, TERMINAL, STOCK, STOCK_FIELDS } from "./fields.js";
-import { canonicalKey } from "./keynames.js";
+import { canonicalKey, keyLabel } from "./keynames.js";
 import { claim } from "./claims.js";
-import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
+import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
 import { resolve } from "./keymap.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
@@ -65,7 +65,7 @@ const CLAIMS = { pending: null, check: null, failed: null };
 
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
-  files: { defaults: null, user: null }, config: null, problems: [], sequence: null, flash: null,
+  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], sequence: null, flash: null,
   enabled: true, published: null,
 });
 
@@ -113,20 +113,44 @@ function blockProps(world) {
   const walk = (n) => {
     if (!n) return;
     const p = n.content?.mod === (world.folder ?? "whistle") ? n.content.props : null;
-    if (p && typeof p === "object") for (const k of ["mappings", "keys"]) if (p[k] !== undefined && !(k in out)) out[k] = p[k];
+    if (p && typeof p === "object") for (const k of ["mappings", "keys", "mods"]) if (p[k] !== undefined && !(k in out)) out[k] = p[k];
     for (const c of n.children ?? []) walk(c);
   };
   walk(world.layout);
   return out;
 }
 
+// The mods with a block in the shown layout, in layout order (hidden blocks count).
+function modsShown(world) {
+  const out = [];
+  const walk = (n) => {
+    if (!n) return;
+    const m = n.content?.mod;
+    if (m && m !== (world.folder ?? "whistle") && !out.includes(m)) out.push(m);
+    for (const c of n.children ?? []) walk(c);
+  };
+  walk(world.layout);
+  return out;
+}
+
+// What the bar flashes for a new mapping conflict.
+function conflictFlash(c) {
+  const seq = c.seq.map(keyLabel).join(" ");
+  if (c.own && c.mods.length === 1) return `${seq}: ${c.mods[0]} wants an own key, see settings`;
+  return `${seq}: ${c.mods.length} mods want it, see settings`;
+}
+const conflictId = (c) => JSON.stringify([c.seq, c.mods]);
+
 // The model with its config brought in line with the world: the files (each run on its last
-// good version while it doesn't parse), the layout's whistle block, Herdr's commands. Unchanged
-// when none of them changed.
+// good version while it doesn't parse), the mods' mappings (those of mods in the shown layout),
+// the layout's whistle block, Herdr's commands. Unchanged when none of them changed. A mapping
+// conflict that wasn't there before flashes, once.
 function configured(model, world) {
   const texts = world.configFiles ?? {};
   const props = blockProps(world);
-  const sig = JSON.stringify([texts.defaults, texts.user, props, world.commands?.length ?? null, world.platform ?? null]);
+  const offered = world.modMappings ?? {};
+  const offers = modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, entry: offered[name] }));
+  const sig = JSON.stringify([texts.defaults, texts.user, props, offers, world.commands?.length ?? null, world.platform ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
   const d = readFile(files.defaults, texts.defaults), u = readFile(files.user, texts.user);
@@ -138,16 +162,22 @@ function configured(model, world) {
   const userGood = u.missing ? null : u.good;
   const c = compose([
     { source: DEFAULTS, ...(d.good?.json ?? SAFETY) },
-    { source: LAYOUT, map: props.mappings, keys: props.keys },
+    { source: MODS, offers },
+    { source: LAYOUT, map: props.mappings, keys: props.keys, mods: props.mods },
     { source: USER, ...(userGood?.json ?? {}) },
   ], { commands: world.commands ?? null, platform: world.platform ?? null });
   // Broken (or not read yet): keys.json isn't written until every source reads.
+  const before = new Set((model.conflicts ?? []).map(conflictId));
+  const fresh = c.conflicts.find((x) => !before.has(conflictId(x)));
   const broken = Boolean(d.unread || d.missing || d.broken || u.unread || u.broken);
   return {
     ...model,
     files: { defaults: d.good, user: userGood },
     config: { sig, map: c.map, keys: c.keys, own: c.own, broken },
     problems: [...fileProblems, ...c.problems],
+    conflicts: c.conflicts,
+    overrides: c.overrides,
+    flash: fresh ? conflictFlash(fresh) : model.flash,
   };
 }
 

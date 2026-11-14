@@ -79,7 +79,7 @@ export default class Whistle extends View {
       keys: call(() => herdr.keys()) ?? [], herdr: call(() => herdr.updates().app.version),
       folder: FOLDER, copies: shared(COPIES) ?? {},
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
-      configFiles: this.configFiles, commands: this.commands,
+      configFiles: this.configFiles, commands: this.commands, modMappings: shared("whistle.mappings") ?? {},
     };
   }
 
