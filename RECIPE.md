@@ -71,6 +71,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert, hide their bars with
   `layout.hide` (only bars that were showing), and show them again once they run.
+- **Whistle state**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
+  sequence, pane }` whenever it changes, and only then; an inert copy never writes it
+  (docs/contracts/state.md). Every other `whistle.*` key is private.
 
 ## Built from
 
@@ -79,7 +82,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   `claims.js` for the keys.json section it wants, `config.js` for the layers, `keymap.js`
   for what a key means, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
-  `bar.js` draws the bar. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
+  `bar.js` draws the bar. `whistle.js` is the reader other mods copy (whistle doesn't import
+  it). `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).

@@ -16,7 +16,10 @@
 //       // world (shallow, before the input).
 //       { world: { barFocused: true }, command: "whistle",
 //         // What it should produce; each is checked only when given:
-//         effects: [{ focusBar: true }],   // exactly these effects, in order
+//         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
+//                                          // from whistle state (`published` checks it)
+//         published: { v: 1, mode: "whistle", ... },  // the whistle state published
+//                                          // (shared("whistle")), or null: none
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
 //         handled: true },                 // whether a key was handled
@@ -50,6 +53,9 @@ export const DEFAULT_WORLD = {
 export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
+// The shared key whistle state is published under (docs/contracts/state.md).
+const STATE = "whistle";
+
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
 // The input a step gives step(), and the world it sees (the clock moved on for a tick).
@@ -77,8 +83,16 @@ export function runScenario(sc, core) {
       const before = show(model);
       const out = core.step(model, next.input, world);
       if (show(model) !== before) fails.push(`${at}: step changed the model it was given`);
-      if ("effects" in s && show(out.effects) !== show(s.effects))
-        fails.push(`${at}: effects ${show(out.effects)}, want ${show(s.effects)}`);
+      const isState = (e) => e?.setShared === STATE;
+      const effects = out.effects.filter((e) => !isState(e));
+      if ("effects" in s && show(effects) !== show(s.effects))
+        fails.push(`${at}: effects ${show(effects)}, want ${show(s.effects)}`);
+      if ("published" in s) {
+        const pub = out.effects.filter(isState).map((e) => e.value);
+        const got = pub;
+        const want = s.published === null ? [] : [s.published];
+        if (show(got) !== show(want)) fails.push(`${at}: published ${show(got)}, want ${show(want)}`);
+      }
       for (const [k, want] of Object.entries(s.model ?? {}))
         if (show(out.model[k]) !== show(want)) fails.push(`${at}: model.${k} ${show(out.model[k])}, want ${show(want)}`);
       if (s.bar) {
