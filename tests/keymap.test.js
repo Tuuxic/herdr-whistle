@@ -1,6 +1,6 @@
 // Table-driven tests for keymap.js (resolve, describe) and keynames.js (keyName, keyLabel).
-// Runs on import: every failing case is collected, then one Error lists them all, which
-// `herdr-app check` reports as the load error. tests/run.sh puts this next to the mod's files.
+// Exports its failures as a suite (tests/main.js throws them). tests/run.sh puts this next to
+// the mod's files. It tests today's modules, which later 1.0 slices replace.
 
 import { compose } from "./config.js";
 import { keyName, keyLabel } from "./keynames.js";
@@ -146,5 +146,4 @@ function runAll() {
   return { fails, total };
 }
 
-const { fails, total } = runAll();
-if (fails.length) throw new Error(`${fails.length} of ${total} keymap tests failed:\n${fails.join("\n")}`);
+export default { name: "keymap (today's modules)", ...runAll() };
