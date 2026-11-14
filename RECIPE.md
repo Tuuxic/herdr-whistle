@@ -74,6 +74,11 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 - **Whistle state**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` whenever it changes, and only then; an inert copy never writes it
   (docs/contracts/state.md). Every other `whistle.*` key is private.
+- **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
+  key>")` says `v: 2`. Whistle names the selected one in `shared("keynav") = { v: 2, active }`,
+  sends it moves and its declared keys as `<mod>.keynav-*` commands, and reads its request slot
+  `shared("keynav.request:<field key>")`. Declared keys beat mappings but not own keys
+  (docs/contracts/keynav.md).
 
 ## Built from
 
@@ -83,7 +88,7 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   for what a key means, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
   `bar.js` draws the bar. `whistle.js` is the reader other mods copy (whistle doesn't import
-  it). `mod.json`: `place: bottom`, size 22, `focusable: true`, and
+  it), and `keynav.js` the helper keynav fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).

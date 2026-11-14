@@ -49,3 +49,12 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 - **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` (docs/contracts/state.md), read with a copied `mods/whistle/whistle.js`.
   `whistle.enabled` and `whistle.sequence` are gone; other `whistle.*` keys are private.
+
+### Keynav authors
+
+- **Breaking**: keynav v2 (docs/contracts/keynav.md). Each field writes its own entry,
+  `shared("keynav.field:<field key>") = { v: 2, label, keys }`, and its own request slot,
+  `shared("keynav.request:<field key>")`; `shared("keynav")` is `{ v: 2, active }`. A field
+  declares the keys it handles (`keys: { d: "Delete" }`), which arrive as
+  `<mod>.keynav-key-<key>`, beat whistle's mappings but never its own keys; other keys never
+  reach it. Copy the new `mods/whistle/keynav.js`; a copy still on v1 isn't a field.
