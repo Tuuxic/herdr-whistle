@@ -101,3 +101,13 @@ _Avoid_: mode indicator, pill
 **Hints**:
 The box above the bar listing the keys that can follow the current key sequence.
 _Avoid_: which-key, popup, help
+
+**Flash**:
+A short message in the bar about the key just pressed, such as a key that isn't mapped or a
+command that failed; gone with the next key.
+_Avoid_: toast, notification, error
+
+**Config problem**:
+Something wrong in whistle's config or in keys.json that whistle works around and lists in its
+settings until it is fixed, such as a file that doesn't parse or a mapping to an unknown command.
+_Avoid_: error, warning, issue
