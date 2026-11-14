@@ -19,6 +19,7 @@ import { keyName, hcKey } from "./keynames.js";
 import { renderBar } from "./bar.js";
 import { HOME } from "./version.js";
 import { folderOf, COPIES } from "./inert.js";
+import { modBlocks, entryKey, requestKey } from "./fields.js";
 
 const FOLDER = folderOf(HOME);
 const call = (f) => { try { return f(); } catch { return null; } };
@@ -72,10 +73,22 @@ export default class Whistle extends View {
     this.configFiles = { defaults, user };
   }
 
+  // The shared state keynav needs (docs/contracts/keynav.md): the driver entry, old v1
+  // announcements, and each shown mod block's entry and request slot.
+  keynavShared(tree) {
+    const out = { keynav: shared("keynav") ?? null, "keynav.fields": shared("keynav.fields") ?? null };
+    for (const b of modBlocks(tree)) {
+      for (const k of [entryKey(b.key), requestKey(b.key)]) if (!(k in out)) out[k] = shared(k) ?? null;
+    }
+    return out;
+  }
+
   // Herdr as the core sees it.
   world() {
+    const tree = layout();
     return {
-      now: Date.now(), layout: layout(), focused: focused(), panes: panes(), barFocused: this.handle.is_focused(),
+      shared: this.keynavShared(tree),
+      now: Date.now(), layout: tree, focused: focused(), panes: panes(), barFocused: this.handle.is_focused(),
       keys: call(() => herdr.keys()) ?? [], herdr: call(() => herdr.updates().app.version),
       folder: FOLDER, copies: shared(COPIES) ?? {},
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,

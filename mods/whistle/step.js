@@ -13,6 +13,9 @@
 //          ({ text, json } | null), config: the layers composed (config.js) and whether a
 //          source is broken, problems: config problems [{ source, detail }] for the views,
 //          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null,
+//          keynavActive: what whistle last wrote as shared("keynav").active, requestAt: the
+//          selected field's requests count after this ms, fieldProblems: keynav fields'
+//          problems [{ source: "keynav", detail }],
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null }
 //
@@ -33,7 +36,9 @@
 //                      at: ms when the shell read them } | undefined (not read yet),
 //          configFiles: { defaults: mappings.json, user: whistle.json } as texts (null: no
 //                         file, undefined: not read yet),
-//          commands: Herdr's commands [{ name, args }] | null (unknown: not checked) }
+//          commands: Herdr's commands [{ name, args }] | null (unknown: not checked),
+//          shared: keynav's shared state by key ("keynav", "keynav.fields", and each shown
+//                  mod block's "keynav.field:<key>" and "keynav.request:<key>") }
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command

@@ -6,6 +6,8 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
+import { fieldKey } from "./fields.js";
+import * as helper from "./keynav.js";
 
 // A terminal with a files block to its right, over the bar.
 const files = (props) => ({ id: "files", type: "block", content: { mod: "files", ...(props ? { props } : {}) } });
@@ -188,4 +190,17 @@ const SCENARIOS = [
 
 export default suite("keynav", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // keynav.js, the helper fields copy: it must spell what the driver reads.
+  for (const [mod, props] of [["files", undefined], ["tree", { root: "~", b: [1, { y: 2, x: 1 }] }]])
+    t.check(`keynav.js keys ${mod}'s field as whistle does`, helper.fieldKey(mod, props), fieldKey(mod, props));
+  t.check("keynav.js's entry is v 2 with the label and declared keys", helper.entry("Files", { d: "Delete" }), { v: 2, label: "Files", keys: { d: "Delete" } });
+  t.check("keynav.js's entry declares no keys by default", helper.entry("Files"), { v: 2, label: "Files", keys: {} });
+  t.check("keynav.js reads a move", helper.move("keynav-down"), "down");
+  t.check("keynav.js reads open", helper.move("keynav-open"), "open");
+  t.check("a declared key isn't a move", helper.move("keynav-key-d"), null);
+  t.check("keynav.js reads a declared key as the field wrote it", helper.declared("keynav-key-D"), "D");
+  t.check("keynav.js ignores other commands", [helper.move("settings"), helper.declared("settings"), helper.move(null)], [null, null, null]);
+  t.check("keynav.js's shared keys are whistle's", [helper.entryKey("files {}"), helper.requestKey("files {}")],
+    ["keynav.field:files {}", "keynav.request:files {}"]);
 });
