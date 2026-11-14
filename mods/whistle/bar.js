@@ -3,10 +3,11 @@
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 
-// vm: { badge, label }; t: theme(); handle: the bar's focus handle; onKey(e, cx).
+// vm: { badge, label, problem }; t: theme(); handle: the bar's focus handle; onKey(e, cx).
+// Inert, there is no badge, only why.
 export function renderBar(vm, t, handle, onKey) {
   const on = vm.badge === "WHISTLE";
-  return h_flex()
+  const row = h_flex()
     .id("whistle")
     .track_focus(handle)
     .size_full()
@@ -14,7 +15,9 @@ export function renderBar(vm, t, handle, onKey) {
     .items_center()
     .gap(10)
     .text_size(11.5)
-    .on_key_down(onKey)
+    .on_key_down(onKey);
+  if (!vm.badge) return row.px(10).child(div().flex_1().min_w(0).truncate().text_color(t.blocked).child(vm.problem ?? ""));
+  return row
     .child(h_flex().id("whistle-mode").h_full().px(10).flex_none().items_center().font_bold()
       .bg(on ? t.accent : t.done).text_color(t.background)
       .child(vm.badge))

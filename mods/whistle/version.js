@@ -4,3 +4,8 @@
 
 export const VERSION = "1.0.0-dev";
 export const MIN_HERDR = "0.1.15";
+
+// This copy's own folder, spelled as Herdr's add procedure finds it: when a name is taken it
+// renames the new copy and rewrites its mods/<name>/ paths, so a renamed copy knows its name
+// (inert.js: only one copy runs).
+export const HOME = "mods/whistle/";
