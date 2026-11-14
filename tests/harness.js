@@ -69,6 +69,13 @@ function inputOf(s, world) {
   return { input: { [kind]: s[kind] }, world };
 }
 
+// Freezes v and everything in it that isn't frozen yet.
+function freeze(v) {
+  if (!v || typeof v !== "object" || Object.isFrozen(v)) return;
+  Object.freeze(v);
+  for (const x of Object.values(v)) freeze(x);
+}
+
 // Runs one scenario through core ({ start, step, bar }): its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
@@ -80,9 +87,12 @@ export function runScenario(sc, core) {
       if (s.world) world = { ...world, ...s.world };
       const next = inputOf(s, world);
       world = next.world;
-      const before = show(model);
-      const out = core.step(model, next.input, world);
-      if (show(model) !== before) fails.push(`${at}: step changed the model it was given`);
+      // The model step is given is frozen, so changing it throws (modules are strict). Cheaper
+      // than comparing it as JSON before and after: only objects not frozen yet are walked.
+      freeze(model);
+      let out;
+      try { out = core.step(model, next.input, world); }
+      catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
       const effects = out.effects.filter((e) => !isState(e));
       if ("effects" in s && show(effects) !== show(s.effects))

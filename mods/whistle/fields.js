@@ -1,10 +1,23 @@
 // Fields: the parts of the window whistle can select in WHISTLE, found in the layout, and the
 // field in a direction. Pure: it reads only the layout it is given (world.layout).
 //
-// A field is { block, kind, label }. For now the terminal is the only kind: each block that
-// shows a pane is one. Keynav and stock fields join here as later kinds.
+// A field is { block, kind, label, stock? }. Kinds: the terminal (each block that shows a
+// pane) and stock fields (a block of one of Herdr's own spaces, tabs or agents mods, ADR 0006).
+// Keynav fields join here as a later kind.
 
 export const TERMINAL = "terminal";
+export const STOCK = "stock";
+
+// The stock fields: Herdr's own mods, each to the Herdr commands its moves run (ADR 0006).
+// This is the one place whistle names a mod, and only Herdr's own; no config adds to it. A
+// direction left out does nothing. `open: "terminal"`: open (and the move into the item's
+// content, `right`) goes on to the terminal field; otherwise open stays (the item is already
+// shown). The files block is not a field: Herdr gives it no commands.
+export const STOCK_FIELDS = {
+  spaces: { label: "Spaces", down: "space.next", up: "space.prev" },
+  tabs: { label: "Tabs", right: "tab.next", left: "tab.prev" },
+  agents: { label: "Agents", down: "agent.next", up: "agent.prev", open: "terminal" },
+};
 
 // One look at the layout: each node by id and each node's parent.
 function index(layout) {
@@ -40,7 +53,10 @@ function inside(idx, node, id) {
 function list(idx) {
   const out = [];
   for (const [id, n] of idx.nodes) {
-    if (n.content?.pane && shows(idx, id)) out.push({ block: id, kind: TERMINAL, label: "Terminal" });
+    if (!shows(idx, id)) continue;
+    if (n.content?.pane) out.push({ block: id, kind: TERMINAL, label: "Terminal" });
+    else if (Object.hasOwn(STOCK_FIELDS, n.content?.mod ?? ""))
+      out.push({ block: id, kind: STOCK, stock: n.content.mod, label: STOCK_FIELDS[n.content.mod].label });
   }
   return out;
 }

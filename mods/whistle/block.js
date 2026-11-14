@@ -2,6 +2,7 @@
 // layout gives whistle's blocks, read and checked. Pure: it reads only the layout it is given.
 //
 // Stable props: `mappings` and `keys` (the layout's config layer, checked by config.js),
+// `mods` (switching mods' mappings off, checked by config.js),
 // `enabled`, `hints`, `nav` and `bar`. `hintsInset`, `hintsBorder` and `hintsLift` place the
 // hints box and may change in a minor release. `part` is private (whistle's own overlay
 // copies). A bad prop is skipped and listed as a config problem; the rest still count.
@@ -11,7 +12,7 @@
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsInset", "hintsBorder", "hintsLift"];
-const KNOWN = ["mappings", "keys", "enabled", "hints", "nav", "bar", ...NUMBERS, "part"];
+const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part"];
 
 const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
