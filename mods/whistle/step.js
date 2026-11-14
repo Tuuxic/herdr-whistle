@@ -45,7 +45,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, terminal, neighbour, TERMINAL } from "./fields.js";
+import { fieldAt, terminal, neighbour, TERMINAL, STOCK, STOCK_FIELDS } from "./fields.js";
 import { canonicalKey } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT } from "./config.js";
@@ -160,6 +160,23 @@ function runMapping(model, world, e) {
   return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects, handled: true };
 }
 
+// A move on a stock field: Herdr's command for that way, if it has one, then the bar holds the
+// keyboard (the command shows another space, tab or agent).
+function stockMove(model, world, field, dir) {
+  if (dir === "right" && STOCK_FIELDS[field.stock].open === "terminal") return toTerminal(model, world);
+  const command = STOCK_FIELDS[field.stock][dir];
+  if (!command) return { model, effects: [], handled: true };
+  return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [{ run: command, args: {} }, { focusBar: true }], handled: true };
+}
+
+// From a stock field into what its item shows: the terminal field, at the pane Herdr focused
+// (the agent's).
+function toTerminal(model, world) {
+  const t = terminal(world.layout, model.recent);
+  const m = (t && select(model, world, t.block)) ?? model;
+  return { model: { ...m, pane: world.focused?.pane ?? m.pane }, effects: [], handled: true };
+}
+
 // An own key's action.
 function ownKey(model, world, action) {
   const own = ACTIONS[action];
@@ -170,11 +187,15 @@ function ownKey(model, world, action) {
     return { ...done, model: (next && select(model, world, next.block)) || model };
   }
   const field = fieldAt(world.layout, model.field, model.recent);
-  if (own.kind === "open") return !field || field.kind === TERMINAL ? { ...type(model, world), handled: true } : done;
+  if (own.kind === "open") {
+    if (!field || field.kind === TERMINAL) return { ...type(model, world), handled: true };
+    return field.kind === STOCK && STOCK_FIELDS[field.stock].open === "terminal" ? toTerminal(model, world) : done;
+  }
   if (own.kind !== "move") return done; // cancel, back: nothing pending
   // A move acts inside the field; with none selected, the terminal stands in.
   const t = field ? null : terminal(world.layout, model.recent);
   if (field?.kind === TERMINAL) return paneMove(model, world, own.dir);
+  if (field?.kind === STOCK) return stockMove(model, world, field, own.dir);
   if (t) return paneMove(select(model, world, t.block), world, own.dir);
   return { model, effects: [], handled: false };
 }
