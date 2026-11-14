@@ -4,7 +4,8 @@
 # lists every failure, grouped by suite. Exits non-zero on failure.
 #
 # The test mod holds:
-#   - the core's modules (CORE below: everything but the shell and the views),
+#   - the core's modules (CORE below: everything but the shell and the views) and the
+#     helpers mods copy (HELPERS),
 #   - tests/mod.json and every tests/*.js: main.js (the test mod), harness.js, shared data
 #     (worlds.js) and the *.test.js suites,
 #   - suites.js, written here: imports every suite,
@@ -25,6 +26,9 @@ CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js key
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT
 for f in $CORE; do cp "$mod/$f" "$dir/"; done
+# Helpers other mods copy (they import herdr, so they aren't core): their suites import them.
+HELPERS="whistle.js"
+for f in $HELPERS; do cp "$mod/$f" "$dir/"; done
 cp "$here/mod.json" "$here"/*.js "$dir/"
 
 # suites.js: every suite, in file order.
