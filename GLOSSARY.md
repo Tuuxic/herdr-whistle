@@ -47,9 +47,14 @@ elsewhere; entries a person writes there themselves are not claims.
 _Avoid_: synced key, reserved key
 
 **Config layer**:
-One of the three places whistle's config comes from, each over the one before: the defaults,
-the layout's whistle block, and the person's own whistle.json.
+One of the four places whistle's config comes from, each over the one before: the defaults,
+mod mappings, the layout's whistle block, and the person's own whistle.json.
 _Avoid_: mapping layer, override
+
+**Mod mappings**:
+Mappings and groups a mod offers whistle under its own name, which only add keys and count
+only while that mod is in the shown layout.
+_Avoid_: plugin keys, registered keys, extensions
 
 ## Fields
 
