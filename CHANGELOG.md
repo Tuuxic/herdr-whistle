@@ -43,3 +43,9 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   bar shows a marker while there are any. A command that fails when pressed only flashes.
   keys.json isn't written while a file is broken, and whistle's claims come back by themselves
   once it's fixed.
+
+### Mod authors
+
+- **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,
+  sequence, pane }` (docs/contracts/state.md), read with a copied `mods/whistle/whistle.js`.
+  `whistle.enabled` and `whistle.sequence` are gone; other `whistle.*` keys are private.
