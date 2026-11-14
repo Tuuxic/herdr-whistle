@@ -7,6 +7,8 @@
 // Herdr's keys.json runs whistle's commands: "whistle" (ctrl-space: TYPE <-> WHISTLE) and
 // "type" (back to TYPE). In WHISTLE the bar holds the keyboard and its key presses go to step.
 // Keys whistle claims in keys.json's mod:whistle section come back as "key-<key>" commands.
+// Its config comes from mappings.json (this folder) and whistle.json (Herdr's home), read on
+// the same poll as keys.json; the core keeps each file's last good version.
 
 import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec } from "herdr";
@@ -23,7 +25,7 @@ const call = (f) => { try { return f(); } catch { return null; } };
 
 // How often the shell ticks (ms): it notices a click away and Herdr's late focus changes.
 const TICK_MS = 120;
-// How often the shell reads keys.json and keys.error (ms).
+// How often the shell reads keys.json, keys.error, mappings.json and whistle.json (ms).
 const KEYS_MS = 1000;
 
 // A path the core names, relative to Herdr's home ("keys.json").
@@ -35,9 +37,12 @@ export default class Whistle extends View {
     this.model = start();
     this.overlays = new Map(); // overlay name -> id
     this.keysFile = undefined; // { text, error, at }, once read
+    this.configFiles = {}; // { defaults, user }: mappings.json and whistle.json, once read
+    this.commands = call(() => herdr.commands()); // Herdr's commands, to check mappings against
+    this.failed = []; // commands that failed when run, fed back after the effects
     cx.spawn(async (cx) => {
       for (;;) {
-        await this.readKeys();
+        await Promise.all([this.readKeys(), this.readConfig()]);
         await cx.sleep(KEYS_MS);
       }
     });
@@ -61,6 +66,12 @@ export default class Whistle extends View {
     this.keysFile = { text, error, at: Date.now() };
   }
 
+  // whistle's config files as last read (null: no file).
+  async readConfig() {
+    const [defaults, user] = await Promise.all([readTextFile(home(`${HOME}mappings.json`)), readTextFile(home("whistle.json"))]);
+    this.configFiles = { defaults, user };
+  }
+
   // Herdr as the core sees it.
   world() {
     return {
@@ -68,6 +79,7 @@ export default class Whistle extends View {
       keys: call(() => herdr.keys()) ?? [], herdr: call(() => herdr.updates().app.version),
       folder: FOLDER, copies: shared(COPIES) ?? {},
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
+      configFiles: this.configFiles, commands: this.commands,
     };
   }
 
@@ -76,12 +88,16 @@ export default class Whistle extends View {
     const out = step(this.model, input, this.world());
     this.model = out.model;
     for (const e of out.effects) this.carry(e);
+    // A command Herdr refused goes back to the core, which flashes it.
+    for (const f of this.failed.splice(0)) this.model = step(this.model, f, this.world()).model;
     return out;
   }
 
   // One effect (step.js lists the closed set).
   carry(e) {
-    if ("run" in e) run(e.run, e.args ?? {});
+    if ("run" in e) {
+      try { run(e.run, e.args ?? {}); } catch (err) { this.failed.push({ ran: e.run, ok: false, error: String(err?.message ?? err) }); }
+    }
     else if (e.focusBar) this.handle.focus();
     else if ("setShared" in e) setShared(e.setShared, e.value);
     else if ("write" in e) {

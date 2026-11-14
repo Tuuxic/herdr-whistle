@@ -9,7 +9,7 @@
 #     (worlds.js) and the *.test.js suites,
 #   - suites.js, written here: imports every suite,
 #   - texts.js, written here: the text of each spec .md (docs/contracts/, docs/guide.md,
-#     tests/fixtures/), mods/whistle/mod.json and the core's sources, by repo path. Suites read
+#     tests/fixtures/), mods/whistle/mod.json and mappings.json and the core's sources, by repo path. Suites read
 #     them from there: readTextFile is async, and `check` never sees an async failure.
 #
 # HERDR_APP picks the herdr-app to run (default: the one on PATH).
@@ -20,13 +20,11 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js fields.js inert.js claims.js step.js"
-# Today's modules the old keymap suite still tests; they go as later slices replace them.
-LEGACY="config.js keymap.js"
+CORE="version.js keynames.js fields.js inert.js claims.js config.js keymap.js step.js"
 
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT
-for f in $CORE $LEGACY; do cp "$mod/$f" "$dir/"; done
+for f in $CORE; do cp "$mod/$f" "$dir/"; done
 cp "$here/mod.json" "$here"/*.js "$dir/"
 
 # suites.js: every suite, in file order.
@@ -43,7 +41,7 @@ literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
 (
   echo 'export default {'
   cd "$root" || exit 1
-  for f in docs/contracts/*.md docs/guide.md tests/fixtures/*.md mods/whistle/mod.json; do
+  for f in docs/contracts/*.md docs/guide.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json; do
     [ -f "$f" ] || continue
     printf '  "%s": `' "$f"; literal "$f"; echo '`,'
   done
