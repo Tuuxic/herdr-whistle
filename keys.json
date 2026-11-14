@@ -2,9 +2,6 @@
   "global": {
     "ctrl-space": "whistle.whistle"
   },
-  "terminal": {
-    "ctrl-[": "whistle.enter"
-  },
   "mod:whistle": {
     "ctrl-space": "whistle.type"
   }

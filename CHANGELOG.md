@@ -31,3 +31,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 
 - Whistle stands aside (inert) on a Herdr older than it needs, or while another copy of
   whistle runs: it claims nothing, Ctrl+Space types through, and the bar says why.
+- Whistle claims the keys it needs in keys.json's `mod:whistle` section itself. It reads keys
+  in any spelling Herdr accepts (`cmd-k`, `win-k`, `secondary-k`, `shift-ctrl-x`, `Ctrl-X`),
+  so your own entry for a key wins however you spelled it, and it puts the old text back if
+  Herdr rejects what it wrote.

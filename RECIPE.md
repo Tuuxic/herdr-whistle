@@ -30,6 +30,17 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   click on the bar enters it.
 - **Moving**: `ctrl-h/j/k/l` select the field in that direction (for now, terminal blocks);
   `h/j/k/l` and the arrows move between the selected terminal's split panes.
+- **Claimed keys** (ADR 0001): whistle keeps its keys in keys.json's `mod:whistle` section
+  (`mod:<folder>` for a renamed copy) as `"<key>": "whistle.key-<key>"`: every chord among its
+  own keys, and any other own key the `global` section or the shown layout's section binds.
+  Keys compare by canonical name (`keynames.js` `canonicalKey`: cmd/win/super are one
+  modifier, `secondary` is cmd on macOS and ctrl elsewhere, modifiers in any order and case,
+  an uppercase letter in a chord is shift). Entries of another form are the person's and win.
+  It writes only when the section would change, one write at a time, never while keys.error
+  exists or when there is no keys.json, and never while inert. 600 ms after a write it looks
+  for keys.error; if Herdr rejected the text it writes the old text back and doesn't retry
+  that text. A failed write is kept as a problem (`model.claimProblem`) and not retried until
+  keys.json changes. `whistle.key-<key>` acts as the key pressed on the bar.
 - **Inert**: on a Herdr older than the minimum in `version.js` (`updates().app.version`, or
   when that can't be read), or while another copy of whistle runs, whistle stands aside:
   WHISTLE never starts, keys and clicks on the bar do nothing, and the key keys.json binds to
@@ -45,7 +56,7 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 
 - **`mods/whistle/`**: a pure core, `step(model, input, world) -> { model, effects }`
   (`step.js`, with `fields.js` for the layout's fields, `inert.js` for the inert gate,
-  `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
+  `claims.js` for the keys.json section it wants, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
   `bar.js` draws the bar. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
@@ -53,10 +64,12 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
   `mod:whistle: ctrl-space → whistle.type`.
-- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `theme()`,
+- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
   `layout.show`), `exec("hc", ["keys", ...])` to type the switch key through while inert.
-  No network; no files outside its folder.
+  `readTextFile` / `writeTextFile` on `appHome()`'s `keys.json` (read every second, written
+  with the text it read as `expected`) and `keys.error`. No network; no other files outside
+  its folder.
 - **Tests**: `bash tests/run.sh` (`herdr-app check` on a throwaway test mod); not shipped.
 
 ## Watch out
