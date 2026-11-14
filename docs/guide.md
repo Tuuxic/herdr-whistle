@@ -126,6 +126,23 @@ Each layer has two sections, kept apart:
 }
 ```
 
+### Mods' mappings
+
+Mods can offer whistle mappings of their own ([the contract](contracts/mod-mappings.md)). They
+sit between the defaults and the layout, and count only while the mod has a block in the shown
+layout. Your whistle.json and the layout can map over any of them, or set a key to `null`.
+
+- **A mapping conflict**: two mods on one key, or a mod on one of whistle's own keys, counts
+  for neither. The key keeps what the defaults give it (or the own key keeps acting), the bar
+  flashes once ("g: 2 mods want it, see settings") and settings list it. Map the key yourself,
+  or switch one mod off, to settle it.
+- **Switching a mod off**: a `mods` section takes a mod's mappings out whole, in whistle.json
+  or the layout's whistle block (whistle.json's goes over the layout's):
+
+```json
+{ "mods": { "alpha": false } }
+```
+
 ### When something is wrong
 
 Whistle works around what's wrong in its config and lists each **config problem** in its

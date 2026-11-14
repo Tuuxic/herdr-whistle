@@ -2,7 +2,9 @@
 //   1. the defaults: mappings.json in whistle's folder (an update replaces it)
 //   2. the layout's whistle block: its "mappings" and "keys" props
 //   3. whistle.json in Herdr's home: the person's own; nothing replaces it
-// (Mod mappings join as a layer between 1 and 2 in a later slice.)
+//   (between 1 and 2: mod mappings, from shared("whistle.mappings"), while each mod is in the layout)
+//
+// Mods' offers (ADR 0007, ADR 0008) and a "mods" section switching mods off: see compose.
 //
 // Two sections, apart: "map" (mappings: key -> [label, command, args?, "type"?], or a group
 // { name, map } whose keys follow) and "keys" (own keys: action -> list of keys). A key set to
