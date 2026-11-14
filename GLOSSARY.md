@@ -75,9 +75,15 @@ whistle drives with Herdr's commands; it has no cursor, so moving to an item ope
 _Avoid_: fallback field, built-in field
 
 **Keynav**:
-The agreement through which a mod becomes a field: it announces itself, draws its own cursor
-while selected, and takes moves from whoever drives it.
+The agreement through which a mod becomes a field: it announces itself and the keys it
+declares, draws its own cursor while selected, and takes moves and declared keys from whoever
+drives it.
 _Avoid_: field protocol, navigation API
+
+**Declared key**:
+A key a keynav field says it handles while selected, with a label for the hints; it wins over
+mappings but never over own keys, and keys it doesn't declare never reach it.
+_Avoid_: field key, field mapping, key-char
 
 **Keynav mod**:
 A mod that takes part in keynav; each of its copies in a layout is a field.
