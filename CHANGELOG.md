@@ -35,3 +35,11 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   in any spelling Herdr accepts (`cmd-k`, `win-k`, `secondary-k`, `shift-ctrl-x`, `Ctrl-X`),
   so your own entry for a key wins however you spelled it, and it puts the old text back if
   Herdr rejects what it wrote.
+- Your config comes in layers: whistle's defaults, then the layout's whistle block, then your
+  `whistle.json`, each over the one before. Mappings (`map`) and whistle's own keys (`keys`)
+  stay apart, and a key or action set to `null` is taken away (docs/guide.md, Your config).
+- Something wrong in your config no longer stops whistle: a file that doesn't parse runs on
+  its last good version, a bad entry is skipped, settings list every config problem and the
+  bar shows a marker while there are any. A command that fails when pressed only flashes.
+  keys.json isn't written while a file is broken, and whistle's claims come back by themselves
+  once it's fixed.

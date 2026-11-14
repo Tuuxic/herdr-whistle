@@ -11,8 +11,9 @@
 //     model: { ... },                                       // optional, over start()
 //     steps: [
 //       // One input each: { command: "whistle" }, { key: "ctrl-l" }, { tick: 120 } (the
-//       // clock moves on by 120 ms, then a tick), or { wrote: path, ok, error } (a write's
-//       // outcome). `world` first changes the world (shallow, before the input).
+//       // clock moves on by 120 ms, then a tick), { wrote: path, ok, error } (a write's
+//       // outcome) or { ran: command, error } (a run that failed). `world` first changes the
+//       // world (shallow, before the input).
 //       { world: { barFocused: true }, command: "whistle",
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order
@@ -24,10 +25,24 @@
 
 import { VERSION, MIN_HERDR } from "./version.js";
 
-// A world whistle runs in: the minimum Herdr, this copy in mods/whistle/ and announced.
+// The defaults scenarios run on (world.configFiles.defaults), unless they give their own: own
+// keys only, so a scenario's mappings are the ones it writes. mappings.json's own text is in
+// texts.js.
+export const TEST_DEFAULTS = {
+  keys: {
+    "field-left": ["ctrl-h"], "field-down": ["ctrl-j"], "field-up": ["ctrl-k"], "field-right": ["ctrl-l"],
+    left: ["h", "left"], down: ["j", "down"], up: ["k", "up"], right: ["l", "right"],
+    open: ["enter"], type: ["i"],
+  },
+  map: {},
+};
+
+// A world whistle runs in: the minimum Herdr, this copy in mods/whistle/ and announced, the
+// test defaults and no whistle.json.
 export const DEFAULT_WORLD = {
   now: 0, layout: null, focused: null, panes: [], barFocused: false, keys: [],
   herdr: MIN_HERDR, folder: "whistle", copies: { whistle: VERSION },
+  configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: null }, commands: null,
 };
 
 // JSON with object keys sorted, so two values compare equal whatever order their fields were
@@ -35,7 +50,7 @@ export const DEFAULT_WORLD = {
 export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
-const INPUTS = ["command", "key", "tick", "wrote"];
+const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
 // The input a step gives step(), and the world it sees (the clock moved on for a tick).
 function inputOf(s, world) {
@@ -44,6 +59,7 @@ function inputOf(s, world) {
   const kind = kinds[0];
   if (kind === "tick") return { input: { tick: true }, world: { ...world, now: world.now + s.tick } };
   if (kind === "wrote") return { input: { wrote: s.wrote, ok: s.ok !== false, error: s.error ?? null }, world };
+  if (kind === "ran") return { input: { ran: s.ran, ok: false, error: s.error ?? null }, world };
   return { input: { [kind]: s[kind] }, world };
 }
 

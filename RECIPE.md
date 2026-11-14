@@ -16,7 +16,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** on the theme's
   `done` color or **WHISTLE** on `accent`, text in `background`. Then, 10 px on, in `muted`,
   what has the keyboard: `Terminal`, or in WHISTLE `Terminal · <pane title>` (up to 40
-  characters).
+  characters). A flash (a failed command, `w x is not mapped`) takes the label until the
+  next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
+  in from the right: `⚠ <count>`.
 - **Inert**: no badge, only why, in the `blocked` color, 10 px in from the left:
   `Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)`, or on a second copy
   `Another whistle runs, from mods/whistle/` (that copy's bar hides itself, so it shows only
@@ -28,8 +30,26 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.type`),
   `i` or Enter go back to TYPE in the selected pane. A click anywhere else ends WHISTLE; a
   click on the bar enters it.
-- **Moving**: `ctrl-h/j/k/l` select the field in that direction (for now, terminal blocks);
-  `h/j/k/l` and the arrows move between the selected terminal's split panes.
+- **Moving** (the default own keys): `ctrl-h/j/k/l` select the field in that direction (for
+  now, terminal blocks); `h/j/k/l` and the arrows move between the selected terminal's split
+  panes.
+- **Config** (ADR 0004): layers, each over the one before: `mods/whistle/mappings.json` (the
+  defaults), the layout's whistle block (`mappings` and `keys` props, the first block of this
+  copy that has each), and `whistle.json` in Herdr's home. `map`: key → `[label, command,
+  args?, "type"?]` or a group `{ name, map }` (nested; groups merge key by key); `keys`: own-key
+  action → list of keys. `null` takes a key or action away. Outside a key sequence a mapping
+  goes over an own key; in one, `cancel` ends it, `back` goes up a level, an unmapped key
+  flashes `<keys> is not mapped`. A mapping runs its command (`pane.*`/`terminal.*` on the
+  selected pane first), then the bar holds the keyboard for 600 ms, except for commands that
+  take it themselves (`mod.open`, `app.*`, renames).
+- **Failure** (issue #10): a file that doesn't parse runs on its last good version from this
+  session; with none, whistle.json is left out and a missing or broken mappings.json gives the
+  safety own keys built into `config.js` (`SAFETY`), a broken install. Every entry is checked
+  (key names via `canonicalKey`, commands against Herdr's `commands()`, where a name outside
+  Herdr's namespaces is a mod's command); a bad one is skipped and listed. Config problems are
+  `model.problems` (`problems(model)` adds keys.json's). A command Herdr refuses when pressed
+  only flashes. keys.json isn't written while whistle's files aren't read yet, either doesn't
+  parse, or mappings.json is missing.
 - **Claimed keys** (ADR 0001): whistle keeps its keys in keys.json's `mod:whistle` section
   (`mod:<folder>` for a renamed copy) as `"<key>": "whistle.key-<key>"`: every chord among its
   own keys, and any other own key the `global` section or the shown layout's section binds.
@@ -56,7 +76,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 
 - **`mods/whistle/`**: a pure core, `step(model, input, world) -> { model, effects }`
   (`step.js`, with `fields.js` for the layout's fields, `inert.js` for the inert gate,
-  `claims.js` for the keys.json section it wants, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
+  `claims.js` for the keys.json section it wants, `config.js` for the layers, `keymap.js`
+  for what a key means, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
   `bar.js` draws the bar. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
@@ -64,17 +85,17 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
   `mod:whistle: ctrl-space → whistle.type`.
-- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `theme()`,
+- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
   `layout.show`), `exec("hc", ["keys", ...])` to type the switch key through while inert.
   `readTextFile` / `writeTextFile` on `appHome()`'s `keys.json` (read every second, written
-  with the text it read as `expected`) and `keys.error`. No network; no other files outside
-  its folder.
+  with the text it read as `expected`) and `keys.error`, and reads `whistle.json` there
+  every second. No network; no other files outside its folder.
 - **Tests**: `bash tests/run.sh` (`herdr-app check` on a throwaway test mod); not shipped.
 
 ## Watch out
 
-- `updates()` and `keys()` are read through `import * as herdr`, so a Herdr without them
+- `updates()`, `keys()` and `commands()` are read through `import * as herdr`, so a Herdr without them
   still loads whistle, which then stands aside instead of failing to load.
 - A copy counts only while it has a block in the shown layout: a copy whose block is gone
   doesn't keep another copy inert.
@@ -87,13 +108,17 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   `ctrl-space` again (or `i`) goes back.
 - With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
   hides itself and `mods/whistle/` runs.
+- A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
+  JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and
   `ctrl-space` reaches the terminal.
 
 ## Install
 
 1. Read this recipe and every file in `mods/whistle/` first. Tell the person that whistle
-   runs `hc` (to type a key into a terminal) and uses no network.
+   runs `hc` (to type a key into a terminal), writes only its own entries in keys.json's
+   `mod:whistle` section, reads `whistle.json` (their own config) without writing it, and
+   uses no network.
 2. Check Herdr's version (`herdr-app --version`) against `"herdr"` in `mods/whistle/mod.json`.
    If Herdr is older, say whistle will stay inert until Herdr is updated.
 3. Look for a whistle already there: any `mods/*/mod.json` with `"title": "Whistle"`. If

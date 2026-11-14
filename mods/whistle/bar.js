@@ -3,7 +3,7 @@
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 
-// vm: { badge, label, problem }; t: theme(); handle: the bar's focus handle; onKey(e, cx).
+// vm: { badge, label, marker, problem }; t: theme(); handle: the bar's focus handle; onKey(e, cx).
 // Inert, there is no badge, only why.
 export function renderBar(vm, t, handle, onKey) {
   const on = vm.badge === "WHISTLE";
@@ -21,5 +21,7 @@ export function renderBar(vm, t, handle, onKey) {
     .child(h_flex().id("whistle-mode").h_full().px(10).flex_none().items_center().font_bold()
       .bg(on ? t.accent : t.done).text_color(t.background)
       .child(vm.badge))
-    .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(vm.label));
+    .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(vm.label))
+    // Config problems: a short marker at the end; settings list them.
+    .child(vm.marker ? div().flex_none().pr(10).text_color(t.blocked).child(vm.marker) : div());
 }
