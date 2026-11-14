@@ -56,6 +56,12 @@ Mappings and groups a mod offers whistle under its own name, which only add keys
 only while that mod is in the shown layout.
 _Avoid_: plugin keys, registered keys, extensions
 
+**Mapping conflict**:
+A key that two mods both offer, or that a mod offers over one of whistle's own keys; neither
+mod's mapping counts until a later layer maps the key or a mod is switched off. A later layer
+mapping over a mod's key is not a conflict.
+_Avoid_: collision, clash, shadowing
+
 ## Fields
 
 **Field**:
