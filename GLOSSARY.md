@@ -54,8 +54,14 @@ _Avoid_: mapping layer, override
 ## Fields
 
 **Field**:
-A part of the window whistle can select in WHISTLE: the terminal, or a copy of a keynav mod.
+A part of the window whistle can select in WHISTLE: the terminal, a copy of a keynav mod, or a
+stock field.
 _Avoid_: panel, block, pane
+
+**Stock field**:
+A block of one of Herdr's own spaces, tabs or agents mods, which take no part in keynav, that
+whistle drives with Herdr's commands; it has no cursor, so moving to an item opens it.
+_Avoid_: fallback field, built-in field
 
 **Keynav**:
 The agreement through which a mod becomes a field: it announces itself, draws its own cursor
