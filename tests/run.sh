@@ -20,7 +20,7 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js fields.js step.js"
+CORE="version.js keynames.js fields.js claims.js step.js"
 # Today's modules the old keymap suite still tests; they go as later slices replace them.
 LEGACY="config.js keymap.js"
 
