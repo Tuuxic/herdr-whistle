@@ -42,6 +42,11 @@ const SCENARIOS = [
     steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-shift-space", terminal: "t1" }] }],
   },
   {
+    name: "Inert, a layout's binding of the switch key comes before the global one",
+    world: { ...OLD, keys: [...KEYS, { section: "layout:main", keys: "ctrl-alt-space", action: "whistle.whistle" }] },
+    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-alt-space", terminal: "t1" }] }],
+  },
+  {
     name: "Inert, with no terminal focused, the switch key goes nowhere",
     world: { ...OLD, focused: null },
     steps: [{ command: "whistle", effects: [], model: { mode: "type" } }],
