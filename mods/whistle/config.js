@@ -80,12 +80,33 @@ function command(written, args, commands) {
   return { run: written, args: args ?? {} };
 }
 
+// Whistle's own commands a mapping can run (docs/contracts/commands.md): those that need a
+// block ("whistle.field:<block>") and those that don't.
+export const VERBS = ["whistle", "type", "on", "off", "settings"];
+export const BLOCK_VERBS = ["field", "focus", "toggle"];
+
+// A whistle.<verb> as written: { run: "whistle.<verb>", args: { block } | {} } | a reason it's bad.
+function verb(written, args) {
+  const colon = written.indexOf(":");
+  const name = colon > 0 ? written.slice(0, colon) : written;
+  const v = name.slice("whistle.".length);
+  if (VERBS.includes(v)) return { run: name, args: {} };
+  if (!BLOCK_VERBS.includes(v)) return `unknown whistle command ${name}`;
+  const block = colon > 0 ? written.slice(colon + 1) : args?.block;
+  if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
+  return { run: name, args: { block } };
+}
+
 // One mapping as written: { label, run, args, then } | a reason it's bad.
 function mapping(v, commands) {
   if (!Array.isArray(v) || typeof v[0] !== "string" || typeof v[1] !== "string")
     return "should be [label, command] or a group { name, map }";
   if (v[2] != null && !isObject(v[2])) return "its args should be an object";
   if (v[3] != null && v[3] !== "type") return 'its 4th item can only be "type"';
+  if (v[1].startsWith("whistle.")) {
+    const w = verb(v[1], v[2]);
+    return typeof w === "string" ? w : { label: v[0], ...w, then: v[3] ?? null };
+  }
   const c = command(v[1], v[2], commands);
   if (!c) return `unknown command ${v[1]}`;
   return { label: v[0], ...c, then: v[3] ?? null };

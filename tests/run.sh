@@ -20,7 +20,7 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js fields.js inert.js claims.js config.js keymap.js step.js"
+CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js keymap.js step.js"
 
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT

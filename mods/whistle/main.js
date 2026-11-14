@@ -102,7 +102,7 @@ export default class Whistle extends View {
     else if ("setShared" in e) setShared(e.setShared, e.value);
     else if ("write" in e) {
       // The outcome goes back with the file read again, so the core sees what it wrote.
-      const after = (ok, error) => this.readKeys().catch(() => {}).then(() => this.feed({ wrote: e.write, ok, error }));
+      const after = (ok, error) => Promise.all([this.readKeys(), this.readConfig()]).catch(() => {}).then(() => this.feed({ wrote: e.write, ok, error }));
       writeTextFile(home(e.write), e.text, e.expected ?? null).then(
         () => after(true, null),
         (err) => after(false, String(err?.message ?? err)),
