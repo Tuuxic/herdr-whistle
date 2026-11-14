@@ -4,7 +4,9 @@
 // the effects.
 //
 // model: { mode: "type" | "whistle", field: block id | null, recent: block ids (the field used
-//          last first), pane: the terminal's selected pane | null, holdUntil: ms,
+//          last first), pane: the terminal's selected pane | null, holdUntil: ms until which
+//          whistle holds the keyboard (in WHISTLE: for the bar; in TYPE, after a mapping that
+//          ends in TYPE: for the terminal Herdr focused),
 //          claims: keys.json as whistle keeps it (claimsTick below), claimProblem: what went
 //          wrong keeping it, for the views | null,
 //          aside: whether this copy stands aside for another (inert.js), hid: the bars it
@@ -149,12 +151,14 @@ function configured(model, world) {
 const takesKeyboard = (name) => /^(mod\.open|app\.)/.test(name) || /rename/.test(name);
 
 // A mapping pressed: its command (pane and terminal commands on the terminal's selected pane),
-// then the bar holds the keyboard.
+// then the bar holds the keyboard. A mapping that ends in TYPE goes to TYPE instead, and holds
+// the keyboard for the terminal (modeTick): the command may have made one, which Herdr focuses.
 function runMapping(model, world, e) {
   const effects = [];
   const pane = onTerminal(model, world) && model.pane;
   if (/^(pane|terminal)\./.test(e.run) && pane) effects.push({ run: "pane.focus", args: { pane } });
   effects.push({ run: e.run, args: e.args });
+  if (e.then === "type") return { model: { ...model, mode: "type", holdUntil: world.now + HOLD_MS }, effects, handled: true };
   if (takesKeyboard(e.run)) return { model, effects, handled: true };
   effects.push({ focusBar: true });
   return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects, handled: true };
@@ -261,6 +265,11 @@ function wrote(model, world, input) {
 // The shell's timer: the bar losing or taking the keyboard.
 function modeTick(model, world) {
   const none = { model, effects: [] };
+  // After a mapping that ends in TYPE: the keyboard to the pane Herdr focused, not WHISTLE.
+  if (model.mode === "type" && world.now < model.holdUntil) {
+    const pane = world.barFocused && world.focused?.pane;
+    return pane ? { model, effects: [{ run: "pane.focus", args: { pane } }] } : none;
+  }
   if (model.mode === "whistle" && world.now < model.holdUntil) {
     const m = onTerminal(model, world) && world.focused?.pane ? { ...model, pane: world.focused.pane } : model;
     return { model: m, effects: world.barFocused ? [] : [{ focusBar: true }] };
