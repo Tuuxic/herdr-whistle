@@ -392,13 +392,13 @@ function publish(out) {
 
 // A step while whistle runs, then keynav told which field is selected.
 function active(model, input, world) {
-  return publish(running(model, input, world), world);
+  return publishKeynav(running(model, input, world), world);
 }
 
 // shared("keynav") = { v: 2, active }: the selected keynav field's key while in WHISTLE, else
 // null. Written only when it changes (model.keynavActive: what whistle last wrote; before its
 // first write, what the world says).
-function publish(out, world) {
+function publishKeynav(out, world) {
   const m = out.model;
   const f = m.mode === "whistle" ? fieldAt(world.layout, m.field, m.recent, world.shared) : null;
   const want = f?.kind === KEYNAV ? f.key : null;
