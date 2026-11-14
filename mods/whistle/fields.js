@@ -1,17 +1,30 @@
 // Fields: the parts of the window whistle can select in WHISTLE, found in the layout, and the
 // field in a direction. Pure: it reads only the layout it is given (world.layout).
 //
-// A field is { block, kind, label }, and a keynav field also { mod, key }. Kinds:
+// A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys }
+// for a keynav field. Kinds:
 //   - the terminal: each block that shows a pane;
-//   - keynav (docs/contracts/keynav.md): a mod's block whose entry
+//   - stock fields: a block of one of Herdr's own spaces, tabs or agents mods (ADR 0006);
+//   - keynav (docs/contracts/keynav.md): any other mod's block whose entry
 //     shared("keynav.field:<fieldKey>") says v 2. `shared` is the shared state the shell read
 //     ({ "<shared key>": value }); stale entries for blocks not in the layout never count.
-// Stock fields join here as a later kind.
 
 import { canonicalKey, isChord } from "./keynames.js";
 
 export const TERMINAL = "terminal";
+export const STOCK = "stock";
 export const KEYNAV = "keynav";
+
+// The stock fields: Herdr's own mods, each to the Herdr commands its moves run (ADR 0006).
+// This is the one place whistle names a mod, and only Herdr's own; no config adds to it. A
+// direction left out does nothing. `open: "terminal"`: open (and the move into the item's
+// content, `right`) goes on to the terminal field; otherwise open stays (the item is already
+// shown). The files block is not a field: Herdr gives it no commands.
+export const STOCK_FIELDS = {
+  spaces: { label: "Spaces", down: "space.next", up: "space.prev" },
+  tabs: { label: "Tabs", right: "tab.next", left: "tab.prev" },
+  agents: { label: "Agents", down: "agent.next", up: "agent.prev", open: "terminal" },
+};
 
 // keynav's version, and the shared keys of a field's entry and request slot.
 export const KEYNAV_V = 2;
@@ -68,6 +81,7 @@ function list(idx, shared) {
     const c = n.content;
     if (!c || !shows(idx, id)) continue;
     if (c.pane) out.push({ block: id, kind: TERMINAL, label: "Terminal" });
+    else if (Object.hasOwn(STOCK_FIELDS, c.mod ?? "")) out.push({ block: id, kind: STOCK, stock: c.mod, label: STOCK_FIELDS[c.mod].label });
     else if (c.mod) {
       const key = fieldKey(c.mod, c.props);
       const e = entryOf(shared, key);

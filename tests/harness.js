@@ -69,6 +69,17 @@ function inputOf(s, world) {
   return { input: { [kind]: s[kind] }, world };
 }
 
+// Deep-freezes v, so a step that changes the model it was given throws (modules are strict)
+// instead of the harness comparing the whole model as text before and after each step, which
+// grew too slow for check's time budget. Frozen parts are skipped: a model shares most of
+// itself with the one before.
+function freeze(v) {
+  if (!v || typeof v !== "object" || Object.isFrozen(v)) return v;
+  Object.freeze(v);
+  for (const k of Object.keys(v)) freeze(v[k]);
+  return v;
+}
+
 // Runs one scenario through core ({ start, step, bar }): its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
@@ -80,9 +91,8 @@ export function runScenario(sc, core) {
       if (s.world) world = { ...world, ...s.world };
       const next = inputOf(s, world);
       world = next.world;
-      const before = show(model);
+      freeze(model);
       const out = core.step(model, next.input, world);
-      if (show(model) !== before) fails.push(`${at}: step changed the model it was given`);
       const isState = (e) => e?.setShared === STATE;
       const effects = out.effects.filter((e) => !isState(e));
       if ("effects" in s && show(effects) !== show(s.effects))

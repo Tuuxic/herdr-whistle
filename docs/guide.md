@@ -1,5 +1,179 @@
 # Whistle guide
 
+## Modes and the switch key
+
+Whistle has two modes. In **TYPE** the keyboard belongs to the focused terminal or app, as
+usual. In **WHISTLE** whistle holds it: keys move between fields and run mappings.
+
+`ctrl-space` is the switch key, both ways. It is the only key whistle ships for TYPE: whistle's
+defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds it:
+
+```json
+"global": { "ctrl-space": "whistle.whistle" },
+"mod:whistle": { "ctrl-space": "whistle.type" }
+```
+
+Ctrl+Space is taken elsewhere on some setups: terminal programs read it as NUL (Emacs uses it
+for set-mark), macOS uses it to switch input sources when you have more than one, and so do the
+Chinese IME on Windows and fcitx5 on Linux. If yours is taken, bind `ctrl-shift-space` instead
+in both places, which nothing in Herdr or the OS takes by default. `"ctrl-[": "whistle.whistle"`
+in the `terminal` section works too, as an opt-in: it takes Esc-by-Ctrl+[ from every terminal
+program, and some keyboard layouts can't press it.
+
+## The default map
+
+The defaults are the same on every OS. Keys that start a group (`s`, `t`, `w`, `a`) are by
+noun; their keys follow (`w` then `v`). A mapping marked **→ TYPE** makes or opens something
+you type into, so it ends in TYPE with the keyboard there.
+
+<!-- table map -->
+| Keys | Does | Command |
+|---|---|---|
+| `/` | Go to tab or space | `mod.open:picker` |
+| `p` | Command palette | `app.palette` |
+| `?` | Keys | `app.help` |
+| `,` | Settings | `app.settings` |
+| `+` | Zoom in | `app.zoom_in` |
+| `-` | Zoom out | `app.zoom_out` |
+| `0` | Reset zoom | `app.zoom_reset` |
+| `tab` | Next tab | `tab.next` |
+| `shift-tab` | Previous tab | `tab.prev` |
+| `]` | Next agent | `agent.next` |
+| `[` | Previous agent | `agent.prev` |
+| `b` | Sidebar | `layout.toggle:sidebar` |
+| `L` | Next layout | `layout.switch` |
+| `ctrl-n` | New tab → TYPE | `tab.new` |
+
+`]` and `[` need AltGr or Option on many non-US keyboards; the `a` group does the same.
+
+The selected terminal, searched or scrolled (Herdr's view of its history, not the program):
+
+<!-- table map -->
+| Keys | Does | Command |
+|---|---|---|
+| `f` | Find in the terminal → TYPE | `terminal.search` |
+| `ctrl-u` | Scroll up half a page | `terminal.scroll` `{"pages": -0.5}` |
+| `ctrl-d` | Scroll down half a page | `terminal.scroll` `{"pages": 0.5}` |
+| `g` | Scroll to the top | `terminal.scroll` `{"to": "top"}` |
+| `G` | Scroll to the bottom | `terminal.scroll` `{"to": "bottom"}` |
+
+The groups:
+
+<!-- table map -->
+| Keys | Does | Command |
+|---|---|---|
+| `s` | Spaces | group |
+| `s` `n` | New space → TYPE | `space.new` |
+| `s` `x` | Close space | `space.close` |
+| `s` `r` | Rename space | `space.rename` |
+| `t` | Tabs | group |
+| `t` `n` | New tab → TYPE | `tab.new` |
+| `t` `x` | Close tab | `tab.close` |
+| `t` `r` | Rename tab | `tab.rename` |
+| `w` | Panes | group |
+| `w` `v` | Split right → TYPE | `pane.split` `{"direction": "right"}` |
+| `w` `s` | Split down → TYPE | `pane.split` `{"direction": "down"}` |
+| `w` `q` | Close pane | `pane.close` |
+| `w` `z` | Zoom pane | `pane.zoom` |
+| `w` `H` | Swap left | `pane.swap` `{"direction": "left"}` |
+| `w` `J` | Swap down | `pane.swap` `{"direction": "down"}` |
+| `w` `K` | Swap up | `pane.swap` `{"direction": "up"}` |
+| `w` `L` | Swap right | `pane.swap` `{"direction": "right"}` |
+| `a` | Agents | group |
+| `a` `n` | Next agent | `agent.next` |
+| `a` `p` | Previous agent | `agent.prev` |
+
+Pane and terminal commands act on the pane whistle has selected in the terminal. After a
+mapping whistle keeps the keyboard, except after one that opens a dialog or a prompt (the
+palette, settings, a rename), which takes it, and one that ends in TYPE.
+
+```json example A mapping that ends in TYPE hands the keyboard to the terminal it made
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": {
+      "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"ctrl-n\": [\"New tab\", \"tab.new\", null, \"type\"] } }",
+      "user": null
+    }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-n",
+      "effects": [{ "run": "tab.new", "args": {} }], "bar": { "badge": "TYPE" } },
+    { "world": { "focused": { "pane": "p2" } }, "tick": 120,
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p2" } }], "bar": { "badge": "TYPE" } }
+  ]
+}
+```
+
+### Own keys
+
+Whistle's own actions in WHISTLE. They aren't mappings and don't show in the hints. A mapping
+on the same key goes over one, except inside a key sequence, where `cancel` and `back` act
+first.
+
+<!-- table keys -->
+| Action | Keys | Does |
+|---|---|---|
+| `field-left` | `ctrl-h` | Select the field to the left |
+| `field-down` | `ctrl-j` | Select the field below |
+| `field-up` | `ctrl-k` | Select the field above |
+| `field-right` | `ctrl-l` | Select the field to the right |
+| `left` | `h` `left` | Move left in the field |
+| `down` | `j` `down` | Move down in the field |
+| `up` | `k` `up` | Move up in the field |
+| `right` | `l` `right` | Move right in the field |
+| `open` | `enter` | Open; on the terminal, back to TYPE there |
+| `type` | `i` | Back to TYPE |
+| `cancel` | `escape` `ctrl-[` | End a key sequence (with none, nothing) |
+| `back` | `backspace` | Back one level in a key sequence |
+
+## Fields
+
+A **field** is a part of the window whistle can select in WHISTLE. `ctrl-h/j/k/l` select the
+field that way, by the layout's rows and columns; entering a group of blocks picks the field
+you used last there, else its terminal, else its first. Entering WHISTLE selects the terminal.
+
+- **The terminal**: `h/j/k/l` and the arrows move between its split panes. The bar names the
+  selected pane.
+- **Stock fields**: Herdr's own spaces, tabs and agents blocks. Whistle drives them with
+  Herdr's commands, so they have no cursor of their own: moving to an item shows it, and only
+  the bar says which stock field is selected. Keys with nothing to do there do nothing.
+- **The files block is not a field**: Herdr gives it no commands. A keynav copy of it would be.
+
+| Block | Keys | Herdr command | Open (`enter`) |
+|---|---|---|---|
+| Spaces | `j` / `k` | `space.next` / `space.prev` | stays: the space is already shown |
+| Tabs | `l` / `h` | `tab.next` / `tab.prev` | stays: the tab is already shown |
+| Agents | `j` / `k` | `agent.next` / `agent.prev` | goes on to the terminal, at the agent's pane (`l` too) |
+
+Herdr's commands skip settled tabs and sub-agents without a pane, and visit rows folded away.
+Whether they wrap around at the ends is up to Herdr.
+
+```json example j on the stock spaces field shows the next space
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "body", "type": "row", "children": [
+        { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
+        { "id": "main", "type": "block", "content": { "pane": {} } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" } },
+    { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] }
+  ]
+}
+```
+
 ## Key names
 
 Whistle names keys the way Herdr's `keys.json` does: the key, with any modifiers in front,
@@ -124,6 +298,23 @@ Each layer has two sections, kept apart:
     { "key": "p", "effects": [{ "run": "tab.prev", "args": {} }, { "focusBar": true }] }
   ]
 }
+```
+
+### Mods' mappings
+
+Mods can offer whistle mappings of their own ([the contract](contracts/mod-mappings.md)). They
+sit between the defaults and the layout, and count only while the mod has a block in the shown
+layout. Your whistle.json and the layout can map over any of them, or set a key to `null`.
+
+- **A mapping conflict**: two mods on one key, or a mod on one of whistle's own keys, counts
+  for neither. The key keeps what the defaults give it (or the own key keeps acting), the bar
+  flashes once ("g: 2 mods want it, see settings") and settings list it. Map the key yourself,
+  or switch one mod off, to settle it.
+- **Switching a mod off**: a `mods` section takes a mod's mappings out whole, in whistle.json
+  or the layout's whistle block (whistle.json's goes over the layout's):
+
+```json
+{ "mods": { "alpha": false } }
 ```
 
 ### When something is wrong
