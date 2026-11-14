@@ -9,10 +9,17 @@
 // Keys whistle claims in keys.json's mod:whistle section come back as "key-<key>" commands.
 
 import { View } from "gpui-kit";
-import { layout, focused, panes, run, theme, setShared, shared, nextCommand, readTextFile, writeTextFile, appHome, window, openOverlay, closeOverlay, exec } from "herdr";
+import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec } from "herdr";
+// Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
+import * as herdr from "herdr";
 import { start, step, bar } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { renderBar } from "./bar.js";
+import { HOME } from "./version.js";
+import { folderOf, COPIES } from "./inert.js";
+
+const FOLDER = folderOf(HOME);
+const call = (f) => { try { return f(); } catch { return null; } };
 
 // How often the shell ticks (ms): it notices a click away and Herdr's late focus changes.
 const TICK_MS = 120;
@@ -27,7 +34,7 @@ export default class Whistle extends View {
     this.handle = cx.focus_handle();
     this.model = start();
     this.overlays = new Map(); // overlay name -> id
-    this.keys = undefined; // { text, error, at }, once read
+    this.keysFile = undefined; // { text, error, at }, once read
     cx.spawn(async (cx) => {
       for (;;) {
         await this.readKeys();
@@ -51,14 +58,16 @@ export default class Whistle extends View {
   // keys.json and keys.error as last read.
   async readKeys() {
     const [text, error] = await Promise.all([readTextFile(home("keys.json")), readTextFile(home("keys.error"))]);
-    this.keys = { text, error, at: Date.now() };
+    this.keysFile = { text, error, at: Date.now() };
   }
 
   // Herdr as the core sees it.
   world() {
     return {
       now: Date.now(), layout: layout(), focused: focused(), panes: panes(), barFocused: this.handle.is_focused(),
-      platform: window()?.platform ?? null, layoutName: shared("layout") ?? null, keys: this.keys,
+      keys: call(() => herdr.keys()) ?? [], herdr: call(() => herdr.updates().app.version),
+      folder: FOLDER, copies: shared(COPIES) ?? {},
+      platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
     };
   }
 

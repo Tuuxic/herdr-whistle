@@ -6,7 +6,9 @@
 // model: { mode: "type" | "whistle", field: block id | null, recent: block ids (the field used
 //          last first), pane: the terminal's selected pane | null, holdUntil: ms,
 //          claims: keys.json as whistle keeps it (claimsTick below), claimProblem: what went
-//          wrong keeping it, for the views | null }
+//          wrong keeping it, for the views | null,
+//          aside: whether this copy stands aside for another (inert.js), hid: the bars it
+//          hid for that, to show again }
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
@@ -15,11 +17,13 @@
 //                                          say what changed (a click away, a late focus)
 //        { wrote: path, ok, error }        a write effect's outcome
 //
-// world: { now: ms, layout: Herdr's layout tree, focused: { pane } | null,
+// world: { now: ms, layout: Herdr's layout tree, focused: { pane, terminal } | null,
 //          panes: [{ pane, title, program }], barFocused: whether the bar holds the keyboard,
+//          keys: Herdr's key bindings [{ section, keys, action }], herdr: Herdr's version,
+//          folder: this copy's folder, copies: shared("whistle.copies") (inert.js),
 //          platform: "macos" | "linux" | "windows", layoutName: the shown layout's name,
-//          keys: { text: keys.json (null: no file), error: keys.error (null: none),
-//                  at: ms when the shell read them } | undefined (not read yet) }
+//          keysFile: { text: keys.json (null: no file), error: keys.error (null: none),
+//                      at: ms when the shell read them } | undefined (not read yet) }
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command
@@ -36,13 +40,17 @@
 import { fieldAt, terminal, neighbour, TERMINAL } from "./fields.js";
 import { canonicalKey } from "./keynames.js";
 import { claim } from "./claims.js";
+import { inert, announce, ownBars, COPIES } from "./inert.js";
+import { VERSION } from "./version.js";
 
 // claims: { pending: the write on its way { text, raw, revert } | null, check: a write waiting
 // for Herdr's verdict { until, text, raw } | null, failed: a text that failed or Herdr rejected,
 // not tried again | null }
 const CLAIMS = { pending: null, check: null, failed: null };
 
-export const start = () => ({ mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null });
+export const start = () => ({
+  mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
+});
 
 // The model with block selected as the field (or the field inside it), if one shows.
 function select(model, world, block) {
@@ -121,7 +129,7 @@ const KEYS_FILE = "keys.json";
 // time. A written text waits for Herdr's verdict (a keys.json read CHECK_MS after the write);
 // if Herdr rejects it, the old text goes back. Nothing is written while keys.error exists.
 function claimsTick(model, world) {
-  const c = model.claims ?? CLAIMS, keys = world.keys, problem = model.claimProblem ?? null;
+  const c = model.claims ?? CLAIMS, keys = world.keysFile, problem = model.claimProblem ?? null;
   const none = { model, effects: [] };
   const set = (patch, p = problem, effects = []) => ({ model: { ...model, claims: { ...c, ...patch }, claimProblem: p }, effects });
   if (!keys || c.pending) return none;
@@ -136,7 +144,7 @@ function claimsTick(model, world) {
     const why = "keys.json has an error (keys.error); whistle left it alone";
     return problem === why ? none : set({}, why);
   }
-  const r = claim(keys.text, Object.keys(OWN), world.layoutName, world.platform);
+  const r = claim(keys.text, Object.keys(OWN), world.layoutName, world.platform, world.folder ?? undefined);
   if (r.problem) return problem === r.problem ? none : set({}, r.problem);
   if (r.same) return problem == null && c.failed == null ? none : set({ failed: null }, null);
   if (r.text === c.failed) return none;
@@ -176,7 +184,54 @@ function tick(model, world) {
   return { model: c.model, effects: [...m.effects, ...c.effects] };
 }
 
+// The key Herdr binds to action as it resolves from a terminal: terminal, a layout, global.
+function boundKey(world, action) {
+  const rank = (s) => (s === "terminal" ? 0 : s.startsWith("layout") ? 1 : s === "global" ? 2 : 9);
+  const found = (world.keys ?? []).filter((k) => k.action === action && rank(k.section) < 9)
+    .sort((a, b) => rank(a.section) - rank(b.section));
+  return found[0]?.keys ?? null;
+}
+
+// Inert: no WHISTLE, and the switch key types through into the focused terminal.
+function inertStep(model, input, world) {
+  if (model.mode === "whistle") return { ...type(model, world), handled: false };
+  const m = { ...model, mode: "type", holdUntil: 0 };
+  if (input.command === "whistle") {
+    const k = boundKey(world, "whistle.whistle"), t = world.focused?.terminal;
+    return { model: m, effects: k && t ? [{ typeKey: k, terminal: t }] : [] };
+  }
+  return { model: m, effects: [], handled: false };
+}
+
+// On each tick, whatever the mode: this copy announces itself in whistle.copies, and hides its
+// bars while it stands aside for another copy (showing again those it hid once it doesn't).
+function chores(out, world, why) {
+  const effects = [...out.effects];
+  const copies = announce(world, VERSION);
+  if (copies) effects.push({ setShared: COPIES, value: copies });
+  let m = out.model;
+  const aside = why?.reason === "copy";
+  if (aside && !m.aside) {
+    const hid = ownBars(world);
+    for (const id of hid) effects.push({ run: "layout.hide", args: { id } });
+    m = { ...m, aside, hid };
+  } else if (!aside && m.aside) {
+    for (const id of m.hid) effects.push({ run: "layout.show", args: { id } });
+    m = { ...m, aside, hid: [] };
+  }
+  return { ...out, model: m, effects };
+}
+
 export function step(model, input, world) {
+  // A write's outcome counts whether or not whistle is inert now.
+  if ("wrote" in input) return wrote(model, world, input);
+  const why = inert(world);
+  const out = why ? inertStep(model, input, world) : active(model, input, world);
+  return input.tick ? chores(out, world, why) : out;
+}
+
+// A step while whistle runs.
+function active(model, input, world) {
   const none = { model, effects: [] };
   const pressed = (name) => (model.mode === "whistle" && name ? key(model, world, name) : { ...none, handled: false });
   if (input.command === "whistle") return model.mode === "whistle" ? type(model, world) : whistle(model, world);
@@ -185,12 +240,14 @@ export function step(model, input, world) {
     return pressed(canonicalKey(input.command.slice(4), world.platform));
   if ("key" in input) return pressed(input.key);
   if (input.tick) return tick(model, world);
-  if ("wrote" in input) return wrote(model, world, input);
   return none;
 }
 
-// The bar's view model: { badge: "TYPE" | "WHISTLE", label: where the keyboard is }.
+// The bar's view model: { badge: "TYPE" | "WHISTLE" | null (inert), label: where the keyboard
+// is, problem: why whistle is inert, if it is }.
 export function bar(model, world) {
+  const why = inert(world);
+  if (why) return { badge: null, label: "", problem: why.problem };
   if (model.mode !== "whistle") return { badge: "TYPE", label: world.focused?.pane ? "Terminal" : "" };
   const f = fieldAt(world.layout, model.field, model.recent);
   if (f?.kind !== TERMINAL) return { badge: "WHISTLE", label: f?.label ?? "" };

@@ -13,16 +13,13 @@
 
 import { canonicalKey, isChord } from "./keynames.js";
 
-export const SECTION = "mod:whistle";
-
-// The entry whistle writes for a key.
-export const claimCommand = (key) => `whistle.key-${key}`;
-const isOwnEntry = (key, value) => value === claimCommand(key);
-
 // keys.json's text (null: no file), with the keys whistle needs (canonical names), the shown
-// layout's name and the platform. Returns { text } to write, { same: true } when keys.json
-// already says it, or { problem } when whistle can't or mustn't write.
-export function claim(fileText, needed, layoutName, platform) {
+// layout's name, the platform and whistle's folder (a renamed copy's section and commands are
+// mod:<folder> and <folder>.key-<key>). Returns { text } to write, { same: true } when
+// keys.json already says it, or { problem } when whistle can't or mustn't write.
+export function claim(fileText, needed, layoutName, platform, mod = "whistle") {
+  const SECTION = `mod:${mod}`;
+  const isOwnEntry = (key, value) => value === `${mod}.key-${key}`;
   if (fileText == null) return { same: true }; // no keys.json: Herdr's defaults; writing one would replace them
   let all;
   try { all = JSON.parse(fileText); } catch { all = null; }
@@ -36,7 +33,7 @@ export function claim(fileText, needed, layoutName, platform) {
   const current = all[SECTION] ?? {}, updated = {};
   for (const [k, v] of Object.entries(current)) if (!isOwnEntry(k, v) || claims.includes(k)) updated[k] = v;
   const taken = new Set(Object.keys(updated).map(canon));
-  for (const k of claims) if (!taken.has(k)) updated[k] = claimCommand(k);
+  for (const k of claims) if (!taken.has(k)) updated[k] = `${mod}.key-${k}`;
 
   if (JSON.stringify(updated) === JSON.stringify(current)) return { same: true };
   return { text: `${JSON.stringify({ ...all, [SECTION]: updated }, null, 2)}\n` };

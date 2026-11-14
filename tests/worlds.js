@@ -21,4 +21,4 @@ export const GRID = {
 };
 
 // A terminal with a pane focused, in the usual layout.
-export const IN_TERMINAL = { layout: ONE, focused: { pane: "p1" }, panes: [{ pane: "p1", title: "zsh" }] };
+export const IN_TERMINAL = { layout: ONE, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };

@@ -4,9 +4,10 @@
 import { suite } from "./harness.js";
 import * as core from "./step.js";
 import { IN_TERMINAL } from "./worlds.js";
+import { VERSION } from "./version.js";
 
 const text = (all) => `${JSON.stringify(all, null, 2)}\n`;
-const keys = (all, extra = {}) => ({ keys: { text: text(all), error: null, at: 0, ...extra } });
+const keys = (all, extra = {}) => ({ keysFile: { text: text(all), error: null, at: 0, ...extra } });
 const world = (all, extra) => ({ ...IN_TERMINAL, platform: "linux", layoutName: "main", ...keys(all, extra) });
 
 // keys.json as shipped: the switch key only.
@@ -103,7 +104,7 @@ const SCENARIOS = [
   },
   {
     name: "No keys.json: whistle writes none (it would replace Herdr's defaults)",
-    world: { ...IN_TERMINAL, platform: "linux", layoutName: "main", keys: { text: null, error: null, at: 0 } },
+    world: { ...IN_TERMINAL, platform: "linux", layoutName: "main", keysFile: { text: null, error: null, at: 0 } },
     steps: [{ tick: 120, effects: [] }],
   },
   {
@@ -113,7 +114,7 @@ const SCENARIOS = [
   },
   {
     name: "keys.json that doesn't parse: nothing written, a problem",
-    world: { ...IN_TERMINAL, platform: "linux", layoutName: "main", keys: { text: "{ nope", error: null, at: 0 } },
+    world: { ...IN_TERMINAL, platform: "linux", layoutName: "main", keysFile: { text: "{ nope", error: null, at: 0 } },
     steps: [{ tick: 120, effects: [], model: { claimProblem: "keys.json doesn't parse; whistle's keys may not reach it" } }],
   },
   {
@@ -154,6 +155,22 @@ const SCENARIOS = [
       write: "keys.json",
       text: text({ ...CLAIMED, "mod:whistle": { ...CLAIMED["mod:whistle"], "ctrl-y": "tab.new" } }),
       expected: text({ ...CLAIMED, "mod:whistle": { ...CLAIMED["mod:whistle"], "ctrl-x": "whistle.key-ctrl-x", "ctrl-y": "tab.new" } }),
+    }] }],
+  },
+  {
+    name: "An inert whistle (Herdr too old) claims nothing",
+    world: { ...world(SHIPPED), herdr: "0.0.1" },
+    steps: [{ tick: 120, effects: [] }],
+  },
+  {
+    name: "A copy in another folder claims in its own section, with its own commands",
+    world: { ...world({ global: { "ctrl-space": "wh.whistle" } }), folder: "wh", copies: { wh: VERSION } },
+    steps: [{ tick: 120, effects: [{
+      write: "keys.json",
+      text: text({ global: { "ctrl-space": "wh.whistle" }, "mod:wh": {
+        "ctrl-h": "wh.key-ctrl-h", "ctrl-j": "wh.key-ctrl-j", "ctrl-k": "wh.key-ctrl-k", "ctrl-l": "wh.key-ctrl-l",
+      } }),
+      expected: text({ global: { "ctrl-space": "wh.whistle" } }),
     }] }],
   },
   {
