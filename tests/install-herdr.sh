@@ -36,14 +36,18 @@ sum="$(printf '%s' "$entry" | sed -n 's/.*"sha256"[^"]*"\([0-9a-f]*\)".*/\1/p')"
 mkdir -p "$dest"
 tarball="$dest/herdr-app-$target.tar.gz"
 curl -fsSL --retry 3 -o "$tarball" "$url"
-if command -v sha256sum >/dev/null; then got="$(sha256sum "$tarball" | cut -d' ' -f1)"
-else got="$(shasum -a 256 "$tarball" | cut -d' ' -f1)"; fi
+# Hash stdin and keep only the hex digits: Windows' sha256sum puts a backslash before the hash
+# of a path that has backslashes in it.
+if command -v sha256sum >/dev/null; then got="$(sha256sum < "$tarball")"
+else got="$(shasum -a 256 < "$tarball")"; fi
+got="$(printf '%s' "${got%% *}" | tr -cd '0-9a-f')"
 [ "$got" = "$sum" ] || { echo "SHA-256 mismatch for $url: got $got, want $sum" >&2; exit 1; }
 # From inside dest: GNU tar on Windows reads "C:/..." as a remote host.
 (cd "$dest" && tar -xzf "herdr-app-$target.tar.gz")
 rm -f "$tarball"
 
-app="$(find "$dest" -type f \( -name herdr-app -o -name herdr-app.exe \) | head -n 1)"
+# Linux and Windows ship a bare herdr-app; macOS ships Herdr.app with the executable in Contents/MacOS.
+app="$(find "$dest" -type f \( -name herdr-app -o -name herdr-app.exe -o -path '*.app/Contents/MacOS/*' \) | head -n 1)"
 [ -n "$app" ] || { echo "no herdr-app in $url" >&2; exit 1; }
 chmod +x "$app" 2>/dev/null || true
 echo "$app"
