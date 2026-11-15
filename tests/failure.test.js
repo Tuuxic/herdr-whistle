@@ -5,6 +5,7 @@
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
+import { problems } from "./views.js";
 import { IN_TERMINAL } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
@@ -227,7 +228,7 @@ export default suite("failure behaviour", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
   // The settings' list: the config problems, then keys.json's.
   const m = { ...core.start(), problems: [{ source: "whistle.json", detail: "doesn't parse" }], claimProblem: "keys.json doesn't parse" };
-  t.check("problems() lists config problems, then keys.json's", core.problems(m), [
+  t.check("problems() lists config problems, then keys.json's", problems(m), [
     { source: "whistle.json", detail: "doesn't parse" }, { source: "keys.json", detail: "keys.json doesn't parse" },
   ]);
 });

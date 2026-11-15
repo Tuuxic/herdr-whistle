@@ -7,6 +7,8 @@
 import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
+import { shared, setShared } from "herdr";
+import { offerMappings } from "./whistle.js";
 
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
@@ -75,7 +77,7 @@ const SCENARIOS = [
     ],
   },
   {
-    name: "A mod registering a clashing key mid-session flashes",
+    name: "A mod registering a conflicting key mid-session flashes",
     world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [
       { tick: 120, bar: { label: "Terminal" } },
@@ -89,7 +91,7 @@ const SCENARIOS = [
     steps: [...IN, { key: "g", effects: [], handled: false, model: { conflicts: [{ seq: ["g"], mods: ["alpha", "beta"] }] } }],
   },
   {
-    name: "Two groups on one key merge; only clashing keys inside conflict; the title is the first mod's in layout order",
+    name: "Two groups on one key merge; only keys both offer inside conflict; the title is the first mod's in layout order",
     world: world({ mods: ["beta", "alpha"], entries: {
       alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { b: ["B", "beta.b"], d: ["D", "beta.d"] } } }),
@@ -102,7 +104,7 @@ const SCENARIOS = [
       { key: "g" }, { key: "d", effects: [], bar: { label: "g d is not mapped" } }],
   },
   {
-    name: "A clash inside merged groups flashes with its key sequence",
+    name: "A mapping conflict inside merged groups flashes with its key sequence",
     world: world({ entries: {
       alpha: entry({ g: { name: "Alpha", map: { d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"] } } }),
@@ -178,6 +180,35 @@ const SCENARIOS = [
     steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
       model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] } }],
   },
+  {
+    name: "A layer above mapping over a mod's whole group is an override of that group, for settings",
+    world: world({ user: { map: { g: ["Next space", "space.next"] } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], b: { name: "More", map: { c: ["C", "alpha.c"] } } } } }) } }),
+    steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
+      model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] },
+      settings: { overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha"], text: "g: you, over alpha" }] } }],
+  },
+  {
+    name: "A key set to null over a group two mods merged is an override of both",
+    world: world({ props: { mappings: { g: null } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"] } } }), beta: entry({ g: { name: "Beta", map: { b: ["B", "beta.b"] } } }) } }),
+    steps: [...IN, { key: "g", effects: [], handled: false,
+      model: { overrides: [{ seq: ["g"], source: "layout", over: ["alpha", "beta"] }] } }],
+  },
+  {
+    name: "A group over a mod's group merges: no override of the group, only of the keys it maps over",
+    world: world({ user: { map: { g: { map: { a: ["Next space", "space.next"], z: ["Z", "tab.next"] } } } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], b: ["B", "alpha.b"] } } }) } }),
+    steps: [...IN, { key: "g" }, { key: "b", effects: ran("alpha.b"),
+      model: { overrides: [{ seq: ["g", "a"], source: "whistle.json", over: ["alpha"] }] } }],
+  },
+  {
+    name: "A mapping over a defaults' group a mod added a key to overrides that mod",
+    world: world({ map: { g: { name: "Go", map: { t: ["Next tab", "tab.next"] } } }, user: { map: { g: ["Next space", "space.next"] } },
+      entries: { alpha: entry({ g: { map: { a: ["A", "alpha.a"] } } }) } }),
+    steps: [...IN, { key: "g", effects: ran("space.next"),
+      model: { overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] } }],
+  },
 
   // Switched off.
   {
@@ -222,6 +253,27 @@ const SCENARIOS = [
     ] } }, { key: "g", effects: ran("alpha.go") }],
   },
   {
+    name: "A new problem in a mod's mappings flashes once, naming the mod",
+    world: world({ entries: { alpha: entry({ x: ["X", 5] }) } }),
+    steps: [
+      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings", marker: null } },
+      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings" } },
+      { command: "whistle", bar: { label: "Terminal · zsh" } },
+      { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
+    ],
+  },
+  {
+    name: "A mod offering a bad mapping mid-session flashes; the same problem again doesn't",
+    world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
+    steps: [
+      { tick: 120, bar: { label: "Terminal" } },
+      { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"], x: ["X", 5] }) } }, tick: 120,
+        bar: { label: "alpha's mappings have a problem, see settings" } },
+      { command: "whistle" },
+      { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, bar: { label: "Terminal · zsh" } },
+    ],
+  },
+  {
     name: "A mods switch that isn't true or false is listed",
     world: world({ user: { mods: { alpha: "off" } }, entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [...IN, { key: "g", effects: ran("alpha.go"),
@@ -262,4 +314,18 @@ export default suite("mod mappings", (t) => {
   } }) };
   const m = core.step(core.start(), { tick: true }, w).model;
   t.check("Two mods' groups merged take the title of the first mod in layout order", m.config.map.g.name, "Beta");
+
+  // whistle.js offerMappings, the helper mods copy: it writes the mod's own entry and keeps the
+  // others', and whistle runs what it wrote.
+  const before = shared("whistle.mappings");
+  setShared("whistle.mappings", { beta: entry({ b: ["B", "beta.b"] }) });
+  offerMappings("alpha", { g: ["Go", "alpha.go"] });
+  const offered = shared("whistle.mappings");
+  t.check("offerMappings writes the mod's entry as v 1 and keeps the other mods'", offered,
+    { beta: entry({ b: ["B", "beta.b"] }), alpha: entry({ g: ["Go", "alpha.go"] }) });
+  offerMappings("alpha", { h: ["Help", "alpha.help"] });
+  t.check("offerMappings again replaces the mod's own entry", shared("whistle.mappings")?.alpha, entry({ h: ["Help", "alpha.help"] }));
+  setShared("whistle.mappings", before ?? null);
+  t.scenario({ name: "A mapping offered through whistle.js's offerMappings runs", world: world({ entries: offered }),
+    steps: [...IN, { key: "g", effects: ran("alpha.go") }] }, core);
 });

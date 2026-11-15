@@ -24,7 +24,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    herdr.dev. Never edit a mod's code.
 4. **whistle.json**: leave it alone. Its shape is unchanged.
 5. **Keys**: tell the person what moved in the default map: Spaces from `S` to `s`, the
-   Ctrl+[ entry key dropped (Ctrl+Space is the switch key, Ctrl+Shift+Space the documented
+   Ctrl+[ switch key dropped (Ctrl+Space is the switch key, Ctrl+Shift+Space the documented
    fallback), and new defaults added.
 
 ### You
@@ -48,11 +48,21 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   written into your whistle.json (docs/guide.md, Settings). The hints name the key that
   cancels a sequence.
 
+### Layout authors
+
+- The layout's whistle block (docs/contracts/layout-block.md) is a stable contract: `mappings`,
+  `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder`
+  and `hintsGap`, which line the hints box up with a bar set in from the window's edge. `nav`
+  directions are `left`/`down`/`up`/`right`, and a bad prop is listed as a config problem.
+
 ### Mod authors
 
 - **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` (docs/contracts/state.md), read with a copied `mods/whistle/whistle.js`.
   `whistle.enabled` and `whistle.sequence` are gone; other `whistle.*` keys are private.
+- **New**: `offerMappings(mod, map)` in the copied `whistle.js` offers your mod's mappings and
+  groups in `shared("whistle.mappings")` (docs/contracts/mod-mappings.md); they count while your
+  mod is in the shown layout.
 
 ### Keynav authors
 

@@ -14,15 +14,8 @@
 // one, the own keys cancel and back end or shorten it, and any other key is the group's or
 // isn't mapped.
 
-import { isGroup } from "./config.js";
+import { isGroup, groupAt } from "./config.js";
 import { keyLabel } from "./keynames.js";
-
-// The group's map at a sequence.
-function at(config, path) {
-  let map = config.map;
-  for (const k of path) map = isGroup(map?.[k]) ? map[k].map : {};
-  return map;
-}
 
 export function resolve(config, sequence, name, declared = null) {
   const own = config.own[name] ?? null;
@@ -31,7 +24,7 @@ export function resolve(config, sequence, name, declared = null) {
     if (own === "back") return { sequence: sequence.length > 1 ? sequence.slice(0, -1) : null, act: { show: true } };
   }
   if (!sequence && declared?.[name] !== undefined) return { sequence: null, act: { declared: declared[name] } };
-  const v = at(config, sequence ?? [])[name];
+  const v = (groupAt(config.map, sequence)?.map ?? {})[name];
   if (isGroup(v)) return { sequence: [...(sequence ?? []), name], act: { show: true } };
   if (v) return { sequence: null, act: { run: v } };
   if (sequence) return { sequence: null, act: { flash: `${[...sequence, name].map(keyLabel).join(" ")} is not mapped` } };

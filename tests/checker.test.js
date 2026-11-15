@@ -23,6 +23,12 @@ export default suite("keynav checker", (t) => {
   t.check("whistle's keynav.js passes the checker", checkKeynav(helper, store), []);
   t.check("a field key with a space after the comma breaks \"field key\"",
     rules({ ...helper, fieldKey: (mod, props) => `${mod} ${JSON.stringify(props ?? {}, null, 1)}` }), ["field key"]);
+  // Objects inside arrays left as written: the contract sorts them too.
+  const unsortedInArrays = (v) => (v && typeof v === "object" && !Array.isArray(v)
+    ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${unsortedInArrays(v[k])}`).join(",")}}`
+    : JSON.stringify(v ?? null));
+  t.check("a field key that leaves objects inside arrays unsorted breaks \"field key\"",
+    rules({ ...helper, fieldKey: (mod, props) => `${mod} ${unsortedInArrays(props ?? {})}` }), ["field key"]);
   t.check("an entry that says v 1 breaks \"entry\"", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
     const key = helper.fieldKey(mod, props);
     setShared(`keynav.field:${key}`, { v: 1, label, keys });

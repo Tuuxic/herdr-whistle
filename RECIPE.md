@@ -13,8 +13,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 ## What you see
 
 - **Bar** (a block the layout places, else docked at the bottom, 22 px, on `chrome`, text
-  11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** on the theme's
-  `done` color or **WHISTLE** on `accent`, text in `background`. Then, 10 px on, in `muted`,
+  11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** outlined in the
+  theme's `accent` (text in `accent`) or **WHISTLE** filled with `accent` (text in
+  `accent_foreground`). Then, 10 px on, in `muted`,
   what has the keyboard: `Terminal`, or in WHISTLE `Terminal · <pane title>` (up to 40
   characters). A flash (a failed command, `w x is not mapped`) takes the label until the
   next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
@@ -80,9 +81,14 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert, hide their bars with
   `layout.hide` (only bars that were showing), and show them again once they run.
-- **Hints and settings** (ADR 0011): the bar's copy works out their view models (`views.js`)
-  and hands them on in private shared keys, `whistle.hints` and `whistle.settings`; two more
-  copies of the mod (prop `part: "hints"` / `"settings"`) draw them and run no core. Settings
+- **Bar spots**: each whistle block in a layout is a copy, told apart by its props
+  (`props()`). A copy whose block is hidden rests: TYPE, no claims, no state, no spot moves;
+  only the shown spot's copy runs (docs/contracts/layout-block.md, rule 6).
+- **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
+  sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
+  two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
+  and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
+  sizes the shell measures) and closes the hints window, as effects. Settings
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.
@@ -104,7 +110,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
   `bar.js`, `hints.js` and `settings.js` draw the bar, the hints and the settings. `whistle.js`
-  is the reader other mods copy (whistle doesn't import it), and `keynav.js` the helper keynav
+  is the helper other mods copy to read whistle state and offer mappings (whistle doesn't
+  import it), and `keynav.js` the helper keynav
   fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own

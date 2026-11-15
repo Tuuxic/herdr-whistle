@@ -9,12 +9,11 @@
 // The shell passes world.folder, this copy's folder, from HOME in version.js: a path the
 // renaming in Herdr's add procedure rewrites.
 
-import { MIN_HERDR } from "./version.js";
+import { MIN_HERDR, FOLDER } from "./version.js";
+import { eachNode } from "./fields.js";
 
 // The private shared key copies announce themselves under.
 export const COPIES = "whistle.copies";
-// The folder of the copy that runs when there are several.
-export const MAIN = "whistle";
 
 // "mods/whistle/" -> "whistle".
 export const folderOf = (home) => String(home).replace(/\\/g, "/").replace(/\/+$/, "").split("/").pop();
@@ -29,21 +28,16 @@ export function older(a, b) {
   return false;
 }
 
-// The layout's mod blocks.
-function modBlocks(layout) {
+// The layout's nodes that hold a mod.
+function modNodes(layout) {
   const out = [];
-  const walk = (n) => {
-    if (!n) return;
-    if (n.content?.mod) out.push(n);
-    for (const c of n.children ?? []) walk(c);
-  };
-  walk(layout);
+  eachNode(layout, (n) => { if (n.content?.mod) out.push(n); });
   return out;
 }
-const modsIn = (layout) => new Set(modBlocks(layout).map((b) => b.content.mod));
+const modsIn = (layout) => new Set(modNodes(layout).map((b) => b.content.mod));
 
 // The ids of this copy's blocks that show (not hidden themselves).
-export const ownBars = (world) => modBlocks(world.layout).filter((b) => b.content.mod === world.folder && !b.hidden).map((b) => b.id);
+export const ownBars = (world) => modNodes(world.layout).filter((b) => b.content.mod === world.folder && !b.hidden).map((b) => b.id);
 
 // The folder of the copy that runs: of this one and the announced copies in the layout,
 // mods/whistle/, else the first by name.
@@ -51,7 +45,7 @@ export function runningCopy(world) {
   const shown = modsIn(world.layout);
   const live = Object.keys(world.copies ?? {}).filter((f) => shown.has(f));
   const all = [...new Set([world.folder, ...live])].sort();
-  return all.includes(MAIN) ? MAIN : all[0];
+  return all.includes(FOLDER) ? FOLDER : all[0];
 }
 
 // Why whistle is inert in this world: null, or { reason: "herdr" | "copy", problem: text }.

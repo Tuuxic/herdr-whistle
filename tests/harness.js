@@ -1,8 +1,8 @@
 // The test harness: suites, the step scenario runner and the spec-example fixture reader.
 // Pure, like the core it tests. tests/run.sh copies it next to the core's modules.
 //
-// A suite file exports `suite(name, (t) => { ... })`; the test mod (main.js) imports every suite
-// through the generated suites.js and throws one Error listing every failure, grouped by suite.
+// A suite file exports `suite(name, (t) => { ... })`; the test mod (main.js) imports the suite
+// under check through the generated suites.js and throws one Error listing every failure, grouped by suite.
 //
 // A scenario is data:
 //   {
@@ -18,8 +18,13 @@
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it)
+//                                          // the views' models (`shared` checks them) and
+//                                          // the hints window (`hintsWindow` checks it)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
+//         shared: { "whistle.hints": null }, // what these private shared keys were set to
+//                                          // in this step; a key given as undefined: not set
+//         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
 //         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
@@ -29,6 +34,7 @@
 //   }
 
 import { VERSION, MIN_HERDR } from "./version.js";
+import * as views from "./views.js";
 
 // The defaults scenarios run on (world.configFiles.defaults), unless they give their own: own
 // keys only, so a scenario's mappings are the ones it writes. mappings.json's own text is in
@@ -55,8 +61,10 @@ export const DEFAULT_WORLD = {
 export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
-// The shared key whistle state is published under (docs/contracts/state.md).
+// The shared key whistle state is published under (docs/contracts/state.md), and the private
+// keys the views' models go in (step.js VIEWS): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
+const VIEW_KEYS = ["whistle.hints", "whistle.settings"];
 
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
@@ -78,7 +86,8 @@ function freeze(v) {
   for (const x of Object.values(v)) freeze(x);
 }
 
-// Runs one scenario through core ({ start, step, bar, hints, settings }): its failures as lines.
+// Runs one scenario through core ({ start, step, bar }), with the views' models from views.js:
+// its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
   let world = { ...DEFAULT_WORLD, ...(sc.world ?? {}) };
@@ -96,7 +105,11 @@ export function runScenario(sc, core) {
       try { out = core.step(model, next.input, world); }
       catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
-      const effects = out.effects.filter((e) => !isState(e));
+      const isView = (e) => VIEW_KEYS.includes(e?.setShared);
+      const isWindow = (e) => e?.openOverlay === "hints" || e?.closeOverlay === "hints";
+      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e));
+      if ("hintsWindow" in s && show(out.effects.filter(isWindow)) !== show(s.hintsWindow))
+        fails.push(`${at}: hintsWindow ${show(out.effects.filter(isWindow))}, want ${show(s.hintsWindow)}`);
       if ("effects" in s && show(effects) !== show(s.effects))
         fails.push(`${at}: effects ${show(effects)}, want ${show(s.effects)}`);
       if ("published" in s) {
@@ -104,6 +117,11 @@ export function runScenario(sc, core) {
         const got = pub;
         const want = s.published === null ? [] : [s.published];
         if (show(got) !== show(want)) fails.push(`${at}: published ${show(got)}, want ${show(want)}`);
+      }
+      for (const [k, want] of Object.entries(s.shared ?? {})) {
+        const set = out.effects.filter((e) => e?.setShared === k);
+        const got = set.length ? set.at(-1).value : undefined;
+        if (set.length > 1 || show(got) !== show(want)) fails.push(`${at}: shared ${k} set to ${show(set.map((e) => e.value))}, want ${want === undefined ? "not set" : show(want)}`);
       }
       for (const [k, want] of Object.entries(s.model ?? {}))
         if (show(out.model[k]) !== show(want)) fails.push(`${at}: model.${k} ${show(out.model[k])}, want ${show(want)}`);
@@ -114,7 +132,7 @@ export function runScenario(sc, core) {
       }
       for (const view of ["hints", "settings"]) {
         if (!(view in s)) continue;
-        const vm = core[view](out.model, world);
+        const vm = views[view](out.model, world);
         if (s[view] === null || vm === null) {
           if (show(vm) !== show(s[view])) fails.push(`${at}: ${view} ${show(vm)}, want ${show(s[view])}`);
           continue;

@@ -9,7 +9,7 @@ predictable but silent. A key would change meaning whenever someone edited the l
 installed a mod, and the person would never learn that two mods wanted it.
 
 Two groups on the same key aren't a conflict: they merge key by key, like groups across
-layers, and only clashing keys inside them conflict. The group's title comes from the mod
+layers, and only keys both offer inside them conflict. The group's title comes from the mod
 that's first in layout order.
 
 ## Consequences

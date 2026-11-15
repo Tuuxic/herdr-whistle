@@ -3,39 +3,36 @@
 //
 // Stable props: `mappings` and `keys` (the layout's config layer, checked by config.js),
 // `mods` (switching mods' mappings off, checked by config.js),
-// `enabled`, `hints`, `nav` and `bar`. `hintsInset`, `hintsBorder` and `hintsLift` place the
-// hints box and may change in a minor release. `part` is private (whistle's own overlay
-// copies). A bad prop is skipped and listed as a config problem; the rest still count.
+// `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`,
+// which place the hints box. `part` is private (whistle's own overlay copies). A bad prop is skipped and listed as a config problem; the rest still count.
 //
 // whistle.json's `enabled`, `hints` and `bar` go over the layout's (settings()).
 
+import { fieldKey, eachNode } from "./fields.js";
+import { isObject } from "./config.js";
+import { FOLDER } from "./version.js";
+
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
-const NUMBERS = ["hintsInset", "hintsBorder", "hintsLift"];
+const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
 const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part"];
 
-const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
 // Every block id in the layout.
 function ids(layout) {
   const out = new Set();
-  const walk = (n) => { if (!n) return; if (n.id) out.add(n.id); for (const c of n.children ?? []) walk(c); };
-  walk(layout);
+  eachNode(layout, (n) => { if (n.id) out.add(n.id); });
   return out;
 }
 
 // This copy's blocks in the layout (not whistle's own overlay copies): [{ id, hidden, props }],
 // in layout order. hidden: the block or one of its groups is hidden.
-export function bars(layout, folder = "whistle") {
+export function bars(layout, folder = FOLDER) {
   const out = [];
-  const walk = (n, hidden) => {
-    if (!n) return;
-    const h = hidden || Boolean(n.hidden);
+  eachNode(layout, (n, _parent, hidden) => {
     const c = n.content;
-    if (c?.mod === folder && !(isObject(c.props) && c.props.part)) out.push({ id: n.id, hidden: h, props: isObject(c.props) ? c.props : {} });
-    for (const k of n.children ?? []) walk(k, h);
-  };
-  walk(layout, false);
+    if (c?.mod === folder && !(isObject(c.props) && c.props.part)) out.push({ id: n.id, hidden, props: isObject(c.props) ? c.props : {} });
+  });
   return out;
 }
 
@@ -60,7 +57,7 @@ function readNav(nav, known, problem) {
 // The props of this copy's blocks, checked: { props, problems: [detail] }. Each prop comes from
 // the first block that has it (a second bar needn't repeat the mappings); `bar` is each
 // block's own, so it is only checked here.
-export function blockProps(layout, folder = "whistle") {
+export function blockProps(layout, folder = FOLDER) {
   const problems = [];
   const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
   const known = ids(layout);
@@ -78,6 +75,15 @@ export function blockProps(layout, folder = "whistle") {
     }
   }
   return { props, problems };
+}
+
+// Whether this copy rests (ADR 0011): every block of the layout with this copy's props (props(),
+// which tell the copies of a layout's spots apart) is hidden. Unknown props: it doesn't rest.
+export function resting(layout, folder, props) {
+  if (props === undefined) return false;
+  const mine = fieldKey(folder, isObject(props) ? props : {});
+  const blocks = bars(layout, folder).filter((b) => fieldKey(folder, b.props) === mine);
+  return blocks.length > 0 && blocks.every((b) => b.hidden);
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.

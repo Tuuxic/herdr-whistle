@@ -31,11 +31,14 @@ export const KEYNAV_V = 2;
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
 
-// A field's key: the mod and its props, as text with sorted keys, so the driver and the mod
-// spell the same field the same way (keynav.js repeats it).
-const stable = (v) => (v && typeof v === "object" && !Array.isArray(v)
-  ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`
-  : JSON.stringify(v ?? null));
+// A field's key: the mod and its props, as text with object keys sorted at every depth (objects
+// inside arrays too; arrays keep their order), so the driver and the mod spell the same field
+// the same way (keynav.js repeats it).
+const stable = (v) => {
+  if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+  return JSON.stringify(v ?? null);
+};
 export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
 
 // A keynav field's entry, if it is one this driver speaks: { label, keys }.
@@ -44,16 +47,25 @@ export function entryOf(shared, key) {
   return e && typeof e === "object" && e.v === KEYNAV_V ? e : null;
 }
 
+// Every node of a layout tree, depth first in layout order: visit(node, parent | null, hidden:
+// whether the node or a group around it is hidden). The one walk of the layout whistle has.
+export function eachNode(layout, visit) {
+  const walk = (n, p, hidden) => {
+    if (!n) return;
+    const h = hidden || Boolean(n.hidden);
+    visit(n, p, h);
+    for (const c of n.children ?? []) walk(c, n, h);
+  };
+  walk(layout, null, false);
+}
+
 // One look at the layout: each node by id and each node's parent.
 function index(layout) {
   const nodes = new Map(), parent = new Map();
-  const walk = (n, p) => {
-    if (!n) return;
+  eachNode(layout, (n, p) => {
     if (n.id) nodes.set(n.id, n);
     parent.set(n, p);
-    for (const c of n.children ?? []) walk(c, n);
-  };
-  walk(layout, null);
+  });
   return { nodes, parent };
 }
 

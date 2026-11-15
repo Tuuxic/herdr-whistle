@@ -27,8 +27,8 @@ Whistle needs nothing from your mod beyond this, and your mod works the same wit
 ## Shapes
 
 A field is known by its **field key**: the mod's folder name, a space, and the block's props
-as JSON with object keys sorted at every depth and no spaces (`files {}`,
-`tree {"root":"~"}`). Both sides compute it from the layout, so it needs no setup.
+as JSON with object keys sorted at every depth, objects inside arrays too (arrays keep their
+order), and no spaces (`files {}`, `tree {"root":"~"}`, `tree {"roots":[{"at":"~","name":"home"}]}`). Both sides compute it from the layout, so it needs no setup.
 
 `shared("keynav.field:<field key>")`, the field's **entry**, written by the field:
 
@@ -152,7 +152,8 @@ the next field. Leaving a field is always the driver's job.
 
 A declared key arrives as `<mod>.keynav-key-<key>`, spelled as the field wrote it, even where
 the driver maps that key. It counts only while the field is selected and outside a key
-sequence. Announce again to change the keys at any time.
+sequence, and whistle's hints list the declared keys with their labels meanwhile. Announce
+again to change the keys at any time.
 
 ```json example A declared key beats a mapping while its field is selected
 {
@@ -174,7 +175,7 @@ sequence. Announce again to change the keys at any time.
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] },
-    { "key": "ctrl-l" },
+    { "key": "ctrl-l", "hints": { "title": "Files", "items": [{ "key": "d", "label": "Delete", "group": false }] } },
     { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusBar": true }] }
   ]
 }
@@ -186,7 +187,7 @@ The driver's own keys (whistle's: selecting fields, moves, open, back to TYPE) a
 its own. A declared key that is one of them is ignored and listed in whistle's settings as a
 config problem; so is a declared chord.
 
-```json example An own key beats a declared key, and the clash is listed
+```json example An own key beats a declared key, and the config problem is listed
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -346,7 +347,7 @@ keynav.js breaks 1 rule of keynav v2:
 | Rule | What it checks |
 |---|---|
 | `functions` | Your copy has `fieldKey`, `announce`, `isActive`, `move`, `declared`, `entered`, `toTerminal` and `keepKeys`. A missing one fails here alone; copy whistle's current `keynav.js`. |
-| `field key` | The field key's form: folder, a space, props as JSON with sorted keys and no spaces. |
+| `field key` | The field key's form: folder, a space, props as JSON with object keys sorted at every depth (objects inside arrays too) and no spaces. |
 | `entry` | `announce` writes `{ v: 2, label, keys }` to the field's entry and returns its field key. |
 | `announce again` | Announcing again changes the label and the declared keys. |
 | `no v1` | Nothing goes to v1's `keynav.fields` or `keynav.request`. |

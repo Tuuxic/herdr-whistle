@@ -244,8 +244,9 @@ Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
 2. **The layout's whistle block**: its `mappings` and `keys` props, for keys that suit that
-   layout's mods. The block's other props (`enabled`, `hints`, `nav`, `bar`) are in
-   [The layout's whistle block](contracts/layout-block.md).
+   layout's mods. The block's other props (`mods`, `enabled`, `hints`, `nav`, `bar`, and
+   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with the
+   bar) are in [The layout's whistle block](contracts/layout-block.md).
 3. **Yours**: `whistle.json` in Herdr's home (`~/.config/herdr-app/whistle.json`). Nothing
    replaces it.
 
@@ -311,6 +312,9 @@ layout. Your whistle.json and the layout can map over any of them, or set a key 
   for neither. The key keeps what the defaults give it (or the own key keeps acting), the bar
   flashes once ("g: 2 mods want it, see settings") and settings list it. Map the key yourself,
   or switch one mod off, to settle it.
+- **A bad mapping a mod offers** is skipped, and settings list it under that mod's name. The
+  bar flashes once when it first appears ("alpha's mappings have a problem, see settings"),
+  but its marker doesn't count it: it's the mod's to fix, not your config's.
 - **Switching a mod off**: a `mods` section takes a mod's mappings out whole, in whistle.json
   or the layout's whistle block (whistle.json's goes over the layout's):
 
@@ -376,14 +380,71 @@ off: the switch key types into the terminal as if whistle weren't there, and the
 setting for you; `whistle.settings` opens the settings. Every command whistle answers to is in
 [Whistle's commands](contracts/commands.md).
 
+## When whistle stands aside
+
+Sometimes whistle can't run safely, so it loads but stands aside (it is **inert**) and says why
+in the bar instead of a mode badge:
+
+- **Herdr is older than whistle needs** (`mods/whistle/mod.json` says which, under `herdr`):
+  the bar reads "Whistle needs Herdr ≥ …". Update Herdr.
+- **Another copy of whistle runs**: two folders under `mods/` hold whistle (say an old one and
+  `mods/whistle/`) and both are in the shown layout. The copy in `mods/whistle/` runs (else the
+  first folder by name); the others hide their bars and read "Another whistle runs, from
+  mods/whistle/". Delete the copies you don't want.
+
+Standing aside, whistle claims no keys, leaves keys.json alone, publishes nothing to other
+mods, and the switch key types into the terminal as if whistle weren't there. Unlike
+[switching it off](#switching-whistle-off), it isn't your choice: it runs again by itself once
+the reason goes.
+
+```json example On a Herdr that's too old, the switch key types through and the bar says why
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "herdr": "0.1.0",
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
+      "bar": { "badge": null } }
+  ]
+}
+```
+
+```json example A second copy of whistle stands aside for the one in mods/whistle/
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "old-bar", "type": "block", "content": { "mod": "whistle-old" } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "folder": "whistle-old",
+    "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
+      "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+  ]
+}
+```
+
 ## Hints
 
 When a key starts a group in WHISTLE (`w`), a box above the bar lists the keys that can follow
 it: the sequence so far and the group's name on top, with the key that cancels the sequence
 (`Esc cancels`), then each key and what it does. A key that starts a further group shows its
 name with a `+`. The box follows the sequence into nested groups and goes away when it ends,
-whether a mapping runs, the cancel key ends it or a key isn't mapped. `"hints": false` in your
-whistle.json (or the layout's whistle block; yours wins) turns the box off.
+whether a mapping runs, the cancel key ends it or a key isn't mapped. Outside a sequence, while
+a [field](#fields) that declares keys of its own is selected, the box lists those keys instead,
+under the field's name. `"hints": false` in your whistle.json (or the layout's whistle block;
+yours wins) turns the box off.
 
 ```json example Hints list the keys that can follow a group
 {

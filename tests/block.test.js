@@ -107,12 +107,21 @@ const SCENARIOS = [
   },
   {
     name: "Bad hints, bar and placement props and an unknown prop are listed",
-    world: inTerminal({ hints: 1, bar: 2, hintsLift: "6", hintsInset: 4, colour: "red" }),
+    world: inTerminal({ hints: 1, bar: 2, hintsGap: "6", hintsAlignRight: 4, colour: "red" }),
     steps: [{ tick: 120, model: { problems: [
       { source: "layout", detail: "hints should be true or false" },
       { source: "layout", detail: "bar should be the spot's name, a string" },
-      { source: "layout", detail: "hintsLift should be a number (px)" },
+      { source: "layout", detail: "hintsGap should be a number (px)" },
       { source: "layout", detail: "colour: not a whistle block prop" },
+    ] } }],
+  },
+  {
+    name: "The old names of the hints placement props aren't read: each is listed",
+    world: inTerminal({ hintsInset: 4, hintsBorder: 1, hintsLift: 6 }),
+    steps: [{ tick: 120, model: { problems: [
+      { source: "layout", detail: "hintsInset: not a whistle block prop" },
+      { source: "layout", detail: "hintsBorder: not a whistle block prop" },
+      { source: "layout", detail: "hintsLift: not a whistle block prop" },
     ] } }],
   },
   {
@@ -143,6 +152,46 @@ const SCENARIOS = [
     world: spots({ bar: "Left" }),
     steps: [{ tick: 120, effects: [],
       model: { problems: [{ source: "whistle.json", detail: 'bar: this layout has no spot "Left"; the bar stays where it is' }] } }],
+  },
+
+  // A hidden bar copy rests (ADR 0011): each spot is a copy of whistle, known by its props.
+  {
+    name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views",
+    world: { ...spots({}), props: { bar: "Top" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
+    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined } }],
+  },
+  {
+    name: "The shown bar copy runs: it claims its keys and publishes",
+    world: { ...spots({}), props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
+    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null },
+      effects: [{ write: "keys.json", text: `${JSON.stringify({ "mod:whistle": {
+        "ctrl-h": "whistle.key-ctrl-h", "ctrl-j": "whistle.key-ctrl-j", "ctrl-k": "whistle.key-ctrl-k", "ctrl-l": "whistle.key-ctrl-l" } }, null, 2)}
+`, expected: "{}" }] }],
+  },
+  {
+    name: "A hidden bar copy doesn't move the bar: the shown copy does",
+    world: { ...spots({ bar: "Top" }), props: { bar: "Top" } },
+    steps: [{ tick: 120, effects: [] }],
+  },
+  {
+    name: "A resting copy in WHISTLE goes back to TYPE",
+    world: { ...spots({}), props: { bar: "Top" } }, model: { mode: "whistle" },
+    steps: [{ tick: 120, effects: [], model: { mode: "type" } }],
+  },
+  {
+    name: "A copy publishes its state again when shown after resting: the other spot's copy wrote it meanwhile",
+    world: { ...spots({}), props: { bar: "Bottom" } },
+    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null } },
+      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
+      { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null },
+        shared: { "whistle.hints": null } }],
+  },
+  {
+    name: "A bar copy shown again stops resting",
+    world: { ...spots({}), props: { bar: "Top" } },
+    steps: [{ tick: 120, published: null },
+      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120,
+        published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null } }],
   },
 ];
 

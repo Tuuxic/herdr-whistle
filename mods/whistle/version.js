@@ -9,3 +9,6 @@ export const MIN_HERDR = "0.1.15";
 // renames the new copy and rewrites its mods/<name>/ paths, so a renamed copy knows its name
 // (inert.js: only one copy runs).
 export const HOME = "mods/whistle/";
+// The folder whistle ships in: the copy that runs when there are several, and the folder a
+// world that doesn't say (tests) stands for.
+export const FOLDER = "whistle";

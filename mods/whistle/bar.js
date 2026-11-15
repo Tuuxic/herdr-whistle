@@ -19,9 +19,11 @@ export function renderBar(vm, t, handle, onKey, onSize) {
     .on_size_change(onSize ?? (() => {}))
     .on_key_down(onKey);
   if (!vm.badge) return row.px(10).child(div().flex_1().min_w(0).truncate().text_color(t.blocked).child(vm.problem ?? ""));
+  // The mode badge in the theme's accent colours: WHISTLE filled (accent_foreground on accent),
+  // TYPE outlined (accent on the bar).
+  const badge = h_flex().id("whistle-mode").h_full().px(10).flex_none().items_center().font_bold();
   return row
-    .child(h_flex().id("whistle-mode").h_full().px(10).flex_none().items_center().font_bold()
-      .bg(on ? t.accent : t.done).text_color(t.background)
+    .child((on ? badge.bg(t.accent).text_color(t.accent_foreground) : badge.border_1().border_color(t.accent).text_color(t.accent))
       .child(vm.badge))
     .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(vm.label))
     // Config problems: a short marker at the end; settings list them.

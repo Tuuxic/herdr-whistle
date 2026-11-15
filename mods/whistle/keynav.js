@@ -17,10 +17,13 @@ export const V = 2;
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
 
-// Props as text with sorted keys, so the driver and the mod spell the same field the same way.
-const stable = (v) => (v && typeof v === "object" && !Array.isArray(v)
-  ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`
-  : JSON.stringify(v ?? null));
+// Props as text with object keys sorted at every depth (objects inside arrays too; arrays keep
+// their order), so the driver and the mod spell the same field the same way.
+const stable = (v) => {
+  if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+  return JSON.stringify(v ?? null);
+};
 // A field's key: the mod's folder and the block's props.
 export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
 
