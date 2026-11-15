@@ -14,7 +14,7 @@
 #     (worlds.js) and the *.test.js suites,
 #   - suites.js, written here: imports the suite that check runs and reports its load time,
 #   - texts.js, written here: the text of each spec .md (docs/contracts/, docs/guide.md,
-#     tests/fixtures/), mods/whistle/mod.json and mappings.json, keys.json and the core's sources, by repo path. Suites read
+#     tests/fixtures/), mods/whistle/mod.json and mappings.json, keys.json, RECIPE.md and the core's sources, by repo path. Suites read
 #     them from there: readTextFile is async, and `check` never sees an async failure.
 #
 # HERDR_APP picks the herdr-app to run (default: the one on PATH).
@@ -45,7 +45,7 @@ literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
 (
   echo 'export default {'
   cd "$root" || exit 1
-  for f in docs/contracts/*.md docs/guide.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json keys.json; do
+  for f in docs/contracts/*.md docs/guide.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json keys.json RECIPE.md; do
     [ -f "$f" ] || continue
     printf '  "%s": `' "$f"; literal "$f"; echo '`,'
   done
