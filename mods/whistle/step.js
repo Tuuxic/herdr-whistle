@@ -52,7 +52,8 @@
 //          props: this copy's block props (props()), which tell the bar spots' copies apart
 //                 | undefined (unknown),
 //          viewport: the window's drawable size { width, height } | null (not measured),
-//          barSize: the bar's drawn size { width, height } | null (not measured) }
+//          barSize: the bar's drawn size { width, height } | null (not measured),
+//          home: Herdr's home folder (appHome()) | undefined (unknown) }
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command

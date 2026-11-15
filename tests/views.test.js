@@ -101,7 +101,7 @@ const SCENARIOS = [
     name: "The hints' and settings' models go in their private shared keys when they change, and only then",
     world: world({ map: PANES }),
     steps: [
-      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { problems: [], mods: [], conflicts: [], overrides: [] } } },
+      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
       { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
       { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
@@ -197,6 +197,17 @@ const SCENARIOS = [
     world: world({ mods: ["alpha", "beta", "gamma"], user: { mods: { alpha: false } },
       entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ b: ["B", "beta.b"] }), delta: entry({ d: ["D", "delta.d"] }) } }),
     steps: [{ tick: 120, settings: { mods: [{ name: "alpha", on: false, problems: [] }, { name: "beta", on: true, problems: [] }] } }],
+  },
+  {
+    // The hand pass (#33): the footer named ~/.config/herdr-app/whistle.json in a sandbox home.
+    name: "Settings name whistle.json in Herdr's home as it is, wherever that is",
+    world: { ...world(), home: "/tmp/sandbox/home" },
+    steps: [{ tick: 120, settings: { file: "/tmp/sandbox/home/whistle.json" } }],
+  },
+  {
+    name: "Settings name whistle.json as in Herdr's home when the home isn't known",
+    world: world(),
+    steps: [{ tick: 120, settings: { file: "whistle.json in Herdr's home" } }],
   },
   {
     name: "A mod's problems are listed under it in settings, not counted in the bar's marker",

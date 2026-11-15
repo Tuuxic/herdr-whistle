@@ -138,10 +138,12 @@ function override(o) {
 
 // The settings' model: { problems: config problems [{ source, detail }], conflicts: mapping
 // conflicts, overrides: keys mapped over mods', mods: the shown layout's mods that offer
-// mappings [{ name, on, problems: details }] }.
+// mappings [{ name, on, problems: details }], file: where changes go, whistle.json in Herdr's
+// home (world.home) }.
 export function settings(model, world) {
   const all = model.problems ?? [];
   return {
+    file: world.home ? `${world.home}/whistle.json` : "whistle.json in Herdr's home",
     problems: problems(model),
     mods: (model.mods ?? []).map((m) => ({ ...m, problems: all.filter((p) => p.source === m.name).map((p) => p.detail) })),
     conflicts: (model.conflicts ?? []).map((c) => conflict(c, world)),
