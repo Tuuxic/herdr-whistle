@@ -19,6 +19,15 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   characters). A flash (a failed command, `w x is not mapped`) takes the label until the
   next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
   in from the right: `⚠ <count>`.
+- **Hints** (a window overlay docked on top of the bar, as wide as the window, on `chrome` with
+  an `accent` border, text 12 px): while a key sequence has reached a group in WHISTLE, a
+  title row with the keys so far (bold, `accent`), the group's name (`foreground`) and, at
+  the right in `dim`, `Esc cancels`; then the group's keys in columns filled top to bottom,
+  each `key → label` (a further group's label `+Name` in `accent`).
+- **Settings** (a dialog, 640 px wide, 80% high, on `chrome`): sections PROBLEMS (each
+  `<source>: <detail>` in `blocked`, or "None"), MAPPING CONFLICTS (each conflict in `blocked`
+  with a `Keep <mod>'s` button per mod), OVER MODS' KEYS (`g: you, over alpha`) and MODS'
+  MAPPINGS (each mod with an on/off switch, its problems under it in `blocked`).
 - **Inert**: no badge, only why, in the `blocked` color, 10 px in from the left:
   `Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)`, or on a second copy
   `Another whistle runs, from mods/whistle/` (that copy's bar hides itself, so it shows only
@@ -71,6 +80,12 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert, hide their bars with
   `layout.hide` (only bars that were showing), and show them again once they run.
+- **Hints and settings** (ADR 0011): the bar's copy works out their view models (`views.js`)
+  and hands them on in private shared keys, `whistle.hints` and `whistle.settings`; two more
+  copies of the mod (prop `part: "hints"` / `"settings"`) draw them and run no core. Settings
+  change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
+  the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
+  next read.
 - **Whistle state**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` whenever it changes, and only then; an inert copy never writes it
   (docs/contracts/state.md). Every other `whistle.*` key is private.
@@ -85,10 +100,12 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 - **`mods/whistle/`**: a pure core, `step(model, input, world) -> { model, effects }`
   (`step.js`, with `fields.js` for the layout's fields, `inert.js` for the inert gate,
   `claims.js` for the keys.json section it wants, `config.js` for the layers, `keymap.js`
-  for what a key means, `keynames.js`, `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
+  for what a key means, `views.js` for the hints' and settings' models, `keynames.js`,
+  `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
-  `bar.js` draws the bar. `whistle.js` is the reader other mods copy (whistle doesn't import
-  it), and `keynav.js` the helper keynav fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
+  `bar.js`, `hints.js` and `settings.js` draw the bar, the hints and the settings. `whistle.js`
+  is the reader other mods copy (whistle doesn't import it), and `keynav.js` the helper keynav
+  fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).
@@ -99,7 +116,7 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   `layout.show`), `exec("hc", ["keys", ...])` to type the switch key through while inert.
   `readTextFile` / `writeTextFile` on `appHome()`'s `keys.json` (read every second, written
   with the text it read as `expected`) and `keys.error`, and reads `whistle.json` there
-  every second. No network; no other files outside its folder.
+  every second; settings write `whistle.json` (with the text read as `expected`). No network; no other files outside its folder.
 - **Tests**: `bash tests/run.sh` (`herdr-app check` on a throwaway test mod); not shipped.
 
 ## Watch out
@@ -119,6 +136,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   hides itself and `mods/whistle/` runs.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
   JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
+- In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
+- In settings, switching a mod off that offers mappings writes `"mods": { "<mod>": false }`
+  into `whistle.json` and its mappings stop working within a second.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and
   `ctrl-space` reaches the terminal.
 

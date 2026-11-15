@@ -3,9 +3,10 @@
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 
-// vm: { badge, label, marker, problem }; t: theme(); handle: the bar's focus handle; onKey(e, cx).
+// vm: { badge, label, marker, problem }; t: theme(); handle: the bar's focus handle; onKey(e, cx);
+// onSize(size): the bar's drawn size, for docking the hints on it.
 // Inert, there is no badge, only why.
-export function renderBar(vm, t, handle, onKey) {
+export function renderBar(vm, t, handle, onKey, onSize) {
   const on = vm.badge === "WHISTLE";
   const row = h_flex()
     .id("whistle")
@@ -15,6 +16,7 @@ export function renderBar(vm, t, handle, onKey) {
     .items_center()
     .gap(10)
     .text_size(11.5)
+    .on_size_change(onSize ?? (() => {}))
     .on_key_down(onKey);
   if (!vm.badge) return row.px(10).child(div().flex_1().min_w(0).truncate().text_color(t.blocked).child(vm.problem ?? ""));
   return row
