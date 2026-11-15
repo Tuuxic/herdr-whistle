@@ -42,7 +42,12 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   cloned (`spaces-whistle`, `main-whistle`); yours are changed in place. A record,
   `whistle-integration.md` in Herdr's home, lets Update offer to make the clones again when
   Herdr updates their originals, and Uninstall offer to undo it all. Whistle itself ships no
-  clones and never reads the record.
+  clones and never reads the record. Integrated lists keep the cursor in view as it moves, and
+  a copy of the layout's pane header marks the terminal whistle has selected while in WHISTLE.
+- **New**: on Herdr's own layouts (such as `main`), where Herdr never shows a new mod's bar,
+  the installing agent asks, then makes a copy of the layout with the bar (`main-whistle`, the
+  same copy integration uses) and switches to it. Agents now talk to you in the words you see
+  in the window, and ask only what is yours to choose (RECIPE.md, Talking to the person).
 
 - Whistle stands aside (inert) on a Herdr older than it needs, or while another copy of
   whistle runs: it claims nothing, Ctrl+Space types through, and the bar says why.
@@ -69,6 +74,11 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder`
   and `hintsGap`, which line the hints box up with a bar set in from the window's edge. `nav`
   directions are `left`/`down`/`up`/`right`, and a bad prop is listed as a config problem.
+- **Breaking**: `hintsAlignRight` is the px from the window's right edge to the bar block's
+  outer edge, its border included (it was to the bar's inside: a bar set in 200 px with a 2 px
+  border needed 202, now 200), and `hintsGap` counts from the block's top border (the border
+  used to eat into the gap). A layout that set `hintsAlignRight` with a border takes
+  `hintsAlignBorder` off it.
 
 ### Mod authors
 

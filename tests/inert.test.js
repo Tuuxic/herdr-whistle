@@ -108,6 +108,19 @@ const SCENARIOS = [
     ],
   },
   {
+    // The hand pass (#33): the shell gives the copy its props ({} for a bar without any), so with
+    // its own bars hidden it would rest (layout-block.md rule 6) and never show them again.
+    name: "A copy that stood aside shows its bars again when the other copy's blocks go, though it hid them itself",
+    world: { ...RENAMED, props: {}, copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" } },
+    steps: [
+      { tick: 120, effects: [{ run: "layout.hide", args: { id: "bar2" } }] },
+      { world: { layout: { ...RENAMED.layout, children: [term("main"), bar, { ...bar2, hidden: true }] } },
+        tick: 120, effects: [] },
+      { world: { layout: { id: "root", type: "column", children: [term("main"), { ...bar2, hidden: true }] } },
+        tick: 120, effects: [{ run: "layout.show", args: { id: "bar2" } }], bar: { badge: "TYPE" } },
+    ],
+  },
+  {
     name: "A bar hidden before the copy went inert stays hidden",
     world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" },
       layout: { ...RENAMED.layout, children: [term("main"), bar, { ...bar2, hidden: true }] } },

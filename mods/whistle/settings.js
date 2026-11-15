@@ -50,5 +50,5 @@ export function renderSettings(vm, t, act, note) {
     .when(Boolean(note), (el) => el.child(div().py(6).text_size(12.5).text_color(t.blocked).child(note ?? "")))
     .child(v_flex().id("wh-body").flex_1().min_h(0).overflow_y_scrollbar().children(rows))
     .child(div().pt(8).text_size(11.5).line_height("17px").text_color(t.dim)
-      .child("Changes go in ~/.config/herdr-app/whistle.json; the bar picks them up within a second."));
+      .child(`Changes go in ${vm.file ?? "whistle.json in Herdr's home"}; the bar picks them up within a second.`));
 }

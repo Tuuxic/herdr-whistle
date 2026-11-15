@@ -5,6 +5,7 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { switchMod, keepMapping } from "./config.js";
+import { HINTS_BOX, labelWidth, keyWidth, columnWidth } from "./views.js";
 import { term, bar } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
@@ -46,6 +47,14 @@ const SCENARIOS = [
     steps: [...IN, { key: "w" }, { key: "escape", hintsWindow: [{ closeOverlay: "hints" }] }],
   },
   {
+    // Herdr makes a new copy of whistle when the layout changes; the old copy's hints window
+    // stays open unless the new one closes it (hand pass, #33).
+    name: "A copy that starts closes a hints window an earlier copy left open, before it opens one",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [{ tick: 120, hintsWindow: [{ closeOverlay: "hints" }] }, { tick: 120, hintsWindow: [] },
+      ...IN, { key: "w", hintsWindow: [HINTS(1000, ONE_ROW, { x: 0, y: 600 - 22 - ONE_ROW - 6 })] }],
+  },
+  {
     name: "A nested group of the same size keeps the hints window where it is",
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { key: "m", hintsWindow: [] }],
@@ -54,7 +63,21 @@ const SCENARIOS = [
     name: "A bar set in from the window's edge docks the hints by the layout's hintsAlignRight, hintsAlignBorder and hintsGap",
     world: { ...world({ map: PANES, props: { hintsAlignRight: 12, hintsAlignBorder: 1, hintsGap: 4 } }),
       viewport: { width: 1000, height: 600 }, barSize: { width: 800, height: 22 } },
-    steps: [...IN, { key: "w", hintsWindow: [HINTS(802, ONE_ROW, { x: 1000 - 12 - 800 - 1, y: 600 - 22 - ONE_ROW - 4 })] }],
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(802, ONE_ROW, { x: 1000 - 12 - 802, y: 600 - (22 + 2) - ONE_ROW - 4 })] }],
+  },
+  {
+    // The hand pass's bar (#33): set in 200 px from the window's right edge, measured to the
+    // bar block's outer edge, inside a 2 px border; the box ends where the border does.
+    name: "hintsAlignRight measures to the bar block's outer edge: a bar 200 px in with a 2 px border gets a box as wide as it",
+    world: { ...world({ map: PANES, props: { hintsAlignRight: 200, hintsAlignBorder: 2 } }),
+      viewport: { width: 1000, height: 600 }, barSize: { width: 600, height: 22 } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(604, ONE_ROW, { x: 196, y: 600 - 26 - ONE_ROW - 6 })] }],
+  },
+  {
+    name: "The hints gap counts from the bar's border: with a 2 px border and hintsGap 6 the box sits 6 px above the border",
+    world: { ...world({ map: PANES, props: { hintsAlignBorder: 2, hintsGap: 6 } }), ...MEASURED },
+    // The bar block: 22 px inside, 26 px with its border, so its outer top is at 574; the box ends 6 px above.
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(1004, ONE_ROW, { x: 0, y: 574 - 6 - ONE_ROW })] }],
   },
   {
     name: "The bar changing size moves the open hints window on the next tick",
@@ -78,7 +101,7 @@ const SCENARIOS = [
     name: "The hints' and settings' models go in their private shared keys when they change, and only then",
     world: world({ map: PANES }),
     steps: [
-      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { problems: [], mods: [], conflicts: [], overrides: [] } } },
+      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
       { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
       { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
@@ -176,6 +199,17 @@ const SCENARIOS = [
     steps: [{ tick: 120, settings: { mods: [{ name: "alpha", on: false, problems: [] }, { name: "beta", on: true, problems: [] }] } }],
   },
   {
+    // The hand pass (#33): the footer named ~/.config/herdr-app/whistle.json in a sandbox home.
+    name: "Settings name whistle.json in Herdr's home as it is, wherever that is",
+    world: { ...world(), home: "/tmp/sandbox/home" },
+    steps: [{ tick: 120, settings: { file: "/tmp/sandbox/home/whistle.json" } }],
+  },
+  {
+    name: "Settings name whistle.json as in Herdr's home when the home isn't known",
+    world: world(),
+    steps: [{ tick: 120, settings: { file: "whistle.json in Herdr's home" } }],
+  },
+  {
     name: "A mod's problems are listed under it in settings, not counted in the bar's marker",
     world: world({ mods: ["alpha"], entries: { alpha: { v: 2, map: {} } } }),
     steps: [{ tick: 120, bar: { marker: null },
@@ -210,6 +244,14 @@ SCENARIOS.push({
 
 export default suite("views", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // The hand pass (#33) saw "Rename" drawn "Rena…" in the Spaces field's hints. "Rename" at
+  // 12 px is about 43 px in Segoe UI and 46 px in Inter; a column must leave it at least 48.
+  const spaces = [{ key: "n", label: "New", group: false }, { key: "r", label: "Rename", group: false }, { key: "x", label: "Close", group: false }];
+  t.check("A hints column leaves its longest label, Rename, room for its full width", labelWidth(spaces) >= 48, true);
+  t.check("A hints column is as wide as its key, arrow and longest label side by side",
+    columnWidth(spaces), keyWidth(spaces) + HINTS_BOX.ARROW + labelWidth(spaces) + 2 * HINTS_BOX.INNER);
+  t.check("A group's label in the hints counts its +", labelWidth([{ key: "w", label: "Panes", group: true }]) > labelWidth([{ key: "w", label: "Panes", group: false }]), true);
 
   t.check("Switching a mod off adds it to whistle.json's mods, keeping the rest",
     switched, { text: pretty({ ...MINE, mods: { alpha: false } }) });

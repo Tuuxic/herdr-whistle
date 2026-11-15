@@ -52,13 +52,22 @@ function declaredHints(model, world) {
 }
 
 // The hints window's measures (px): a row, the side padding, the title row, the gap between
-// columns, a character's width (estimated). hints.js draws by them.
-export const HINTS_BOX = { ROW: 18, PAD: 12, HEAD: 22, GAP: 32, CH: 7.2 };
-const { ROW, PAD, HEAD, GAP, CH } = HINTS_BOX;
+// columns, the arrow's width and the gap on each side of it. hints.js draws by them.
+export const HINTS_BOX = { ROW: 18, PAD: 12, HEAD: 22, GAP: 32, ARROW: 14, INNER: 8 };
+const { ROW, PAD, HEAD, GAP, ARROW, INNER } = HINTS_BOX;
 const itemText = (i) => (i.group ? `+${i.label}` : i.label);
-// One column's widths: its longest key, and key + arrow + its longest label.
-export const keyWidth = (col) => Math.ceil(Math.max(...col.map((i) => i.key.length)) * CH) + 4;
-export const columnWidth = (col) => keyWidth(col) + 8 + 10 + 8 + Math.ceil(Math.max(...col.map((i) => itemText(i).length)) * CH);
+
+// A text's width at the hints' 12 px, estimated on the wide side (whistle can't measure text):
+// narrow letters, wide ones (m, w, capitals), the rest. Bold keys run a little wider.
+const NARROW = /[il.,:;'|!ftjrI \[\]()]/, WIDE = /[mwMW@%]/, CAPS = /[A-Z0-9+]/;
+const charWidth = (c) => (NARROW.test(c) ? 4.5 : WIDE.test(c) ? 11 : CAPS.test(c) ? 9 : 7.5);
+const textWidth = (text, bold = false) => Math.ceil([...text].reduce((w, c) => w + charWidth(c), 0) * (bold ? 1.08 : 1));
+
+// One column's widths: its longest key, its longest label (all of it: labels are never cut),
+// and the column, key + arrow + label with the gaps between.
+export const keyWidth = (col) => Math.max(...col.map((i) => textWidth(i.key, true))) + 4;
+export const labelWidth = (col) => Math.max(...col.map((i) => textWidth(itemText(i)))) + 4;
+export const columnWidth = (col) => keyWidth(col) + INNER + ARROW + INNER + labelWidth(col);
 
 // The hints' items in columns filled top to bottom, each as wide as its own items: the most
 // columns that fit the width. { columns, rows }.
@@ -76,10 +85,10 @@ export function hintsColumns(items, width) {
 const BAR_HEIGHT = 22, WIDTH = 900;
 
 // Where the hints window docks: on top of the bar and as wide as it, { width, height, at? }.
-// Whistle measures only the window (world.viewport) and its own bar (world.barSize); the bar
-// reaches the window's right edge, set in by the layout's hintsAlignRight, inside a border
-// hintsAlignBorder wide, and the box sits hintsGap (6) above it. Without a viewport, Herdr
-// places the window.
+// Whistle measures only the window (world.viewport) and its own bar (world.barSize, inside any
+// border); the layout says the rest. The bar block (the bar and a border hintsAlignBorder wide
+// around it) ends hintsAlignRight px from the window's right edge, and the box sits hintsGap
+// (6) above the block's top, border included. Without a viewport, Herdr places the window.
 export function hintsBox(items, place, world) {
   const vp = world.viewport ?? null;
   const right = place.hintsAlignRight ?? 0, border = place.hintsAlignBorder ?? 0, gap = place.hintsGap ?? 6;
@@ -87,7 +96,8 @@ export function hintsBox(items, place, world) {
   const width = Math.round(barWidth + 2 * border);
   const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
   if (!vp) return { width, height };
-  const at = { x: Math.max(0, vp.width - right - barWidth - border), y: Math.max(8, vp.height - (world.barSize?.height ?? BAR_HEIGHT) - height - gap) };
+  const blockHeight = (world.barSize?.height ?? BAR_HEIGHT) + 2 * border;
+  const at = { x: Math.max(0, vp.width - right - width), y: Math.max(8, vp.height - blockHeight - height - gap) };
   return { width, height, at };
 }
 
@@ -128,10 +138,12 @@ function override(o) {
 
 // The settings' model: { problems: config problems [{ source, detail }], conflicts: mapping
 // conflicts, overrides: keys mapped over mods', mods: the shown layout's mods that offer
-// mappings [{ name, on, problems: details }] }.
+// mappings [{ name, on, problems: details }], file: where changes go, whistle.json in Herdr's
+// home (world.home) }.
 export function settings(model, world) {
   const all = model.problems ?? [];
   return {
+    file: world.home ? `${world.home}/whistle.json` : "whistle.json in Herdr's home",
     problems: problems(model),
     mods: (model.mods ?? []).map((m) => ({ ...m, problems: all.filter((p) => p.source === m.name).map((p) => p.detail) })),
     conflicts: (model.conflicts ?? []).map((c) => conflict(c, world)),

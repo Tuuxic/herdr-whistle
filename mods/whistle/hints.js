@@ -6,9 +6,9 @@
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { HINTS_BOX, hintsColumns, keyWidth, columnWidth } from "./views.js";
+import { HINTS_BOX, hintsColumns, keyWidth, labelWidth, columnWidth } from "./views.js";
 
-const { ROW, PAD, HEAD, GAP } = HINTS_BOX;
+const { ROW, PAD, HEAD, GAP, ARROW, INNER } = HINTS_BOX;
 const labelOf = (i) => (i.group ? `+${i.label}` : i.label);
 
 // vm: { keys, title, items: [{ key, label, group }], exit } | null; width: the window's; t: theme().
@@ -25,8 +25,8 @@ export function renderHints(vm, width, t) {
     .child(top)
     .child(h_flex().flex_1().items_start().gap(GAP).px(PAD).pb(8)
       .children(columns.map((col) => v_flex().w(columnWidth(col)).flex_none()
-        .children(col.map((i) => h_flex().h(ROW).gap(8).items_center()
+        .children(col.map((i) => h_flex().h(ROW).gap(INNER).items_center()
           .child(div().w(keyWidth(col)).flex_none().font_bold().text_color(t.accent).child(i.key))
-          .child(div().text_color(t.dim).child("→"))
-          .child(div().min_w(0).truncate().text_color(i.group ? t.accent : t.foreground).child(labelOf(i))))))));
+          .child(div().w(ARROW).flex_none().text_color(t.dim).child("→"))
+          .child(div().w(labelWidth(col)).flex_none().whitespace_nowrap().text_color(i.group ? t.accent : t.foreground).child(labelOf(i))))))));
 }

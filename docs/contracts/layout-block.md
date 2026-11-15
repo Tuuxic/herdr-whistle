@@ -23,14 +23,15 @@ contract.
 | `hints` | boolean | `false` hides the hints box. Default `true`. |
 | `nav` | object | `{ "<block id>": { "<direction>": "<block id>" } }`: which field the field keys reach from a block, over the layout's rows and columns. Directions: `left`, `down`, `up`, `right`. |
 | `bar` | string | Names this block as a spot for the bar (see rule 5). |
-| `hintsAlignRight` | number | px from the window's right edge to the bar's inside. Default 0. |
+| `hintsAlignRight` | number | px from the window's right edge to the bar block's outer edge (its border included). Default 0. |
 | `hintsAlignBorder` | number | The width in px of the border the layout draws around the bar. Default 0. |
 | `hintsGap` | number | px between the bar's top and the hints box. Default 6. |
 
 The three `hints*` props line the hints box up with the bar. Whistle can't measure where the
-layout puts the bar, only the bar's own size, so a layout that sets the bar in from the
-window's right edge, or draws a border around it, tells whistle by how much: the box is then as
-wide as the bar and its border, and sits `hintsGap` above it.
+layout puts the bar, only the bar's own size inside any border, so a layout that sets the bar
+in from the window's right edge, or draws a border around it, tells whistle by how much: the
+box is then as wide as the bar block, border included, ends where the block ends, and sits
+`hintsGap` above the block's top edge, border included (rule 7).
 
 A layout may have several whistle blocks (bar spots). Each prop but `bar` comes from the first
 block, in layout order, that has it, so a second spot needn't repeat the mappings.
@@ -162,7 +163,8 @@ is.
 Each whistle block is a copy of whistle, told apart by its props (give each spot its own
 `bar` name). While a copy's block is hidden, that copy rests: it stays in TYPE, claims no keys,
 publishes nothing and moves no spot, so only the shown spot's copy runs. Shown again, it runs
-again and publishes its state anew.
+again and publishes its state anew. The blocks a copy hid itself, while it stood aside for
+another copy of whistle, don't make it rest: once that copy's blocks go, it shows them again.
 
 ```json example A hidden spot's copy rests while the shown one runs
 {
@@ -181,6 +183,39 @@ again and publishes its state anew.
 }
 ```
 
+### 7. The hints box lines up with the bar block, border included
+
+A bar block that ends 200 px from the window's right edge, with a 2 px border, sets
+`hintsAlignRight: 200` and `hintsAlignBorder: 2`: the box is as wide as the bar and both
+borders, ends where the block's outer edge does, and sits `hintsGap` (6) above the block's top
+border.
+
+```json example A bar 200 px in with a 2 px border gets a hints box as wide as it, 6 px above it
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": {
+        "hintsAlignRight": 200, "hintsAlignBorder": 2,
+        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
+      } } }
+    ] },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "viewport": { "width": 1000, "height": 600 },
+    "barSize": { "width": 600, "height": 22 }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
+      "mod": "whistle", "kind": "window", "frame": "none", "width": 604, "height": 50,
+      "at": { "x": 196, "y": 518 }, "props": { "part": "hints", "width": 604 } } }] }
+  ]
+}
+```
+
+The box is 600 + 2 × 2 = 604 px wide and starts at 1000 − 200 − 604 = 196; the bar block is
+22 + 2 × 2 = 26 px high, so the box (50 px, one row) ends 6 px above it: 600 − 26 − 6 − 50 = 518.
+
 ## Stable and may change
 
 - Stable: `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
@@ -190,4 +225,6 @@ again and publishes its state anew.
 ## History
 
 - whistle 1.0.0: first version. `nav` directions are `left`/`down`/`up`/`right` (they were
-  `h`/`j`/`k`/`l`); a bad prop is now listed instead of ignored.
+  `h`/`j`/`k`/`l`); a bad prop is now listed instead of ignored. `hintsAlignRight` measures to
+  the bar block's outer edge, border included (it was to the bar's inside), and `hintsGap`
+  counts from the block's top border.

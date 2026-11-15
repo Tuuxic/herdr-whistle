@@ -41,6 +41,10 @@ const TICK_MS = 120;
 // How often the shell reads keys.json, keys.error, mappings.json and whistle.json (ms).
 const KEYS_MS = 1000;
 
+// The private shared key (ADR 0010) holding the id of the overlay this folder's copy opened
+// under a name, so a later copy can close it.
+const overlayKey = (name) => `whistle.overlay:${FOLDER}:${name}`;
+
 // A path the core names, relative to Herdr's home ("keys.json").
 const home = (path) => `${appHome()}/${path}`;
 
@@ -110,7 +114,7 @@ export default class Whistle extends View {
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
       configFiles: this.configFiles, commands: this.commands, modMappings: shared("whistle.mappings") ?? {},
       viewport: call(() => globalThis.window?.viewport_size?.()) ?? this.viewport ?? null, barSize: this.barSize ?? null,
-      props: call(() => props() ?? {}) ?? undefined,
+      props: call(() => props() ?? {}) ?? undefined, home: call(() => appHome()) ?? undefined,
     };
   }
 
@@ -144,6 +148,15 @@ export default class Whistle extends View {
     };
   }
 
+  // Closes the overlay open under a name: this copy's, else the one an earlier copy of this
+  // folder left open (Herdr makes a new copy when the layout changes; the id is in shared state).
+  closeOverlay(name) {
+    const id = this.overlays.get(name) ?? shared(overlayKey(name)) ?? null;
+    if (id) call(() => closeOverlay(id));
+    this.overlays.delete(name);
+    if (id) setShared(overlayKey(name), null);
+  }
+
   // One effect (step.js lists the closed set).
   carry(e) {
     if ("run" in e) {
@@ -159,14 +172,11 @@ export default class Whistle extends View {
         (err) => after(false, String(err?.message ?? err)),
       );
     } else if ("openOverlay" in e) {
-      const old = this.overlays.get(e.openOverlay);
-      if (old) closeOverlay(old);
-      this.overlays.set(e.openOverlay, openOverlay(e.spec));
-    } else if ("closeOverlay" in e) {
-      const id = this.overlays.get(e.closeOverlay);
-      if (id) closeOverlay(id);
-      this.overlays.delete(e.closeOverlay);
-    } else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
+      this.closeOverlay(e.openOverlay);
+      const id = openOverlay(e.spec);
+      this.overlays.set(e.openOverlay, id);
+      setShared(overlayKey(e.openOverlay), id);
+    } else if ("closeOverlay" in e) this.closeOverlay(e.closeOverlay); else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
   }
 
   render(_cx) {
