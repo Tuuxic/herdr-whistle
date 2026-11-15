@@ -4,6 +4,7 @@
 import { suite } from "./harness.js";
 import * as core from "./step.js";
 import { IN_TERMINAL, term, bar } from "./worlds.js";
+import { VERSION } from "./version.js";
 
 // Herdr's key bindings (keys()): Ctrl+Space bound to whistle.whistle everywhere.
 const KEYS = [{ section: "global", keys: "ctrl-space", action: "whistle.whistle" }];
@@ -93,13 +94,13 @@ const SCENARIOS = [
     name: "A copy announces its folder in whistle.copies when it isn't there yet",
     world: { ...TWO, folder: "whistle-2", copies: { whistle: "1.0.0" } },
     steps: [
-      { tick: 120, effects: [{ setShared: "whistle.copies", value: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" } }, { run: "layout.hide", args: { id: "bar2" } }] },
-      { world: { copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" } }, tick: 120, effects: [] },
+      { tick: 120, effects: [{ setShared: "whistle.copies", value: { "whistle": "1.0.0", "whistle-2": VERSION } }, { run: "layout.hide", args: { id: "bar2" } }] },
+      { world: { copies: { "whistle": "1.0.0", "whistle-2": VERSION } }, tick: 120, effects: [] },
     ],
   },
   {
     name: "An inert copy hides its bar, and shows it again once it is the copy that runs",
-    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" } },
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION } },
     steps: [
       { tick: 120, effects: [{ run: "layout.hide", args: { id: "bar2" } }] },
       { world: { layout: { ...RENAMED.layout, children: [term("main"), bar, { ...bar2, hidden: true }] } },
@@ -112,7 +113,7 @@ const SCENARIOS = [
     // The hand pass (#33): the shell gives the copy its props ({} for a bar without any), so with
     // its own bars hidden it would rest (layout-block.md rule 6) and never show them again.
     name: "A copy that stood aside shows its bars again when the other copy's blocks go, though it hid them itself",
-    world: { ...RENAMED, props: {}, copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" } },
+    world: { ...RENAMED, props: {}, copies: { "whistle": "1.0.0", "whistle-2": VERSION } },
     steps: [
       { tick: 120, effects: [{ run: "layout.hide", args: { id: "bar2" } }] },
       { world: { layout: { ...RENAMED.layout, children: [term("main"), bar, { ...bar2, hidden: true }] } },
@@ -123,7 +124,7 @@ const SCENARIOS = [
   },
   {
     name: "A bar hidden before the copy went inert stays hidden",
-    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": "1.0.0-dev" },
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION },
       layout: { ...RENAMED.layout, children: [term("main"), bar, { ...bar2, hidden: true }] } },
     steps: [
       { tick: 120, effects: [] },

@@ -23,7 +23,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Herdr's window libraries, and xvfb for when `check` won't run headless.
       - name: Linux libraries
