@@ -528,7 +528,7 @@ function copiesTick(out, world, why) {
 export function step(model, input, world) {
   const why = inert(world);
   if (why) return hintsClosed(stepped(model, input, world, why));
-  if (resting(world.layout, folderOf(world), world.props)) return rest(hintsClosed({ model, effects: [] }), input, world);
+  if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);
   return publish(viewsSent(stepped(model, input, world, why), world));
 }
 

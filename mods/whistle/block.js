@@ -79,11 +79,13 @@ export function blockProps(layout, folder = FOLDER) {
 
 // Whether this copy rests (ADR 0011): every block of the layout with this copy's props (props(),
 // which tell the copies of a layout's spots apart) is hidden. Unknown props: it doesn't rest.
-export function resting(layout, folder, props) {
+// A block the copy hid itself, standing aside for another copy (hid: their ids), doesn't count
+// as hidden: the copy shows it again once it runs.
+export function resting(layout, folder, props, hid = []) {
   if (props === undefined) return false;
   const mine = fieldKey(folder, isObject(props) ? props : {});
   const blocks = bars(layout, folder).filter((b) => fieldKey(folder, b.props) === mine);
-  return blocks.length > 0 && blocks.every((b) => b.hidden);
+  return blocks.length > 0 && blocks.every((b) => b.hidden && !hid.includes(b.id));
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.

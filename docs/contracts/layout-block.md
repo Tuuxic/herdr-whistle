@@ -163,7 +163,8 @@ is.
 Each whistle block is a copy of whistle, told apart by its props (give each spot its own
 `bar` name). While a copy's block is hidden, that copy rests: it stays in TYPE, claims no keys,
 publishes nothing and moves no spot, so only the shown spot's copy runs. Shown again, it runs
-again and publishes its state anew.
+again and publishes its state anew. The blocks a copy hid itself, while it stood aside for
+another copy of whistle, don't make it rest: once that copy's blocks go, it shows them again.
 
 ```json example A hidden spot's copy rests while the shown one runs
 {
