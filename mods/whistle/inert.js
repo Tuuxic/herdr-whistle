@@ -10,6 +10,7 @@
 // renaming in Herdr's add procedure rewrites.
 
 import { MIN_HERDR } from "./version.js";
+import { eachNode } from "./fields.js";
 
 // The private shared key copies announce themselves under.
 export const COPIES = "whistle.copies";
@@ -29,21 +30,16 @@ export function older(a, b) {
   return false;
 }
 
-// The layout's mod blocks.
-function modBlocks(layout) {
+// The layout's nodes that hold a mod.
+function modNodes(layout) {
   const out = [];
-  const walk = (n) => {
-    if (!n) return;
-    if (n.content?.mod) out.push(n);
-    for (const c of n.children ?? []) walk(c);
-  };
-  walk(layout);
+  eachNode(layout, (n) => { if (n.content?.mod) out.push(n); });
   return out;
 }
-const modsIn = (layout) => new Set(modBlocks(layout).map((b) => b.content.mod));
+const modsIn = (layout) => new Set(modNodes(layout).map((b) => b.content.mod));
 
 // The ids of this copy's blocks that show (not hidden themselves).
-export const ownBars = (world) => modBlocks(world.layout).filter((b) => b.content.mod === world.folder && !b.hidden).map((b) => b.id);
+export const ownBars = (world) => modNodes(world.layout).filter((b) => b.content.mod === world.folder && !b.hidden).map((b) => b.id);
 
 // The folder of the copy that runs: of this one and the announced copies in the layout,
 // mods/whistle/, else the first by name.

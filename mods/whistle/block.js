@@ -8,7 +8,7 @@
 //
 // whistle.json's `enabled`, `hints` and `bar` go over the layout's (settings()).
 
-import { fieldKey } from "./fields.js";
+import { fieldKey, eachNode } from "./fields.js";
 
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
@@ -20,8 +20,7 @@ const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v)
 // Every block id in the layout.
 function ids(layout) {
   const out = new Set();
-  const walk = (n) => { if (!n) return; if (n.id) out.add(n.id); for (const c of n.children ?? []) walk(c); };
-  walk(layout);
+  eachNode(layout, (n) => { if (n.id) out.add(n.id); });
   return out;
 }
 
@@ -29,14 +28,10 @@ function ids(layout) {
 // in layout order. hidden: the block or one of its groups is hidden.
 export function bars(layout, folder = "whistle") {
   const out = [];
-  const walk = (n, hidden) => {
-    if (!n) return;
-    const h = hidden || Boolean(n.hidden);
+  eachNode(layout, (n, _parent, hidden) => {
     const c = n.content;
-    if (c?.mod === folder && !(isObject(c.props) && c.props.part)) out.push({ id: n.id, hidden: h, props: isObject(c.props) ? c.props : {} });
-    for (const k of n.children ?? []) walk(k, h);
-  };
-  walk(layout, false);
+    if (c?.mod === folder && !(isObject(c.props) && c.props.part)) out.push({ id: n.id, hidden, props: isObject(c.props) ? c.props : {} });
+  });
   return out;
 }
 

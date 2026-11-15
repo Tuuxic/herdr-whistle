@@ -47,16 +47,25 @@ export function entryOf(shared, key) {
   return e && typeof e === "object" && e.v === KEYNAV_V ? e : null;
 }
 
+// Every node of a layout tree, depth first in layout order: visit(node, parent | null, hidden:
+// whether the node or a group around it is hidden). The one walk of the layout whistle has.
+export function eachNode(layout, visit) {
+  const walk = (n, p, hidden) => {
+    if (!n) return;
+    const h = hidden || Boolean(n.hidden);
+    visit(n, p, h);
+    for (const c of n.children ?? []) walk(c, n, h);
+  };
+  walk(layout, null, false);
+}
+
 // One look at the layout: each node by id and each node's parent.
 function index(layout) {
   const nodes = new Map(), parent = new Map();
-  const walk = (n, p) => {
-    if (!n) return;
+  eachNode(layout, (n, p) => {
     if (n.id) nodes.set(n.id, n);
     parent.set(n, p);
-    for (const c of n.children ?? []) walk(c, n);
-  };
-  walk(layout, null);
+  });
   return { nodes, parent };
 }
 

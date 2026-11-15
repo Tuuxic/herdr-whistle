@@ -65,7 +65,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, fields, terminal, neighbour, modBlocks, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
+import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
@@ -131,13 +131,10 @@ function paneMove(model, world, direction) {
 // The mods with a block in the shown layout, in layout order (hidden blocks count).
 function modsShown(world) {
   const out = [];
-  const walk = (n) => {
-    if (!n) return;
+  eachNode(world.layout, (n) => {
     const m = n.content?.mod;
     if (m && m !== (world.folder ?? "whistle") && !out.includes(m)) out.push(m);
-    for (const c of n.children ?? []) walk(c);
-  };
-  walk(world.layout);
+  });
   return out;
 }
 
