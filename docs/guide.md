@@ -312,6 +312,9 @@ layout. Your whistle.json and the layout can map over any of them, or set a key 
   for neither. The key keeps what the defaults give it (or the own key keeps acting), the bar
   flashes once ("g: 2 mods want it, see settings") and settings list it. Map the key yourself,
   or switch one mod off, to settle it.
+- **A bad mapping a mod offers** is skipped, and settings list it under that mod's name. The
+  bar flashes once when it first appears ("alpha's mappings have a problem, see settings"),
+  but its marker doesn't count it: it's the mod's to fix, not your config's.
 - **Switching a mod off**: a `mods` section takes a mod's mappings out whole, in whistle.json
   or the layout's whistle block (whistle.json's goes over the layout's):
 

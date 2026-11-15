@@ -25,7 +25,7 @@ keep the others.
 
 An entry only adds keys: no `null`, and no own keys or settings. A bad entry (another `v`, the
 wrong form) or a bad mapping in it is skipped and listed in whistle's settings under your mod's
-name; the rest still counts.
+name; the rest still counts (rule 6).
 
 ## Rules
 
@@ -178,3 +178,30 @@ section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's
 A chord in your mappings (`ctrl-g`) is claimed in keys.json like any of whistle's keys, so it
 reaches whistle in WHISTLE. A conflicting chord is claimed only while a lower layer still maps
 it, so Herdr's own binding keeps working until the conflict is settled.
+
+### 6. A bad entry is skipped, listed under your mod, and flashes once
+
+A bad entry, or a bad mapping in it, is skipped; the rest of your entry still counts. Whistle's
+settings list the problem under your mod's name, and the bar flashes once when it first
+appears. It isn't one of the person's config problems, so the bar's marker doesn't count it.
+
+```json example A bad mapping in a mod's entry is skipped and flashes once
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "alpha", "type": "block", "content": { "mod": "alpha" } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }", "user": null },
+    "modMappings": { "alpha": { "v": 1, "map": { "g": ["Go", "alpha.go"], "x": ["X"] } } }
+  },
+  "steps": [
+    { "tick": 120, "bar": { "label": "alpha's mappings have a problem, see settings", "marker": null },
+      "settings": { "mods": [{ "name": "alpha", "on": true, "problems": ["map › x: should be [label, command] or a group { name, map }"] }] } },
+    { "command": "whistle", "bar": { "label": "Terminal" } },
+    { "world": { "barFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusBar": true }] }
+  ]
+}
+```

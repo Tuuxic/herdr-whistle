@@ -222,6 +222,27 @@ const SCENARIOS = [
     ] } }, { key: "g", effects: ran("alpha.go") }],
   },
   {
+    name: "A new problem in a mod's mappings flashes once, naming the mod",
+    world: world({ entries: { alpha: entry({ x: ["X", 5] }) } }),
+    steps: [
+      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings", marker: null } },
+      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings" } },
+      { command: "whistle", bar: { label: "Terminal · zsh" } },
+      { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
+    ],
+  },
+  {
+    name: "A mod offering a bad mapping mid-session flashes; the same problem again doesn't",
+    world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
+    steps: [
+      { tick: 120, bar: { label: "Terminal" } },
+      { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"], x: ["X", 5] }) } }, tick: 120,
+        bar: { label: "alpha's mappings have a problem, see settings" } },
+      { command: "whistle" },
+      { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, bar: { label: "Terminal · zsh" } },
+    ],
+  },
+  {
     name: "A mods switch that isn't true or false is listed",
     world: world({ user: { mods: { alpha: "off" } }, entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [...IN, { key: "g", effects: ran("alpha.go"),

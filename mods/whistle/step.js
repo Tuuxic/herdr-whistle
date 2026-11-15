@@ -146,11 +146,14 @@ function conflictFlash(c) {
   return `${seq}: ${c.mods.length} mods want it, see settings`;
 }
 const conflictId = (c) => JSON.stringify([c.seq, c.mods]);
+// What the bar flashes for a new problem in a mod's offered mappings (issue #10).
+const modProblemFlash = (p) => `${p.source}'s mappings have a problem, see settings`;
+const problemId = (p) => JSON.stringify([p.source, p.detail]);
 
 // The model with its config brought in line with the world: the files (each run on its last
 // good version while it doesn't parse), the mods' mappings (those of mods in the shown layout),
 // the layout's whistle block, Herdr's commands. Unchanged when none of them changed. A mapping
-// conflict that wasn't there before flashes, once.
+// conflict, or a problem in a mod's mappings, that wasn't there before flashes, once.
 function configured(model, world) {
   const texts = world.configFiles ?? {};
   const folder = world.folder ?? "whistle";
@@ -179,6 +182,9 @@ function configured(model, world) {
   // Broken (or not read yet): keys.json isn't written until every source reads.
   const before = new Set((model.conflicts ?? []).map(conflictId));
   const fresh = c.conflicts.find((x) => !before.has(conflictId(x)));
+  const offering = new Set(offers.map((o) => o.name));
+  const known = new Set((model.problems ?? []).filter((p) => offering.has(p.source)).map(problemId));
+  const freshModProblem = c.problems.find((p) => offering.has(p.source) && !known.has(problemId(p)));
   const broken = Boolean(d.unread || d.missing || d.broken || u.unread || u.broken);
   return {
     ...model,
@@ -194,7 +200,7 @@ function configured(model, world) {
     conflicts: c.conflicts,
     overrides: c.overrides,
     mods: modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, on: !c.off.includes(name) })),
-    flash: fresh ? conflictFlash(fresh) : model.flash,
+    flash: fresh ? conflictFlash(fresh) : freshModProblem ? modProblemFlash(freshModProblem) : model.flash,
   };
 }
 
