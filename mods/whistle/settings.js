@@ -19,7 +19,8 @@ const line = (t, id, text, color) => h_flex().id(id).min_h(26).flex_none().px(6)
   .child(div().flex_1().min_w(0).text_size(12.5).line_height("17px").text_color(color ?? t.muted).child(text));
 
 // vm: the settings' model, or null (the bar hasn't said yet); t: theme(); act: { switchMod(name,
-// on), keep(seq, value) }; note: what went wrong with the last change | null.
+// on, cx), keep(seq, value, cx) }, each given the click's cx; note: what went wrong with the last
+// change | null.
 export function renderSettings(vm, t, act, note) {
   const top = h_flex().gap(10).items_center().pb(6)
     .child(div().text_size(15).font_semibold().child("Whistle"))
@@ -33,7 +34,7 @@ export function renderSettings(vm, t, act, note) {
   if (vm.conflicts.length) {
     rows.push(heading(t, `MAPPING CONFLICTS · ${vm.conflicts.length}`));
     vm.conflicts.forEach((c, i) => rows.push(line(t, `wh-c-${i}`, `${c.text}: neither counts until you settle it`, t.blocked)
-      .children(c.keep.map((k, j) => button(t, `wh-c-${i}-${j}`, `Keep ${k.mod}'s`, () => act.keep(c.seq, k.value))))));
+      .children(c.keep.map((k, j) => button(t, `wh-c-${i}-${j}`, `Keep ${k.mod}'s`, (_e, cx) => act.keep(c.seq, k.value, cx))))));
   }
   if (vm.overrides.length) {
     rows.push(heading(t, `OVER MODS' KEYS · ${vm.overrides.length}`));
@@ -42,7 +43,7 @@ export function renderSettings(vm, t, act, note) {
   rows.push(heading(t, `MODS' MAPPINGS · ${vm.mods.length}`));
   if (!vm.mods.length) rows.push(line(t, "wh-m-none", "No mod in this layout offers mappings."));
   vm.mods.forEach((m, i) => {
-    rows.push(line(t, `wh-m-${i}`, m.name, t.foreground).child(toggle(t, `wh-m-${i}-on`, m.on, () => act.switchMod(m.name, !m.on))));
+    rows.push(line(t, `wh-m-${i}`, m.name, t.foreground).child(toggle(t, `wh-m-${i}-on`, m.on, (_e, cx) => act.switchMod(m.name, !m.on, cx))));
     m.problems.forEach((p, j) => rows.push(line(t, `wh-m-${i}-p-${j}`, p, t.blocked).pl(24)));
   });
   return root

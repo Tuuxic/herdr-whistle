@@ -23,9 +23,8 @@ const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 // The hints' model while a key sequence has reached a group in WHISTLE and hints are on (the
 // layout's whistle block, whistle.json), else null:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
-//   in the group's order, exit: what ends it ("Esc cancels") | null, place: the layout's
-//   hintsAlignRight / hintsAlignBorder / hintsGap, for docking the box on the bar }.
-export function hints(model, _world) {
+//   in the group's order, exit: what ends it ("Esc cancels") | null }.
+export function hints(model) {
   if (model.mode !== "whistle" || !model.sequence?.length || model.config?.hints === false) return null;
   let group = null, map = model.config?.map ?? {};
   for (const k of model.sequence) {
@@ -37,8 +36,47 @@ export function hints(model, _world) {
     ? { key: keyLabel(key), label: v.name ?? key, group: true }
     : { key: keyLabel(key), label: v.label, group: false }));
   const cancel = model.config?.keys?.cancel?.[0];
-  return { keys: seqLabel(model.sequence), title: group.name ?? "", items, exit: cancel ? `${keyLabel(cancel)} cancels` : null,
-    place: model.config?.place ?? {} };
+  return { keys: seqLabel(model.sequence), title: group.name ?? "", items, exit: cancel ? `${keyLabel(cancel)} cancels` : null };
+}
+
+// The hints window's measures (px): a row, the side padding, the title row, the gap between
+// columns, a character's width (estimated). hints.js draws by them.
+export const HINTS_BOX = { ROW: 18, PAD: 12, HEAD: 22, GAP: 32, CH: 7.2 };
+const { ROW, PAD, HEAD, GAP, CH } = HINTS_BOX;
+const itemText = (i) => (i.group ? `+${i.label}` : i.label);
+// One column's widths: its longest key, and key + arrow + its longest label.
+export const keyWidth = (col) => Math.ceil(Math.max(...col.map((i) => i.key.length)) * CH) + 4;
+export const columnWidth = (col) => keyWidth(col) + 8 + 10 + 8 + Math.ceil(Math.max(...col.map((i) => itemText(i).length)) * CH);
+
+// The hints' items in columns filled top to bottom, each as wide as its own items: the most
+// columns that fit the width. { columns, rows }.
+export function hintsColumns(items, width) {
+  for (let cols = Math.max(1, items.length); cols >= 1; cols--) {
+    const rows = Math.ceil(items.length / cols);
+    const columns = Array.from({ length: cols }, (_, c) => items.slice(c * rows, c * rows + rows)).filter((c) => c.length);
+    const used = columns.reduce((sum, col) => sum + columnWidth(col), 0) + GAP * (columns.length - 1);
+    if (used <= width - 2 * PAD || cols === 1) return { columns, rows: Math.max(1, rows) };
+  }
+  return { columns: [items], rows: Math.max(1, items.length) };
+}
+
+// The bar's height when the shell hasn't measured it (mod.json's size), and the window's width.
+const BAR_HEIGHT = 22, WIDTH = 900;
+
+// Where the hints window docks: on top of the bar and as wide as it, { width, height, at? }.
+// Whistle measures only the window (world.viewport) and its own bar (world.barSize); the bar
+// reaches the window's right edge, set in by the layout's hintsAlignRight, inside a border
+// hintsAlignBorder wide, and the box sits hintsGap (6) above it. Without a viewport, Herdr
+// places the window.
+export function hintsBox(items, place, world) {
+  const vp = world.viewport ?? null;
+  const right = place.hintsAlignRight ?? 0, border = place.hintsAlignBorder ?? 0, gap = place.hintsGap ?? 6;
+  const barWidth = world.barSize?.width ?? vp?.width ?? WIDTH;
+  const width = Math.round(barWidth + 2 * border);
+  const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
+  if (!vp) return { width, height };
+  const at = { x: Math.max(0, vp.width - right - barWidth - border), y: Math.max(8, vp.height - (world.barSize?.height ?? BAR_HEIGHT) - height - gap) };
+  return { width, height, at };
 }
 
 const names = (mods) => (mods.length > 1 ? `${mods.slice(0, -1).join(", ")} and ${mods.at(-1)}` : mods[0] ?? "");

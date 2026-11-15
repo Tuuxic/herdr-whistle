@@ -25,7 +25,65 @@ const PANES = { w: { name: "Panes", map: {
   m: { name: "Move", map: { h: ["Move left", "pane.move"] } },
 } } };
 
+// The hints window as the core opens it: a window overlay of whistle's own "hints" part.
+const HINTS = (width, height, at) => ({ openOverlay: "hints", spec: { mod: "whistle", kind: "window", frame: "none", width, height,
+  ...(at ? { at } : {}), props: { part: "hints", width } } });
+// A 1000 x 600 window with the bar along its bottom, 22 px high.
+const MEASURED = { viewport: { width: 1000, height: 600 }, barSize: { width: 1000, height: 22 } };
+// The Panes group's two items fit on one row: the window is 22 (title) + 18 (row) + 10 high.
+const ONE_ROW = 50;
+
 const SCENARIOS = [
+  // The hints window: the core opens, docks and closes it; the shell only measures.
+  {
+    name: "Hints opening: a group's first key opens the hints window docked on top of the bar, as wide as it",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(1000, ONE_ROW, { x: 0, y: 600 - 22 - ONE_ROW - 6 })] }],
+  },
+  {
+    name: "Hints closing: the sequence ending closes the hints window",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [...IN, { key: "w" }, { key: "escape", hintsWindow: [{ closeOverlay: "hints" }] }],
+  },
+  {
+    name: "A nested group of the same size keeps the hints window where it is",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [...IN, { key: "w" }, { key: "m", hintsWindow: [] }],
+  },
+  {
+    name: "A bar set in from the window's edge docks the hints by the layout's hintsAlignRight, hintsAlignBorder and hintsGap",
+    world: { ...world({ map: PANES, props: { hintsAlignRight: 12, hintsAlignBorder: 1, hintsGap: 4 } }),
+      viewport: { width: 1000, height: 600 }, barSize: { width: 800, height: 22 } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(802, ONE_ROW, { x: 1000 - 12 - 800 - 1, y: 600 - 22 - ONE_ROW - 4 })] }],
+  },
+  {
+    name: "The bar changing size moves the open hints window on the next tick",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [...IN, { key: "w" },
+      { world: { barSize: { width: 700, height: 30 } }, tick: 120, hintsWindow: [HINTS(700, ONE_ROW, { x: 300, y: 600 - 30 - ONE_ROW - 6 })] }],
+  },
+  {
+    name: "Before the shell has measured anything, the hints window opens 900 wide where Herdr puts it",
+    world: world({ map: PANES }),
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW)] }],
+  },
+  {
+    name: "An inert copy closes its hints window and sets no views' models",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [...IN, { key: "w" }, { world: { herdr: "0.0.1" }, tick: 120,
+      effects: [{ run: "pane.focus", args: { pane: "p1" } }], hintsWindow: [{ closeOverlay: "hints" }],
+      shared: { "whistle.hints": undefined, "whistle.settings": undefined } }],
+  },
+  {
+    name: "The hints' and settings' models go in their private shared keys when they change, and only then",
+    world: world({ map: PANES }),
+    steps: [
+      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { problems: [], mods: [], conflicts: [], overrides: [] } } },
+      { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
+      { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
+        { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
+    ],
+  },
   {
     name: "Hints list the choices of the current key sequence",
     world: world({ map: PANES }),
@@ -48,11 +106,6 @@ const SCENARIOS = [
     name: "Hints switched off in whistle.json show nothing, over the layout's",
     world: world({ map: PANES, props: { hints: true }, user: { hints: false } }),
     steps: [...IN, { key: "w", hints: null }],
-  },
-  {
-    name: "Hints carry the layout's placement for the hints box",
-    world: world({ map: PANES, props: { hintsAlignRight: 12, hintsGap: 4 } }),
-    steps: [...IN, { key: "w", hints: { place: { hintsAlignRight: 12, hintsGap: 4 } } }],
   },
   {
     name: "No hints outside a key sequence, nor once it ends",

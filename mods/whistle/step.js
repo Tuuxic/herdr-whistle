@@ -22,7 +22,9 @@
 //          selected field's requests count after this ms, fieldProblems: keynav fields'
 //          problems [{ source: "keynav", detail }],
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
-//          published (state() below, as JSON) | null }
+//          published (state() below, as JSON) | null,
+//          sent: the views' models last set in their shared keys and the hints window last
+//          opened, as JSON ({ hints, settings, box }; null: none yet / not open) }
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
@@ -43,7 +45,9 @@
 //                         file, undefined: not read yet),
 //          commands: Herdr's commands [{ name, args }] | null (unknown: not checked),
 //          shared: keynav's shared state by key ("keynav", "keynav.fields", and each shown
-//                  mod block's "keynav.field:<key>" and "keynav.request:<key>") }
+//                  mod block's "keynav.field:<key>" and "keynav.request:<key>"),
+//          viewport: the window's drawable size { width, height } | null (not measured),
+//          barSize: the bar's drawn size { width, height } | null (not measured) }
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command
@@ -52,7 +56,8 @@
 //                                       last whenever the whistle state changes (state())
 //   { write: path, text, expected }     write a file (path relative to Herdr's home: "keys.json");
 //                                       the outcome comes back as { wrote }
-//   { openOverlay: name, spec }         open an overlay, known by name
+//   { openOverlay: name, spec }         open an overlay, known by name (closing the one open
+//                                       under that name first)
 //   { closeOverlay: name }              close it
 //   { typeKey: key, terminal }          type a key into a terminal
 //
@@ -66,10 +71,7 @@ import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, spots } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
-import { problems, hints, settings } from "./views.js";
-
-// The views' models live in views.js; the core hands them out with the bar's.
-export { problems, hints, settings };
+import { problems, hints, settings, hintsBox } from "./views.js";
 
 // claims: { pending: the write on its way { text, raw, revert } | null, check: a write waiting
 // for Herdr's verdict { until, text, raw } | null, failed: a text that failed or Herdr rejected,
@@ -79,7 +81,7 @@ const CLAIMS = { pending: null, check: null, failed: null };
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, waitFor: null,
-  enabled: true, published: null,
+  enabled: true, published: null, sent: { hints: null, settings: null, box: null },
 });
 
 // The model with block selected as the field (or the field inside it), if one shows.
@@ -523,14 +525,49 @@ function chores(out, world, why) {
 }
 
 export function step(model, input, world) {
+  const why = inert(world);
+  return why ? hintsClosed(stepped(model, input, world, why)) : publish(viewsSent(stepped(model, input, world, why), world));
+}
+
+function stepped(model, input, world, why) {
   // A write's outcome counts whether or not whistle is inert now.
   if ("wrote" in input) return wrote(model, world, input);
   // A command that failed when pressed only flashes.
   if ("ran" in input) return { model: { ...model, flash: `${input.ran} failed: ${input.error ?? "unknown error"}` }, effects: [] };
-  const why = inert(world);
   const out = why ? inertStep(model, input, world) : active(model, input, world);
-  const done = input.tick ? chores(out, world, why) : out;
-  return why ? done : publish(done);
+  return input.tick ? chores(out, world, why) : out;
+}
+
+// The private shared keys the views' models go in (ADR 0010): the hints window and the
+// settings dialog, whistle's own overlay copies, draw them.
+export const VIEWS = { hints: "whistle.hints", settings: "whistle.settings" };
+// The hints window's overlay name.
+const HINTS_OVERLAY = "hints";
+
+// After a step: the views' models set in their shared keys when they change, and the hints
+// window opened, moved or closed to match the hints (docked on the bar: views.js hintsBox).
+function viewsSent(out, world) {
+  const m = out.model, sent = m.sent ?? start().sent, effects = [...out.effects];
+  const h = hints(m), s = settings(m, world), hs = JSON.stringify(h), ss = JSON.stringify(s);
+  if (hs !== sent.hints) effects.push({ setShared: VIEWS.hints, value: h });
+  if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
+  let box = null;
+  if (h) {
+    const b = hintsBox(h.items, m.config?.place ?? {}, world);
+    const spec = { mod: world.folder ?? "whistle", kind: "window", frame: "none", width: b.width, height: b.height,
+      ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
+    box = JSON.stringify(spec);
+    if (box !== sent.box) effects.push({ openOverlay: HINTS_OVERLAY, spec });
+  } else if (sent.box) effects.push({ closeOverlay: HINTS_OVERLAY });
+  if (hs === sent.hints && ss === sent.settings && box === sent.box) return out;
+  return { ...out, model: { ...m, sent: { hints: hs, settings: ss, box } }, effects };
+}
+
+// An inert copy sets no shared keys; it only closes its hints window, if open.
+function hintsClosed(out) {
+  const sent = out.model.sent;
+  if (!sent?.box) return out;
+  return { ...out, model: { ...out.model, sent: { ...sent, box: null } }, effects: [...out.effects, { closeOverlay: HINTS_OVERLAY }] };
 }
 
 // The shared key the whistle state goes in (docs/contracts/state.md).

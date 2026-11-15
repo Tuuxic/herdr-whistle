@@ -11,20 +11,22 @@
 // the same poll as keys.json; the core keeps each file's last good version.
 //
 // Two more copies of this mod, known by their "part" prop, draw the views and run no core: the
-// hints window (part "hints") and the settings dialog (part "settings"). The bar's copy hands
-// them their view models (views.js) in private shared keys (ADR 0010) and opens the hints window
-// while there are hints. Settings change things by writing whistle.json through config.js; the
-// bar picks the change up on its next read (ADR 0011).
+// hints window (part "hints") and the settings dialog (part "settings"). The core hands them
+// their view models (views.js) in private shared keys (ADR 0010) and opens and docks the hints
+// window, all as effects; the shell measures the window and the bar for it. A part copy draws
+// on each render, which Herdr reruns when shared state changes. Settings change things by
+// writing whistle.json through config.js; the bar picks the change up on its next read
+// (ADR 0011).
 
 import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec, props } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
-import { start, step, bar, hints, settings } from "./step.js";
+import { start, step, bar, VIEWS } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
 import { renderBar } from "./bar.js";
-import { renderHints, hintsSize } from "./hints.js";
+import { renderHints } from "./hints.js";
 import { renderSettings } from "./settings.js";
 import { HOME } from "./version.js";
 import { folderOf, COPIES } from "./inert.js";
@@ -41,14 +43,12 @@ const KEYS_MS = 1000;
 // A path the core names, relative to Herdr's home ("keys.json").
 const home = (path) => `${appHome()}/${path}`;
 
-// The private shared keys the views' models go in, and the bar's height (mod.json's size).
-const HINTS = "whistle.hints", SETTINGS = "whistle.settings", BAR_H = 22;
 
 export default class Whistle extends View {
   init(_props, cx) {
     // One of whistle's own overlay copies (the "part" prop, private): no core of its own.
     this.part = call(() => props()?.part) ?? null;
-    if (this.part) return this.initPart(cx);
+    if (this.part) return this.initPart();
     this.handle = cx.focus_handle();
     this.model = start();
     this.overlays = new Map(); // overlay name -> id
@@ -108,73 +108,37 @@ export default class Whistle extends View {
       folder: FOLDER, copies: shared(COPIES) ?? {},
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
       configFiles: this.configFiles, commands: this.commands, modMappings: shared("whistle.mappings") ?? {},
+      viewport: call(() => globalThis.window?.viewport_size?.()) ?? this.viewport ?? null, barSize: this.barSize ?? null,
     };
   }
 
-  // One input through the core: the new model, its effects carried out, the views' models
-  // handed on.
+  // One input through the core: the new model and its effects carried out. A command Herdr
+  // refused goes back to the core, which flashes it.
   feed(input) {
     const out = step(this.model, input, this.world());
     this.model = out.model;
     for (const e of out.effects) this.carry(e);
-    // A command Herdr refused goes back to the core, which flashes it.
-    for (const f of this.failed.splice(0)) this.model = step(this.model, f, this.world()).model;
-    this.views();
+    for (const f of this.failed.splice(0)) this.feed(f);
     return out;
   }
 
-  // The hints' and settings' models, set in shared state when they change; the hints window open
-  // while there are hints, docked on top of the bar and as wide as it.
-  views() {
-    const world = this.world();
-    const h = hints(this.model, world), s = settings(this.model, world);
-    const hs = JSON.stringify(h), ss = JSON.stringify(s);
-    if (ss !== this.settingsSent) { this.settingsSent = ss; setShared(SETTINGS, s); }
-    if (hs === this.hintsSent) return;
-    this.hintsSent = hs;
-    setShared(HINTS, h);
-    if (!h) {
-      if (this.hintsId) closeOverlay(this.hintsId);
-      this.hintsId = null;
-      this.hintsAt = null;
-      return;
-    }
-    // The bar reaches the window's right edge, so its left edge is the window's width less its
-    // own. A bar set in from the edge says by how much (the layout's whistle block):
-    // hintsAlignRight (px from the window's right edge to the bar's inside), hintsAlignBorder
-    // (its border, so the box lines up with the outside), hintsGap (px from the bar's top to the
-    // box, 6).
-    const vp = call(() => globalThis.window?.viewport_size?.());
-    const inset = Number(h.place?.hintsAlignRight ?? 0), border = Number(h.place?.hintsAlignBorder ?? 0), lift = Number(h.place?.hintsGap ?? 6);
-    const barW = this.barW ?? vp?.width ?? 900;
-    const { width, height } = hintsSize(h.items, Math.round(barW + 2 * border));
-    const at = vp ? { x: Math.max(0, vp.width - inset - barW - border), y: Math.max(8, vp.height - (this.barH ?? BAR_H) - height - lift) } : undefined;
-    const spot = JSON.stringify([width, height, at]);
-    if (this.hintsId && this.hintsAt === spot) return;
-    if (this.hintsId) closeOverlay(this.hintsId);
-    this.hintsAt = spot;
-    this.hintsId = openOverlay({ mod: FOLDER, kind: "window", frame: "none", width, height, at, props: { part: "hints", width } });
-  }
-
-  // A view copy: draws the model the bar's copy shares, looking for a new one now and then.
-  initPart(cx) {
+  // A view copy: draws the model the core shares (render). Settings change whistle.json,
+  // through config.js, against the text just read; each change runs in a task of its own, from
+  // the click that asked for it.
+  initPart() {
     this.note = null; // settings: what went wrong with the last change
-    this.seen = null;
-    cx.timer.every(TICK_MS * 2, (cx) => {
-      const now = JSON.stringify(shared(this.part === "hints" ? HINTS : SETTINGS) ?? null);
-      if (now !== this.seen) { this.seen = now; cx.notify(); }
+    const change = (edit, cx) => cx.spawn(async (cx) => {
+      try {
+        const text = await readTextFile(home("whistle.json"));
+        const r = edit(text);
+        this.note = r.problem ?? null;
+        if (!r.problem) await writeTextFile(home("whistle.json"), r.text, text);
+      } catch (err) { this.note = `couldn't write whistle.json: ${String(err?.message ?? err)}`; }
+      cx.notify();
     });
-    // Settings change whistle.json, through config.js, against the text just read.
-    const change = (edit) => readTextFile(home("whistle.json")).then((text) => {
-      const r = edit(text);
-      if (r.problem) { this.note = r.problem; return; }
-      this.note = null;
-      return writeTextFile(home("whistle.json"), r.text, text);
-    }).catch((err) => { this.note = `couldn't write whistle.json: ${String(err?.message ?? err)}`; })
-      .then(() => cx.notify());
     this.act = {
-      switchMod: (name, on) => change((text) => switchMod(text, name, on)),
-      keep: (seq, value) => change((text) => keepMapping(text, seq, value)),
+      switchMod: (name, on, cx) => change((text) => switchMod(text, name, on), cx),
+      keep: (seq, value, cx) => change((text) => keepMapping(text, seq, value), cx),
     };
   }
 
@@ -203,14 +167,16 @@ export default class Whistle extends View {
     } else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
   }
 
-  render(cx) {
-    if (this.part === "hints") return renderHints(shared(HINTS) ?? null, Number(props()?.width ?? 900), theme());
-    if (this.part === "settings") return renderSettings(shared(SETTINGS) ?? null, theme(), this.act, this.note);
+  render(_cx) {
+    if (this.part === "hints") return renderHints(shared(VIEWS.hints) ?? null, Number(props()?.width ?? 900), theme());
+    if (this.part === "settings") return renderSettings(shared(VIEWS.settings) ?? null, theme(), this.act, this.note);
+    // Measured while drawing, where it is sure to be legal: the window's size, for the hints.
+    this.viewport = call(() => globalThis.window?.viewport_size?.()) ?? this.viewport;
     return renderBar(bar(this.model, this.world()), theme(), this.handle, (e, cx) => {
       if (this.model.mode !== "whistle") return;
       const out = this.feed({ key: keyName(e) });
       if (out.handled) cx.stop_propagation();
       cx.notify();
-    }, (size) => { this.barW = size.width; this.barH = size.height; });
+    }, (size) => { this.barSize = { width: size.width, height: size.height }; });
   }
 }

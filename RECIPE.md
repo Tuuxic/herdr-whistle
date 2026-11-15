@@ -80,9 +80,11 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert, hide their bars with
   `layout.hide` (only bars that were showing), and show them again once they run.
-- **Hints and settings** (ADR 0011): the bar's copy works out their view models (`views.js`)
-  and hands them on in private shared keys, `whistle.hints` and `whistle.settings`; two more
-  copies of the mod (prop `part: "hints"` / `"settings"`) draw them and run no core. Settings
+- **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
+  sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
+  two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
+  and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
+  sizes the shell measures) and closes the hints window, as effects. Settings
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.
