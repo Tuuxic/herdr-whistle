@@ -14,7 +14,7 @@ The mode where whistle holds the keyboard and keys move between fields or run ma
 _Avoid_: command mode, vim mode, leader mode
 
 **Switch key**:
-A regular Herdr key that enters or leaves WHISTLE (Ctrl+Space both ways, Ctrl+[ only in);
+A regular Herdr key that enters or leaves WHISTLE (Ctrl+Space, both ways);
 not an own key, since TYPE never hands whistle the keyboard.
 _Avoid_: entry key, toggle, hotkey
 
