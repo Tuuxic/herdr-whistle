@@ -6,7 +6,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 
 > **Agents:** install, update and uninstall whistle by the [Install](#install),
 > [Update](#update) and [Uninstall](#uninstall) sections at the end, not by AGENTS.md's add
-> steps: re-adding makes a renamed second copy, which only stands aside.
+> steps: re-adding makes a renamed second copy, which only stands aside. After Install, offer
+> [Integrate](#integrate).
 
 ![Whistle](preview.png)
 
@@ -160,6 +161,12 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   into `whistle.json` and its mappings stop working within a second.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and
   `ctrl-space` reaches the terminal.
+- After Install on Herdr's `main` layout, Integrate (simple path, Herdr's blocks) shows
+  `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without opening a space
+  and Enter opens it; the selected field glows in `accent`; files and changes are fields.
+- Update, with a clone's `cloned_from.version` older than its original, offers to make that
+  clone again; Uninstall offers to undo Integrate, and yes brings back `main` and deletes the
+  clones and the record.
 
 ## Install
 
@@ -180,6 +187,179 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
    layout has no `agents` or `spaces` block, say the jump keys name blocks by id and offer to
    point them at their layout's ids.
 6. `herdr-app check mods/whistle`.
+7. Offer [Integrate](#integrate): "Whistle can drive Herdr's spaces, agents and tabs as they
+   are, but with no cursor (moving opens), and files and changes not at all. I can make
+   keynav copies of your layout's blocks with a cursor and a look for the selected one. Do
+   that?" If the person says yes, follow Integrate; if not, say they can ask for it any time.
+
+## Integrate
+
+**Integration** (ADR 0015) makes the blocks of the person's shown layout into keynav fields,
+with a look for the selected field and a cursor that moves without opening. It is
+instructions for you, not part of whistle: whistle's code doesn't change, whistle ships no
+clones and never reads the record, and a keynav mod works the same without whistle. Herdr's
+own blocks stay stock fields (no cursor, moving opens) for anyone who doesn't integrate.
+
+Offer it after Install's last step. Do it at any other time the person asks.
+
+### Before you start
+
+- **The shown layout**: `"layout"` in `herdr-app status`. Integrate only that one, unless the
+  person picks more on the advanced path.
+- **Herdr's own** layouts and mods are the names in Herdr's `installed.json` (a mod by its
+  folder, a layout as `layout:<name>`). They are read-only: Herdr replaces them on every
+  start and moves an edited one aside, so clone them and never edit them.
+- **The person's own** mods and layouts are the others that they wrote, and every clone (its
+  `mod.json` or layout has `cloned_from`). Change those in place.
+- **Third-party** mods came from somewhere else (herdr.dev, someone's repository: usually a
+  README, a LICENSE or an author in the folder). When you can't tell, treat a mod as
+  third-party.
+- **Already fields, left as they are**: terminal blocks (`content` is a `pane`, `tab`,
+  `terminal` or `agent`), mods that already speak keynav v2 (a `keynav.js` with `V = 2` whose
+  `announce` the mod calls), and whistle's own blocks (`"title": "Whistle"` in the mod's
+  `mod.json`). A mod still on keynav v1 (`shared("keynav.fields")`) is adapted: its
+  `keynav.js` is replaced and its calls changed as below.
+
+### Simple path
+
+Ask one thing: **Herdr's blocks** only, or **all blocks**.
+
+- **Herdr's blocks** are the blocks with the ids `spaces`, `agents`, `tabs`, `files` and
+  `changes`, whatever mod sits there now. A layout with none of these ids has no Herdr's
+  blocks: say so and offer all blocks instead.
+- **All blocks**: every mod block in the layout that isn't already a field.
+
+Then, without asking more:
+
+1. **The layout.** If it is one of Herdr's own, clone it and show the clone:
+   `herdr-app do layout.clone '{"name":"<name>","as":"<name>-whistle"}'` (it switches to the
+   clone; `herdr-app do layout.switch '{"name":"<name>-whistle"}'` if it didn't). If the name
+   is taken, ask before using another. The person's own layout is changed in place.
+2. **The mods.** For each block to adapt: Herdr's mods and third-party mods are cloned,
+   `herdr-app do mod.clone '{"name":"<mod>","as":"<mod>-whistle"}'`, and the block's
+   `content.mod` in the layout file (`layouts/<layout>.json`) is pointed at the clone. Blocks
+   of one mod share one clone. The person's own mods are changed in place.
+3. **Keynav** for each of those mods, as in
+   [How a mod becomes a field](#how-a-mod-becomes-a-field), with whistle's suggested look:
+   - The selected field **glows**: while it is active, the block's outer element (made
+     `.relative()`) gets a last child `div().absolute().inset_0()` with a `border_2()` in the
+     theme's `accent` and the element's own corner radius, so nothing moves.
+   - The **cursor item** gets a 1 px `accent` outline. Give every item a 1 px border, in
+     `accent` on the cursor item and transparent (`accent + "00"`) on the others, so rows
+     don't shift.
+4. **Declared keys** only for actions the mod already has, acting on the cursor item. For
+   Herdr's blocks:
+
+   <!-- table integrate-keys -->
+   | Block | Key | Label | Herdr command |
+   |---|---|---|---|
+   | `spaces` | `n` | New space | `space.new` |
+   | `spaces` | `r` | Rename | `space.rename` |
+   | `spaces` | `x` | Close | `space.close` |
+   | `agents` | none | | |
+   | `tabs` | `n` | New tab | `tab.new` |
+   | `tabs` | `r` | Rename | `tab.rename` |
+   | `tabs` | `x` | Close | `tab.close` |
+   | `files` | none | | |
+   | `changes` | none | | |
+
+   `n` runs the command with no args; `r` and `x` pass the cursor item, `{ "id": <its id> }`
+   (Herdr asks for the name, and asks before closing a space). For other mods, declare keys
+   for the mod's clear actions on one item (what its buttons or its menu do to an item),
+   never one of whistle's own keys (`h`/`j`/`k`/`l`, the arrows, `i`, `enter`, `escape`, by
+   default) and never a chord.
+5. **Check** each mod you changed, write the [record](#the-record), and tell the person what
+   you made, that `ctrl-h/j/k/l` in WHISTLE now reach those fields, and that Uninstall offers
+   to undo it.
+
+### Advanced path
+
+The person chooses; you do the rest as on the simple path:
+
+- **The layouts**: the shown one and any others. Herdr's own are cloned as on the simple path.
+- **The blocks** of each layout to make fields.
+- **The look** of the selected field (glow, border or background; color and width) and of
+  its cursor item. Use the theme's colors (`accent`, `selected`, `foreground`, …), not fixed
+  ones.
+- **The declared keys** of each field: which keys, their labels, what each runs.
+- **Clone or in place** for each third-party mod. In place, the mod's next update from its
+  author may remove the change; Update offers to add it again.
+
+### How a mod becomes a field
+
+By `docs/contracts/keynav.md`; read it first. In the mod's folder (the clone, or the person's
+own mod):
+
+1. **Copy** `mods/whistle/keynav.js` into the folder.
+2. **Announce** from `render`, in the copy drawn as a layout block only, not in a copy the mod
+   opens as an overlay with its own props (such as agents' sort menu):
+   `this.key = announce("<mod folder>", props() ?? {}, "<Label>", { <key>: "<label>" })`,
+   with the folder's own name (`spaces-whistle` for a clone), the block's title as the mod
+   shows it, and the declared keys (`{}` for none).
+3. **A cursor** over the items a click acts on, in the order they are shown (rows, tabs, the
+   files and folders the tree shows). Keep it as the item's id, not its index, so it survives
+   the list changing; if its item goes, put it on the first. In `render`,
+   `if (entered(this, this.key))` puts it on the item that is current now (the shown space,
+   the focused agent, the shown tab, the open diff), else the first. Scroll it into view if
+   the list scrolls and the mod has a scroll handle.
+4. **Commands**: read `nextCommand()` in a loop started in `init` (in the block's copy only; if
+   the mod already reads commands, add to its loop: each command reaches one reader):
+   `cx.spawn(async (cx) => { for (;;) { this.keynav(await nextCommand()); cx.notify(); } })`.
+   `keynav(c)` does nothing unless `isActive(this.key)`. `move(c)`: `up`/`down` move the
+   cursor through a list (`left`/`right` through a row, such as tabs) without opening anything;
+   `open` does what a click on the cursor item does; in a tree, `left` closes the cursor's
+   open folder, and a preview's back button is `left` too. `declared(c)` runs that key's
+   action on the cursor item.
+5. **Requests**: after `open` focused a terminal pane (an agent's), call
+   `toTerminal(this.key)`; after it showed something else (another space or tab), call
+   `keepKeys(this.key)`.
+6. **The look**, drawn only while `isActive(this.key)`: the field's glow and the cursor item's
+   outline. Without a driver nothing is active and the mod looks as before.
+7. Change nothing else: the mod still works by mouse as it did.
+8. **Check**: `bash kit/keynav-checker/check.sh <mod folder>` (from whistle's repo, or copy
+   `kit/keynav-checker/` as keynav.md says) and `herdr-app check <mod folder>`; both must
+   pass.
+
+A clone of a Herdr mod (`spaces-whistle`) is a field like any keynav mod: whistle's stock
+field table names only Herdr's own mods, so it never applies to the clone.
+
+### The record
+
+Write `whistle-integration.md` in Herdr's home (next to `keys.json`). Whistle never reads it;
+Update and Uninstall do. Keep this form, one row per layout and per mod:
+
+```md
+# Whistle integration
+
+Made by an agent following whistle's RECIPE.md (Integrate). Whistle never reads this file.
+
+- Made: 2026-11-15, whistle 1.0.0, Herdr 0.1.15, simple path (Herdr's blocks)
+
+## Layouts
+
+| Layout | Original | Version | How |
+|---|---|---|---|
+| main-whistle | main | 0.1.15 | clone |
+
+## Mods
+
+| Mod | Original | Version | How | Blocks | Look | Declared keys |
+|---|---|---|---|---|---|---|
+| spaces-whistle | spaces | 0.1.15 | clone | main-whistle: spaces | suggested | n space.new, r space.rename, x space.close |
+| notes | notes | 1.2.0 | in place | main-whistle: notes | suggested | d Delete |
+
+## In-place changes
+
+- notes: added keynav.js; main.js: announce, cursor, keynav commands, look
+```
+
+- **Version**: the original's version when you made it. For a clone, its `cloned_from.version`
+  (Herdr's version for Herdr's own); for an in-place mod, `"version"` in its `mod.json`, or
+  `none`.
+- **How**: `clone` or `in place`. List every file you added or changed in place under
+  **In-place changes**, so the change can be found and taken out again.
+- **Look**: `suggested`, or what the person chose.
+- Integrating again later adds rows and keeps the old ones.
 
 ## Update
 
@@ -199,11 +379,34 @@ only through you.
 5. Read `CHANGELOG.md` and tell the person about every entry newer than the old version,
    breaking ones first; follow each entry's **Upgrading** note.
 6. `herdr-app check mods/whistle`.
+7. **Integration**: if `whistle-integration.md` is in Herdr's home, read it. Clones never get
+   their original's updates on their own, so for each row:
+   - A **clone** whose original is newer than the version the record and its
+     `cloned_from.version` give (Herdr's own: `herdr-app --version`; others: `"version"` in
+     the original's `mod.json`): tell the person and offer to make it again from the new
+     version. Yes: move the old clone aside (`<name>-whistle-old`), clone the original again
+     under the old clone's name (`mod.clone` / `layout.clone` refuse a taken name), make it a
+     field again with the look and declared keys the record gives (a layout: point its blocks
+     at the clones again), check it, then delete the old one. Changes the person made to the
+     old clone by hand are lost; say so first. A layout clone keeps the person's clicks only
+     if it is not made again.
+   - An **in-place** mod whose keynav change is gone (no `keynav.js`, or the files listed under
+     **In-place changes** no longer have it; its author's update replaced them): offer to add
+     keynav again, the same way.
+   - Update the record's versions and rows for what you made again.
 
 ## Uninstall
 
-1. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`).
-2. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` action.
-3. Ask before deleting `~/.config/herdr-app/whistle.json`, the person's own settings.
-4. Tell the person that whistle blocks in their layouts will now show nothing, and offer to
+1. **Integration**: if `whistle-integration.md` is in Herdr's home, read it and offer to undo
+   it. Yes: if a `-whistle` layout from the record is shown, show its original again
+   (`herdr-app do layout.switch '{"name":"<original>"}'`); delete each clone the record lists
+   (`layouts/<name>.json`, `mods/<name>/`); take the in-place keynav changes out of the files
+   listed under **In-place changes**; delete the record. No: leave all of it; tell the person
+   the fields keep working without whistle (they only show their look while a driver selects
+   them), and that the clones no longer get updates, since only whistle's Update looks for
+   them.
+2. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`).
+3. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` action.
+4. Ask before deleting `~/.config/herdr-app/whistle.json`, the person's own settings.
+5. Tell the person that whistle blocks in their layouts will now show nothing, and offer to
    remove them.
