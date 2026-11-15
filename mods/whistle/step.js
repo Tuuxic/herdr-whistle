@@ -501,10 +501,10 @@ function standAside(model, input, world) {
   return { model: m, effects: [], handled: false };
 }
 
-// The key bound to whistle.<command> typed through into the focused terminal, as if whistle
-// weren't there.
+// The key bound to <folder>.<command> typed through into the focused terminal, as if whistle
+// weren't there: Herdr hands a copy the lines named after its folder (whistle-2.whistle).
 function typeThrough(model, world, command) {
-  const k = boundKey(world, `whistle.${command}`), t = world.focused?.terminal;
+  const k = boundKey(world, `${folderOf(world)}.${command}`), t = world.focused?.terminal;
   return { model, effects: k && t ? [{ typeKey: k, terminal: t }] : [] };
 }
 
