@@ -160,6 +160,9 @@ export default class Whistle extends View {
   // One effect (step.js lists the closed set).
   carry(e) {
     if ("run" in e) {
+      // Herdr's run() returns null on a command it refuses and shows its own error toast (issue
+      // #35); it doesn't throw. The catch only guards a later Herdr that throws: then the core
+      // flashes { ran, ok: false }.
       try { run(e.run, e.args ?? {}); } catch (err) { this.failed.push({ ran: e.run, ok: false, error: String(err?.message ?? err) }); }
     }
     else if (e.focusBar) this.handle.focus();
