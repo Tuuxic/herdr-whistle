@@ -392,7 +392,8 @@ own mod):
    the cursor** in the way it moved (as vim's `scrolloff=1`), by scrolling to the child after
    it on a move down or right (`Math.min(index + 1, last)`) and to the child before it on a
    move up or left (`Math.max(index - 1, 0)`). At the first and last item the cursor item
-   itself touches the edge. A mod that already scrolls to its current item (tabs) scrolls this
+   itself touches the edge. When the cursor is put on an item rather than moved (on entering
+   the field, or its item gone), scroll to the cursor item itself. A mod that already scrolls to its current item (tabs) scrolls this
    way to the cursor item instead while the field is active.
 4. **Commands**: read `nextCommand()` in a loop started in `init(_props, cx)` (in the block's
    copy only; if the mod already reads commands, add to its loop: each command reaches one
