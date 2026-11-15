@@ -107,12 +107,21 @@ const SCENARIOS = [
   },
   {
     name: "Bad hints, bar and placement props and an unknown prop are listed",
-    world: inTerminal({ hints: 1, bar: 2, hintsLift: "6", hintsInset: 4, colour: "red" }),
+    world: inTerminal({ hints: 1, bar: 2, hintsGap: "6", hintsAlignRight: 4, colour: "red" }),
     steps: [{ tick: 120, model: { problems: [
       { source: "layout", detail: "hints should be true or false" },
       { source: "layout", detail: "bar should be the spot's name, a string" },
-      { source: "layout", detail: "hintsLift should be a number (px)" },
+      { source: "layout", detail: "hintsGap should be a number (px)" },
       { source: "layout", detail: "colour: not a whistle block prop" },
+    ] } }],
+  },
+  {
+    name: "The old names of the hints placement props aren't read: each is listed",
+    world: inTerminal({ hintsInset: 4, hintsBorder: 1, hintsLift: 6 }),
+    steps: [{ tick: 120, model: { problems: [
+      { source: "layout", detail: "hintsInset: not a whistle block prop" },
+      { source: "layout", detail: "hintsBorder: not a whistle block prop" },
+      { source: "layout", detail: "hintsLift: not a whistle block prop" },
     ] } }],
   },
   {

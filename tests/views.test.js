@@ -51,8 +51,8 @@ const SCENARIOS = [
   },
   {
     name: "Hints carry the layout's placement for the hints box",
-    world: world({ map: PANES, props: { hintsInset: 12, hintsLift: 4 } }),
-    steps: [...IN, { key: "w", hints: { place: { hintsInset: 12, hintsLift: 4 } } }],
+    world: world({ map: PANES, props: { hintsAlignRight: 12, hintsGap: 4 } }),
+    steps: [...IN, { key: "w", hints: { place: { hintsAlignRight: 12, hintsGap: 4 } } }],
   },
   {
     name: "No hints outside a key sequence, nor once it ends",

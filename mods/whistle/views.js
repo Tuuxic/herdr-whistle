@@ -24,7 +24,7 @@ const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 // layout's whistle block, whistle.json), else null:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
 //   in the group's order, exit: what ends it ("Esc cancels") | null, place: the layout's
-//   hintsInset / hintsBorder / hintsLift, for docking the box on the bar }.
+//   hintsAlignRight / hintsAlignBorder / hintsGap, for docking the box on the bar }.
 export function hints(model, _world) {
   if (model.mode !== "whistle" || !model.sequence?.length || model.config?.hints === false) return null;
   let group = null, map = model.config?.map ?? {};

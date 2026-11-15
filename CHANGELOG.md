@@ -48,6 +48,13 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   written into your whistle.json (docs/guide.md, Settings). The hints name the key that
   cancels a sequence.
 
+### Layout authors
+
+- The layout's whistle block (docs/contracts/layout-block.md) is a stable contract: `mappings`,
+  `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder`
+  and `hintsGap`, which line the hints box up with a bar set in from the window's edge. `nav`
+  directions are `left`/`down`/`up`/`right`, and a bad prop is listed as a config problem.
+
 ### Mod authors
 
 - **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,

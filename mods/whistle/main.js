@@ -141,10 +141,11 @@ export default class Whistle extends View {
     }
     // The bar reaches the window's right edge, so its left edge is the window's width less its
     // own. A bar set in from the edge says by how much (the layout's whistle block):
-    // hintsInset (px from the window's right edge to the bar's inside), hintsBorder (its border,
-    // so the box lines up with the outside), hintsLift (px from the bar's top to the box, 6).
+    // hintsAlignRight (px from the window's right edge to the bar's inside), hintsAlignBorder
+    // (its border, so the box lines up with the outside), hintsGap (px from the bar's top to the
+    // box, 6).
     const vp = call(() => globalThis.window?.viewport_size?.());
-    const inset = Number(h.place?.hintsInset ?? 0), border = Number(h.place?.hintsBorder ?? 0), lift = Number(h.place?.hintsLift ?? 6);
+    const inset = Number(h.place?.hintsAlignRight ?? 0), border = Number(h.place?.hintsAlignBorder ?? 0), lift = Number(h.place?.hintsGap ?? 6);
     const barW = this.barW ?? vp?.width ?? 900;
     const { width, height } = hintsSize(h.items, Math.round(barW + 2 * border));
     const at = vp ? { x: Math.max(0, vp.width - inset - barW - border), y: Math.max(8, vp.height - (this.barH ?? BAR_H) - height - lift) } : undefined;

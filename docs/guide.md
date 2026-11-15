@@ -244,8 +244,9 @@ Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
 2. **The layout's whistle block**: its `mappings` and `keys` props, for keys that suit that
-   layout's mods. The block's other props (`enabled`, `hints`, `nav`, `bar`) are in
-   [The layout's whistle block](contracts/layout-block.md).
+   layout's mods. The block's other props (`mods`, `enabled`, `hints`, `nav`, `bar`, and
+   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with the
+   bar) are in [The layout's whistle block](contracts/layout-block.md).
 3. **Yours**: `whistle.json` in Herdr's home (`~/.config/herdr-app/whistle.json`). Nothing
    replaces it.
 

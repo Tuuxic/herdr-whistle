@@ -18,13 +18,19 @@ contract.
 |---|---|---|
 | `mappings` | object | The layout's mappings, as whistle.json's `map` (see the guide's Your config). |
 | `keys` | object | The layout's own keys, as whistle.json's `keys`. |
+| `mods` | object | `{ "<mod>": false }` switches a mod's offered mappings off (see [Mods' mappings](mod-mappings.md)). |
 | `enabled` | boolean | `false` switches WHISTLE off in this layout. Default `true`. |
 | `hints` | boolean | `false` hides the hints box. Default `true`. |
 | `nav` | object | `{ "<block id>": { "<direction>": "<block id>" } }`: which field the field keys reach from a block, over the layout's rows and columns. Directions: `left`, `down`, `up`, `right`. |
 | `bar` | string | Names this block as a spot for the bar (see rule 5). |
-| `hintsInset` | number | px from the window's right edge to the bar's inside, for a bar set in from the edge. |
-| `hintsBorder` | number | The bar's border in px, so the hints box lines up with its outside. |
-| `hintsLift` | number | px from the bar's inside top to the hints box. Default 6. |
+| `hintsAlignRight` | number | px from the window's right edge to the bar's inside. Default 0. |
+| `hintsAlignBorder` | number | The width in px of the border the layout draws around the bar. Default 0. |
+| `hintsGap` | number | px between the bar's top and the hints box. Default 6. |
+
+The three `hints*` props line the hints box up with the bar. Whistle can't measure where the
+layout puts the bar, only the bar's own size, so a layout that sets the bar in from the
+window's right edge, or draws a border around it, tells whistle by how much: the box is then as
+wide as the bar and its border, and sits `hintsGap` above it.
 
 A layout may have several whistle blocks (bar spots). Each prop but `bar` comes from the first
 block, in layout order, that has it, so a second spot needn't repeat the mappings.
@@ -153,9 +159,8 @@ is.
 
 ## Stable and may change
 
-- Stable: `mappings`, `keys`, `enabled`, `hints`, `nav`, `bar`, and the rules above.
-- May change in a minor release: `hintsInset`, `hintsBorder`, `hintsLift` (they follow how the
-  hints box is drawn).
+- Stable: `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
+  `hintsAlignBorder`, `hintsGap`, and the rules above.
 - Private: `part`, which whistle sets on its own overlay copies. Don't write it.
 
 ## History
