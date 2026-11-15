@@ -74,8 +74,13 @@ that changes nothing writes nothing, so a change of value is a change of state.
 
 ```json example Switched off, enabled is false and mode is type
 {
-  "world": { "barFocused": true },
-  "model": { "enabled": false, "mode": "whistle" },
+  "world": {
+    "barFocused": true,
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+    ] }
+  },
+  "model": { "mode": "whistle" },
   "steps": [
     { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": false, "sequence": null, "pane": null } }
   ]

@@ -11,11 +11,11 @@ const fromMod = (model) => {
 };
 
 // Every config problem, for settings and the bar's marker: [{ source, detail }], whistle's
-// config first, then keys.json's. Problems in mods' offered mappings aren't config problems:
+// config first, then the keynav fields', then keys.json's. Problems in mods' offered mappings aren't config problems:
 // settings list them under each mod, and the marker doesn't count them.
 export function problems(model) {
   const mod = fromMod(model);
-  return [...(model.problems ?? []).filter((p) => !mod(p)), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
+  return [...(model.problems ?? []).filter((p) => !mod(p)), ...(model.fieldProblems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
 }
 
 const seqLabel = (seq) => seq.map(keyLabel).join(" ");

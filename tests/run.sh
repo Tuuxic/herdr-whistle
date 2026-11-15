@@ -24,13 +24,13 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js fields.js inert.js claims.js config.js keymap.js views.js step.js"
+CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js keymap.js views.js step.js"
 
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT
 for f in $CORE; do cp "$mod/$f" "$dir/"; done
 # Helpers other mods copy (they import herdr, so they aren't core): their suites import them.
-HELPERS="whistle.js"
+HELPERS="whistle.js keynav.js"
 for f in $HELPERS; do cp "$mod/$f" "$dir/"; done
 cp "$here/mod.json" "$here"/*.js "$dir/"
 

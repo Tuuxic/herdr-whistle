@@ -69,7 +69,7 @@ const SCENARIOS = [
   },
   {
     name: "Switched off, whistle publishes enabled false and mode type",
-    world: { ...WORLD, barFocused: true }, model: { enabled: false, mode: "whistle" },
+    world: { ...WORLD, barFocused: true, configFiles: { defaults: DEFAULTS, user: json({ enabled: false }) } }, model: { mode: "whistle" },
     steps: [{ tick: 0, published: state({ enabled: false }) }],
   },
   {
@@ -82,11 +82,11 @@ const SCENARIOS = [
 export default suite("whistle state", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
 
-  // Switched back on: the model's enabled flips (no command does that yet: the layout's
-  // `enabled` prop, #27).
+  // Switched back on in whistle.json: enabled true is published again.
   const w = { ...DEFAULT_WORLD, ...WORLD };
-  const off = core.step({ ...core.start(), enabled: false }, { tick: true }, w);
-  const on = core.step({ ...off.model, enabled: true }, { tick: true }, w);
+  const user = (u) => ({ ...w, configFiles: { defaults: DEFAULTS, user: json(u) } });
+  const off = core.step(core.start(), { tick: true }, user({ enabled: false }));
+  const on = core.step(off.model, { tick: true }, user({ enabled: true }));
   t.check("switched back on, enabled true is published", on.effects.find((e) => e.setShared === "whistle")?.value?.enabled, true);
 
   // The reader (whistle.js), as a mod would use it.
