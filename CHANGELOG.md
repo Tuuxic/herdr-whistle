@@ -58,3 +58,6 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   declares the keys it handles (`keys: { d: "Delete" }`), which arrive as
   `<mod>.keynav-key-<key>`, beat whistle's mappings but never its own keys; other keys never
   reach it. Copy the new `mods/whistle/keynav.js`; a copy still on v1 isn't a field.
+- **New**: the keynav checker in `kit/keynav-checker/`. Run `bash kit/keynav-checker/check.sh
+  path/to/your-mod` to check your copy of `keynav.js` against keynav v2 with `herdr-app check`
+  (docs/contracts/keynav.md, "Checking your field").

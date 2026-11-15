@@ -323,6 +323,48 @@ whistle's settings say to update its `keynav.js`.
 }
 ```
 
+## Checking your field
+
+The keynav checker, in whistle's `kit/keynav-checker/`, checks your copy of `keynav.js`
+against this contract. It needs only `herdr-app` (and bash):
+
+```sh
+bash kit/keynav-checker/check.sh path/to/your-mod
+```
+
+It builds a throwaway mod from the kit and your mod's `keynav.js` and loads it with
+`herdr-app check`. The kit plays the driver through Herdr's own shared state: it announces a
+field with your copy, sets `shared("keynav")`, hands it the commands a driver sends and reads
+what it writes back. `PASS` means your copy speaks keynav v2. Otherwise the check fails and
+lists each rule your copy breaks, with what it got and what it should be:
+
+```
+keynav.js breaks 1 rule of keynav v2:
+  entry: announce wrote {"v":1,"label":"Check","keys":{"d":"Delete"}} to "keynav.field:keynav-check {"check":1}", want {"v":2,"label":"Check","keys":{"d":"Delete"}}
+```
+
+| Rule | What it checks |
+|---|---|
+| `functions` | Your copy has `fieldKey`, `announce`, `isActive`, `move`, `declared`, `entered`, `toTerminal` and `keepKeys`. A missing one fails here alone; copy whistle's current `keynav.js`. |
+| `field key` | The field key's form: folder, a space, props as JSON with sorted keys and no spaces. |
+| `entry` | `announce` writes `{ v: 2, label, keys }` to the field's entry and returns its field key. |
+| `announce again` | Announcing again changes the label and the declared keys. |
+| `no v1` | Nothing goes to v1's `keynav.fields` or `keynav.request`. |
+| `active` | `isActive` follows `shared("keynav").active`, for this field only. |
+| `moves` | `keynav-up`, `-down`, `-left`, `-right` and `-open` read as moves, nothing else does. |
+| `declared keys` | `keynav-key-<key>` reads as the key, spelled as written. |
+| `terminal request` | `toTerminal` writes `{ to: "terminal", at }` to the field's request slot, `at` in ms. |
+| `hold request` | `keepKeys` writes `{ hold: true, at }` to the field's request slot. |
+| `entered` | `entered` is true once each time the field becomes active. |
+
+`HERDR_APP=<path>` picks the `herdr-app` to run, such as the minimum Herdr your mod supports.
+Without bash, copy the `kit/keynav-checker/` folder, put your `keynav.js` in the copy and run
+`herdr-app check` on it. Whistle runs the checker on its own `keynav.js` in its tests.
+
+The checker covers the helper, not your mod's own code: whether it announces from render,
+handles the commands it reads and draws its cursor while active is yours to try with whistle
+running.
+
 ## Stable and may change
 
 - Stable: the field key's form, the three shared keys and their shapes, and the
