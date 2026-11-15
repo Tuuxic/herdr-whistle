@@ -184,9 +184,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - A copy counts only while it has a block in the shown layout: a copy whose block is gone
   doesn't keep another copy inert.
 - Herdr hands a keys.json action to the mod its prefix names: a copy in `mods/whistle-2/`
-  answers only to `whistle-2.*`. When `global`'s switch key names another folder
-  (`whistle.whistle`) and none names this copy, the running copy lists a `keys.json` config
-  problem. Whistle only reads `global`; it never writes it (ADR 0001).
+  answers only to `whistle-2.*`, and switched off or inert it types those keys through. While no
+  `global` line runs this copy's switch command (`whistle-2.whistle`), the running copy lists
+  each one that runs another folder's (`whistle.whistle`) as a `keys.json` config problem. Whistle
+  only reads `global`; it never writes it (ADR 0001).
 - `run()` returns `null` on a command Herdr refuses, and Herdr shows its own error toast; it
   doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then the bar
   flashes).
@@ -204,6 +205,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - Alt+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
 - With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.whistle`,
   settings list the switch-key problem and the bar shows `⚠ 1`.
+- With only `mods/whistle-2/`, its `global` lines on `whistle-2.*` and whistle switched off,
+  Ctrl+Space and Alt+A reach the terminal.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
   JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
 - In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
@@ -528,7 +531,7 @@ only through you.
    `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.whistle`,
    `whistle.focus:agents`, `whistle.focus:spaces`, `whistle.settings`), keeping their keys.
 3. Other copies stay inert while `mods/whistle/` runs. Ask before deleting them.
-4. Never touch `~/.config/herdr-app/whistle.json`, and don't merge `keys.json` again:
+4. Never touch `whistle.json` in Herdr's home, and don't merge `keys.json` again:
    whistle reconciles its own `mod:whistle` keys. Change keys.json only where step 2 or an
    Upgrading note says to.
 5. Read `CHANGELOG.md` and tell the person about every entry newer than the old version,
@@ -572,6 +575,6 @@ only through you.
    them.
 2. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`).
 3. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` action.
-4. Ask before deleting `~/.config/herdr-app/whistle.json`, the person's own settings.
+4. Ask before deleting `whistle.json` in Herdr's home, the person's own settings.
 5. Tell the person that whistle blocks in their layouts will now show nothing, and offer to
    remove them.

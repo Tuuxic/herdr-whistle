@@ -16,7 +16,8 @@ const TWO = {
   layout: { id: "root", type: "column", children: [term("main"), bar, bar2] },
   copies: { "whistle": "1.0.0", "whistle-2": "1.0.0" },
 };
-const RENAMED = { ...TWO, folder: "whistle-2" };
+// Herdr hands the copy in mods/whistle-2/ only the lines named after its folder.
+const RENAMED = { ...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
 
 const SCENARIOS = [
   {

@@ -74,8 +74,9 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 - **New**: Alt+, (Ctrl+Shift+, on macOS) opens whistle's settings from anywhere: in TYPE, in WHISTLE and while
   whistle is switched off (Ctrl+, stays Herdr's settings).
 - A copy of whistle in another folder (`mods/whistle-2/`) answers only to `whistle-2.*` in
-  keys.json; its settings list a config problem while the switch key in `global` names another
-  folder's copy (docs/guide.md, A copy in another folder). Install writes such a copy's keys
+  keys.json, and types those keys through while switched off or inert; its settings list a config
+  problem while no `global` line runs its own switch command and one runs another folder's
+  (docs/guide.md, A copy in another folder). Install writes such a copy's keys
   with its folder's name, and Update rewrites them to `whistle.*` when it moves the copy back.
 
 ### Layout authors

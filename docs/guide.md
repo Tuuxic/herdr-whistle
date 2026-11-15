@@ -487,10 +487,14 @@ in the bar instead of a mode badge:
 Herdr hands a `keys.json` action to the mod its prefix names, so a copy of whistle in another
 folder (say `mods/whistle-2/`, because another mod is already named `whistle`) answers only to
 `whistle-2.*`: its lines read `"ctrl-space": "whistle-2.whistle"`, and the same for the jump
-keys and the settings key. The installing agent writes them so. If the switch key in `global`
-names another folder's copy (`whistle.whistle`) and none names this one, the running copy lists
-it as a [config problem](#when-something-is-wrong) from `keys.json`, with the line to write.
-Whistle only reads `global`; it never changes it.
+keys and the settings key. The installing agent writes them so. Switched off or standing aside,
+the copy types those keys into the terminal, as the copy in `mods/whistle/` does with its own.
+
+While no line in `global` runs this copy's switch command (`whistle-2.whistle`), the running
+copy lists every `global` line that runs another folder's (`whistle.whistle`) as a
+[config problem](#when-something-is-wrong) from `keys.json`, with the line to write. One line
+that runs its own is enough: then it lists none. Whistle only reads `global`; it never changes
+it.
 
 ```json example A copy in mods/whistle-2/ whose switch key runs whistle.whistle lists a config problem
 {
@@ -546,7 +550,7 @@ the reason goes.
     "folder": "whistle-old",
     "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle-old.whistle" }]
   },
   "steps": [
     { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,

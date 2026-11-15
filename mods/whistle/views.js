@@ -1,7 +1,7 @@
 // The views' models (ADR 0011): what the hints and settings draw, worked out from the core's
 // model. Pure: the views (hints.js, settings.js) only draw what these return.
 
-import { isGroup, groupAt, ACTIONS, USER, LAYOUT } from "./config.js";
+import { isGroup, groupAt, ACTIONS, USER, LAYOUT, KEYS } from "./config.js";
 import { keyLabel, canonicalKey } from "./keynames.js";
 import { fieldAt, declaredKeys, KEYNAV } from "./fields.js";
 
@@ -16,7 +16,7 @@ const fromMod = (model) => {
 // settings list them under each mod, and the marker doesn't count them.
 export function problems(model) {
   const mod = fromMod(model);
-  return [...(model.problems ?? []).filter((p) => !mod(p)), ...(model.fieldProblems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
+  return [...(model.problems ?? []).filter((p) => !mod(p)), ...(model.fieldProblems ?? []), ...(model.claimProblem ? [{ source: KEYS, detail: model.claimProblem }] : [])];
 }
 
 const seqLabel = (seq) => seq.map(keyLabel).join(" ");
