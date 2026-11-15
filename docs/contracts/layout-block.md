@@ -157,6 +157,30 @@ is.
 }
 ```
 
+### 6. A hidden spot's copy rests
+
+Each whistle block is a copy of whistle, told apart by its props (give each spot its own
+`bar` name). While a copy's block is hidden, that copy rests: it stays in TYPE, claims no keys,
+publishes nothing and moves no spot, so only the shown spot's copy runs. Shown again, it runs
+again and publishes its state anew.
+
+```json example A hidden spot's copy rests while the shown one runs
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
+    ] },
+    "props": { "bar": "Top" },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Top\" }" }
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null }
+  ]
+}
+```
+
 ## Stable and may change
 
 - Stable: `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,

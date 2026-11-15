@@ -8,6 +8,8 @@
 //
 // whistle.json's `enabled`, `hints` and `bar` go over the layout's (settings()).
 
+import { fieldKey } from "./fields.js";
+
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
@@ -77,6 +79,15 @@ export function blockProps(layout, folder = "whistle") {
     }
   }
   return { props, problems };
+}
+
+// Whether this copy rests (ADR 0011): every block of the layout with this copy's props (props(),
+// which tell the copies of a layout's spots apart) is hidden. Unknown props: it doesn't rest.
+export function resting(layout, folder, props) {
+  if (props === undefined) return false;
+  const mine = fieldKey(folder, isObject(props) ? props : {});
+  const blocks = bars(layout, folder).filter((b) => fieldKey(folder, b.props) === mine);
+  return blocks.length > 0 && blocks.every((b) => b.hidden);
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.

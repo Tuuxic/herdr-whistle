@@ -46,6 +46,8 @@
 //          commands: Herdr's commands [{ name, args }] | null (unknown: not checked),
 //          shared: keynav's shared state by key ("keynav", "keynav.fields", and each shown
 //                  mod block's "keynav.field:<key>" and "keynav.request:<key>"),
+//          props: this copy's block props (props()), which tell the bar spots' copies apart
+//                 | undefined (unknown),
 //          viewport: the window's drawable size { width, height } | null (not measured),
 //          barSize: the bar's drawn size { width, height } | null (not measured) }
 //
@@ -68,7 +70,7 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots } from "./block.js";
+import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
@@ -532,7 +534,21 @@ function chores(out, world, why) {
 
 export function step(model, input, world) {
   const why = inert(world);
-  return why ? hintsClosed(stepped(model, input, world, why)) : publish(viewsSent(stepped(model, input, world, why), world));
+  if (why) return hintsClosed(stepped(model, input, world, why));
+  if (resting(world.layout, world.folder ?? "whistle", world.props)) return rest(hintsClosed({ model, effects: [] }), input, world);
+  return publish(viewsSent(stepped(model, input, world, why), world));
+}
+
+// A hidden bar copy rests while another spot's copy runs: in TYPE, it claims, publishes and
+// moves nothing (its hints window closed), and lets every key and command go on. A write it
+// made still reports back. It forgets what it published and shared, as the running copy writes
+// them meanwhile: shown again, it sets them anew.
+function rest(closed, input, world) {
+  const out = "wrote" in input ? wrote(closed.model, world, input) : { model: closed.model, effects: [] };
+  const m = out.model;
+  const quiet = m.mode === "type" && m.published === null && m.sent.hints === null && m.sent.settings === null;
+  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: start().sent };
+  return { model, effects: [...closed.effects, ...out.effects], handled: false };
 }
 
 function stepped(model, input, world, why) {

@@ -80,6 +80,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert, hide their bars with
   `layout.hide` (only bars that were showing), and show them again once they run.
+- **Bar spots**: each whistle block in a layout is a copy, told apart by its props
+  (`props()`). A copy whose block is hidden rests: TYPE, no claims, no state, no spot moves;
+  only the shown spot's copy runs (docs/contracts/layout-block.md, rule 6).
 - **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
   sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
   two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
