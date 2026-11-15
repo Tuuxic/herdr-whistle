@@ -134,10 +134,10 @@ const SCENARIOS = [
 // switchMod, and the bar picks the new text up on its next read (ADR 0011).
 const MINE = { map: { n: ["Next tab", "tab.next"] } };
 const switched = switchMod(json(MINE), "alpha", false);
-const CLASH = { mods: ["alpha", "beta"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } };
+const CONFLICT = { mods: ["alpha", "beta"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } };
 SCENARIOS.push({
   name: "Switching a mod off from settings writes whistle.json and the bar picks it up",
-  world: world({ ...CLASH, user: MINE }),
+  world: world({ ...CONFLICT, user: MINE }),
   steps: [...IN, { key: "g", effects: [], handled: false },
     { world: { configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: {} }), user: switched.text } }, tick: 120,
       settings: { conflicts: [], mods: [{ name: "alpha", on: false, problems: [] }, { name: "beta", on: true, problems: [] }] } },
@@ -148,7 +148,7 @@ SCENARIOS.push({
 const kept = keepMapping(json(MINE), ["g"], ["Go", "alpha.go"]);
 SCENARIOS.push({
   name: "Keeping a mod's mapping from settings writes it into whistle.json and settles the conflict",
-  world: world({ ...CLASH, user: MINE }),
+  world: world({ ...CONFLICT, user: MINE }),
   steps: [...IN,
     { world: { configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: {} }), user: kept.text } }, tick: 120,
       settings: { conflicts: [], overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha", "beta"], text: "g: you, over alpha and beta" }] } },

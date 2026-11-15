@@ -24,7 +24,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    herdr.dev. Never edit a mod's code.
 4. **whistle.json**: leave it alone. Its shape is unchanged.
 5. **Keys**: tell the person what moved in the default map: Spaces from `S` to `s`, the
-   Ctrl+[ entry key dropped (Ctrl+Space is the switch key, Ctrl+Shift+Space the documented
+   Ctrl+[ switch key dropped (Ctrl+Space is the switch key, Ctrl+Shift+Space the documented
    fallback), and new defaults added.
 
 ### You

@@ -67,7 +67,7 @@ your mod leaves the layout is ignored, not deleted.
 If two mods offer the same key (command against command, or command against group), neither
 counts: the key falls through to the defaults, or is unmapped. The bar flashes once when the
 conflict appears, and whistle's settings list it with both mods. Two groups on one key aren't a
-conflict: they merge key by key, only clashing keys inside them conflict, and the group takes
+conflict: they merge key by key, only keys both offer inside them conflict, and the group takes
 the title of the mod first in layout order.
 
 ```json example Two mods on one key count for neither and flash once

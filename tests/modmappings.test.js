@@ -75,7 +75,7 @@ const SCENARIOS = [
     ],
   },
   {
-    name: "A mod registering a clashing key mid-session flashes",
+    name: "A mod registering a conflicting key mid-session flashes",
     world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [
       { tick: 120, bar: { label: "Terminal" } },
@@ -89,7 +89,7 @@ const SCENARIOS = [
     steps: [...IN, { key: "g", effects: [], handled: false, model: { conflicts: [{ seq: ["g"], mods: ["alpha", "beta"] }] } }],
   },
   {
-    name: "Two groups on one key merge; only clashing keys inside conflict; the title is the first mod's in layout order",
+    name: "Two groups on one key merge; only keys both offer inside conflict; the title is the first mod's in layout order",
     world: world({ mods: ["beta", "alpha"], entries: {
       alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { b: ["B", "beta.b"], d: ["D", "beta.d"] } } }),
@@ -102,7 +102,7 @@ const SCENARIOS = [
       { key: "g" }, { key: "d", effects: [], bar: { label: "g d is not mapped" } }],
   },
   {
-    name: "A clash inside merged groups flashes with its key sequence",
+    name: "A mapping conflict inside merged groups flashes with its key sequence",
     world: world({ entries: {
       alpha: entry({ g: { name: "Alpha", map: { d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"] } } }),

@@ -186,7 +186,7 @@ The driver's own keys (whistle's: selecting fields, moves, open, back to TYPE) a
 its own. A declared key that is one of them is ignored and listed in whistle's settings as a
 config problem; so is a declared chord.
 
-```json example An own key beats a declared key, and the clash is listed
+```json example An own key beats a declared key, and the config problem is listed
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [

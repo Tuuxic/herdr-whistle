@@ -59,7 +59,7 @@ const SCENARIOS = [
       { key: "d", handled: true, effects: [{ run: "files.keynav-key-d", args: {} }, { focusBar: true }] }],
   },
   {
-    name: "An own key beats a declared key: the clash is ignored and listed as a config problem",
+    name: "An own key beats a declared key: the declared key is ignored and listed as a config problem",
     world: { ...WORLD, shared: entry({ j: "Jump", x: "Cut" }) },
     steps: [...IN, { key: "ctrl-l" },
       { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }],

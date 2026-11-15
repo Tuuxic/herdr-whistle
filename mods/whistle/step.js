@@ -49,7 +49,7 @@
 //   { run: "<command>", args }          run a Herdr command
 //   { focusBar: true }                  the bar takes the keyboard
 //   { setShared: key, value }           set shared state; step adds { setShared: "whistle" }
-//                                       last whenever the public state changes (state())
+//                                       last whenever the whistle state changes (state())
 //   { write: path, text, expected }     write a file (path relative to Herdr's home: "keys.json");
 //                                       the outcome comes back as { wrote }
 //   { openOverlay: name, spec }         open an overlay, known by name
@@ -533,10 +533,10 @@ export function step(model, input, world) {
   return why ? done : publish(done);
 }
 
-// The shared key whistle's public state goes in (docs/contracts/state.md).
+// The shared key the whistle state goes in (docs/contracts/state.md).
 export const STATE = "whistle";
 
-// Whistle's public state (ADR 0010): { v: 1, mode, enabled, sequence: null | { keys, group },
+// The whistle state (ADR 0010): { v: 1, mode, enabled, sequence: null | { keys, group },
 // pane }. mode is "type" while WHISTLE is switched off; group is the name of the group the
 // sequence has reached.
 export function state(model) {

@@ -1,7 +1,6 @@
 // The hints: draws the hints' view model (views.js hints()) and nothing else. A window overlay
-// docked on top of the bar, as wide as it, the way which-key's classic layout does: a title row
-// with the keys and the group's name, then columns filled top to bottom, as many as fit. A window
-// doesn't take the keyboard, so WHISTLE keeps it. The bar's copy opens it at hintsSize() and
+// docked on top of the bar, as wide as it: a title row with the keys and the group's name, then
+// columns filled top to bottom, as many as fit. A window doesn't take the keyboard, so WHISTLE keeps it. The bar's copy opens it at hintsSize() and
 // closes it when the sequence ends.
 
 import { div } from "gpui-kit";
