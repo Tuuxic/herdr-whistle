@@ -76,10 +76,10 @@ export function hintsColumns(items, width) {
 const BAR_HEIGHT = 22, WIDTH = 900;
 
 // Where the hints window docks: on top of the bar and as wide as it, { width, height, at? }.
-// Whistle measures only the window (world.viewport) and its own bar (world.barSize); the bar
-// reaches the window's right edge, set in by the layout's hintsAlignRight, inside a border
-// hintsAlignBorder wide, and the box sits hintsGap (6) above it. Without a viewport, Herdr
-// places the window.
+// Whistle measures only the window (world.viewport) and its own bar (world.barSize, inside any
+// border); the layout says the rest. The bar block (the bar and a border hintsAlignBorder wide
+// around it) ends hintsAlignRight px from the window's right edge, and the box sits hintsGap
+// (6) above the block's top, border included. Without a viewport, Herdr places the window.
 export function hintsBox(items, place, world) {
   const vp = world.viewport ?? null;
   const right = place.hintsAlignRight ?? 0, border = place.hintsAlignBorder ?? 0, gap = place.hintsGap ?? 6;
@@ -87,7 +87,8 @@ export function hintsBox(items, place, world) {
   const width = Math.round(barWidth + 2 * border);
   const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
   if (!vp) return { width, height };
-  const at = { x: Math.max(0, vp.width - right - barWidth - border), y: Math.max(8, vp.height - (world.barSize?.height ?? BAR_HEIGHT) - height - gap) };
+  const blockHeight = (world.barSize?.height ?? BAR_HEIGHT) + 2 * border;
+  const at = { x: Math.max(0, vp.width - right - width), y: Math.max(8, vp.height - blockHeight - height - gap) };
   return { width, height, at };
 }
 

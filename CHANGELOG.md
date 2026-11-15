@@ -69,6 +69,11 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder`
   and `hintsGap`, which line the hints box up with a bar set in from the window's edge. `nav`
   directions are `left`/`down`/`up`/`right`, and a bad prop is listed as a config problem.
+- **Breaking**: `hintsAlignRight` is the px from the window's right edge to the bar block's
+  outer edge, its border included (it was to the bar's inside: a bar set in 200 px with a 2 px
+  border needed 202, now 200), and `hintsGap` counts from the block's top border (the border
+  used to eat into the gap). A layout that set `hintsAlignRight` with a border takes
+  `hintsAlignBorder` off it.
 
 ### Mod authors
 

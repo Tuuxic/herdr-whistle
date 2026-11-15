@@ -62,7 +62,21 @@ const SCENARIOS = [
     name: "A bar set in from the window's edge docks the hints by the layout's hintsAlignRight, hintsAlignBorder and hintsGap",
     world: { ...world({ map: PANES, props: { hintsAlignRight: 12, hintsAlignBorder: 1, hintsGap: 4 } }),
       viewport: { width: 1000, height: 600 }, barSize: { width: 800, height: 22 } },
-    steps: [...IN, { key: "w", hintsWindow: [HINTS(802, ONE_ROW, { x: 1000 - 12 - 800 - 1, y: 600 - 22 - ONE_ROW - 4 })] }],
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(802, ONE_ROW, { x: 1000 - 12 - 802, y: 600 - (22 + 2) - ONE_ROW - 4 })] }],
+  },
+  {
+    // The hand pass's bar (#33): set in 200 px from the window's right edge, measured to the
+    // bar block's outer edge, inside a 2 px border; the box ends where the border does.
+    name: "hintsAlignRight measures to the bar block's outer edge: a bar 200 px in with a 2 px border gets a box as wide as it",
+    world: { ...world({ map: PANES, props: { hintsAlignRight: 200, hintsAlignBorder: 2 } }),
+      viewport: { width: 1000, height: 600 }, barSize: { width: 600, height: 22 } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(604, ONE_ROW, { x: 196, y: 600 - 26 - ONE_ROW - 6 })] }],
+  },
+  {
+    name: "The hints gap counts from the bar's border: with a 2 px border and hintsGap 6 the box sits 6 px above the border",
+    world: { ...world({ map: PANES, props: { hintsAlignBorder: 2, hintsGap: 6 } }), ...MEASURED },
+    // The bar block: 22 px inside, 26 px with its border, so its outer top is at 574; the box ends 6 px above.
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(1004, ONE_ROW, { x: 0, y: 574 - 6 - ONE_ROW })] }],
   },
   {
     name: "The bar changing size moves the open hints window on the next tick",
