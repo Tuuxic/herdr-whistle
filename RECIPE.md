@@ -57,7 +57,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   characters). A flash (a failed command, `w x is not mapped`) takes the label until the
   next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
   in from the right: `⚠ <count>`.
-- **Hints** (a window overlay docked on top of the bar, as wide as the window, on `chrome` with
+- **Hints** (a window overlay docked on top of the bar, as wide as the bar block, on `chrome` with
   an `accent` border, text 12 px): while a key sequence has reached a group in WHISTLE, a
   title row with the keys so far (bold, `accent`), the group's name (`foreground`) and, at
   the right in `dim`, `Esc cancels`; then the group's keys in columns filled top to bottom,
