@@ -179,7 +179,9 @@ export default class Whistle extends View {
       const id = openOverlay(e.spec);
       this.overlays.set(e.openOverlay, id);
       setShared(overlayKey(e.openOverlay), id);
-    } else if ("closeOverlay" in e) this.closeOverlay(e.closeOverlay); else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
+    }
+    else if ("closeOverlay" in e) this.closeOverlay(e.closeOverlay);
+    else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
   }
 
   render(_cx) {

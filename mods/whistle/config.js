@@ -46,7 +46,7 @@ export const SAFETY = {
 
 export const DEFAULTS = "mappings.json";
 export const USER = "whistle.json";
-// Herdr's keys.json, as a problem's source.
+// Herdr's keys.json (in Herdr's home): a problem's source, the file claims write.
 export const KEYS = "keys.json";
 export const LAYOUT = "layout";
 export const MODS = "mods";
@@ -66,10 +66,11 @@ export function readFile(good, text) {
   return { good: { text, json } };
 }
 
-// A command as written, "<name>" or "<name>:<arg>": { name, arg: the text after the colon | null }.
-function nameAndArg(written) {
+// A command as written, "<verb>" or "<verb>:<block>": { verb, block: everything after the
+// first colon (ADR 0014) | null }. A Herdr command's "<name>:<arg>" splits the same way.
+export function verbAndBlock(written) {
   const colon = written.indexOf(":");
-  return colon > 0 ? { name: written.slice(0, colon), arg: written.slice(colon + 1) } : { name: written, arg: null };
+  return colon > 0 ? { verb: written.slice(0, colon), block: written.slice(colon + 1) } : { verb: written, block: null };
 }
 
 // A command as written ("pane.split", "space.select:1") with Herdr's command list
@@ -77,7 +78,7 @@ function nameAndArg(written) {
 // Herdr has no such command. Mods' own commands (<mod>.<command>) aren't listed, so a name
 // outside Herdr's namespaces counts.
 function command(written, args, commands) {
-  const { name, arg } = nameAndArg(written);
+  const { verb: name, block: arg } = verbAndBlock(written);
   if (!commands) return { run: written, args: args ?? {} };
   const known = commands.find((c) => c.name === name);
   if (!known) {
@@ -94,22 +95,23 @@ function command(written, args, commands) {
 // block ("whistle.field:<block>") and those that don't.
 export const VERBS = ["whistle", "type", "on", "off", "settings"];
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
-// The verb a jump key may add to keep the mode it was pressed in (ADR 0014); a mapping runs it
-// as toggle.
+// The verb a jump key may add to keep the mode it was pressed in (ADR 0014).
 export const KEEP_MODE = "toggle-keep-mode";
 // The verbs a jump key (keys.json "whistle.<verb>:<block>") may run.
 export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
+// The block verb a jump verb runs: toggle-keep-mode runs as toggle.
+export const runsAs = (verb) => (verb === KEEP_MODE ? "toggle" : verb);
 
 // A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
 // | a reason it's bad.
 function whistleCommand(written, args) {
-  const { name, arg } = nameAndArg(written);
+  const { verb: name, block: arg } = verbAndBlock(written);
   const v = name.slice("whistle.".length);
   if (VERBS.includes(v)) return { run: name, args: {} };
   if (!JUMP_VERBS.includes(v)) return `unknown whistle command ${name}`;
   const block = arg ?? args?.block;
   if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
-  return { run: v === KEEP_MODE ? "whistle.toggle" : name, args: { block } };
+  return { run: `whistle.${runsAs(v)}`, args: { block } };
 }
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
@@ -136,9 +138,9 @@ export function keysProblems(text, folder) {
     for (const [key, action] of Object.entries(keys)) {
       if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
       const c = action.slice(folder.length + 1);
-      const { name, arg } = nameAndArg(c);
-      if (arg === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(name)) continue;
-      const why = arg === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
+      const { verb, block } = verbAndBlock(c);
+      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb)) continue;
+      const why = block === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
       out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
     }
   }

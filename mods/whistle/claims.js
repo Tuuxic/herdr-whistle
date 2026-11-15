@@ -13,7 +13,7 @@
 // wrote them and win: a key you bind there, in any spelling, isn't claimed.
 
 import { canonicalKey, isChord } from "./keynames.js";
-import { usedKeys } from "./config.js";
+import { usedKeys, KEYS } from "./config.js";
 import { FOLDER } from "./version.js";
 
 // keys.json's text (null: no file), with the keys whistle needs (canonical names), the shown
@@ -50,8 +50,6 @@ export const CLAIMS = { pending: null, check: null, failed: null };
 // How long Herdr gets to load a written keys.json before whistle looks for keys.error (ms).
 export const CHECK_MS = 600;
 
-const KEYS_FILE = "keys.json";
-
 // The shell's timer, for claims: keys.json brought in line with whistle's keys, one write at a
 // time. A written text waits for Herdr's verdict (a keys.json read CHECK_MS after the write);
 // if Herdr rejects it, the old text goes back. Nothing is written while keys.error exists.
@@ -65,7 +63,7 @@ export function claimsTick(model, world) {
     if (keys.error == null) return kept({ check: null }, null);
     const why = `keys.json rejected whistle's keys: ${String(keys.error).trim().slice(0, 80)}`;
     return kept({ check: null, failed: claims.check.text, pending: { text: claims.check.raw, raw: claims.check.text, revert: true } }, why,
-      [{ write: KEYS_FILE, text: claims.check.raw, expected: claims.check.text }]);
+      [{ write: KEYS, text: claims.check.raw, expected: claims.check.text }]);
   }
   if (keys.error != null) {
     const why = "keys.json has an error (keys.error); whistle left it alone";
@@ -77,14 +75,14 @@ export function claimsTick(model, world) {
   if (wanted.same) return problem == null && claims.failed == null ? none : kept({ failed: null }, null);
   if (wanted.text === claims.failed) return none;
   return kept({ pending: { text: wanted.text, raw: keys.text, revert: false } }, problem,
-    [{ write: KEYS_FILE, text: wanted.text, expected: keys.text }]);
+    [{ write: KEYS, text: wanted.text, expected: keys.text }]);
 }
 
 // A keys.json write's outcome: a claim waits for Herdr's verdict; a failure is a problem, and
 // its text isn't tried again.
 export function claimWrote(model, world, input) {
   const before = model.claims ?? CLAIMS, write = before.pending;
-  if (input.wrote !== KEYS_FILE || !write) return { model, effects: [] };
+  if (input.wrote !== KEYS || !write) return { model, effects: [] };
   if (!input.ok) {
     const claims = { ...before, pending: null, failed: write.revert ? before.failed : write.text };
     return { model: { ...model, claims, claimProblem: `couldn't write keys.json: ${input.error ?? "unknown error"}` }, effects: [] };

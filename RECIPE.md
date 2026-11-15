@@ -528,7 +528,7 @@ only through you.
    `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.whistle`,
    `whistle.focus:agents`, `whistle.focus:spaces`, `whistle.settings`), keeping their keys.
 3. Other copies stay inert while `mods/whistle/` runs. Ask before deleting them.
-4. Never touch `~/.config/herdr-app/whistle.json`, and don't merge `keys.json` again:
+4. Never touch `whistle.json` in Herdr's home, and don't merge `keys.json` again:
    whistle reconciles its own `mod:whistle` keys. Change keys.json only where step 2 or an
    Upgrading note says to.
 5. Read `CHANGELOG.md` and tell the person about every entry newer than the old version,
@@ -572,6 +572,6 @@ only through you.
    them.
 2. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`).
 3. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` action.
-4. Ask before deleting `~/.config/herdr-app/whistle.json`, the person's own settings.
+4. Ask before deleting `whistle.json` in Herdr's home, the person's own settings.
 5. Tell the person that whistle blocks in their layouts will now show nothing, and offer to
    remove them.

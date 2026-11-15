@@ -25,8 +25,9 @@
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null,
 //          sent: the views' models last set in their shared keys and the hints window last
-//          opened, as JSON ({ hints, settings, box }; null: none yet / not open; box starts
-//          "left open", so a copy that starts closes a hints window an earlier copy left) }
+//          opened, as JSON ({ hints, settings, box }; null: none yet / not open), and leftOpen:
+//          a hints window an earlier copy may have left open (Herdr makes a new copy when the
+//          layout changes), true when a copy starts, so its first step closes it }
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
@@ -73,21 +74,17 @@
 import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
-import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems } from "./config.js";
+import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
 
-// sent.box when a copy starts: a hints window may be open, left by an earlier copy of whistle
-// (Herdr makes a new copy when the layout changes), so the first step closes it.
-const LEFT_OPEN = "left open";
-
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
-  enabled: true, published: null, sent: { hints: null, settings: null, box: LEFT_OPEN },
+  enabled: true, published: null, sent: { hints: null, settings: null, box: null, leftOpen: true },
 });
 
 // This copy's folder (world.folder), its blocks' mod name.
@@ -244,9 +241,12 @@ const flash = (model, text) => ({ model: { ...model, flash: text }, effects: [],
 const revealing = (world, block) => reveal(world.layout, block).map((r) => (r.show
   ? { run: "layout.show", args: { id: r.show } } : { run: "layout.select", args: { stack: r.stack, child: r.child } }));
 
+// The flash when a block holds no field to select now.
+const cantSelect = (block) => `${block} can't be selected now`;
+
 // Why a verb can't run on block now (the bar flashes it), or null when it can.
 function cantRun(model, world, v, block) {
-  if (v === "field") return select(model, world, block) ? null : `${block} can't be selected now`;
+  if (v === "field") return select(model, world, block) ? null : cantSelect(block);
   return has(world.layout, block) ? null : `No ${block} in this layout`;
 }
 
@@ -266,9 +266,12 @@ function toggled(model, world, block) {
 // A whistle.<verb> from a mapping (docs/contracts/commands.md), in WHISTLE.
 function whistleMapping(model, world, v, block) {
   if (!BLOCK_VERBS.includes(v)) return { ...command(model, world, v), handled: true };
+  if (v === "field") {
+    const m = select(model, world, block);
+    return m ? { model: m, effects: [], handled: true } : flash(model, cantSelect(block));
+  }
   const why = cantRun(model, world, v, block);
   if (why) return flash(model, why);
-  if (v === "field") return { model: select(model, world, block), effects: [], handled: true };
   if (v === "toggle") {
     const t = toggled(model, world, block);
     return held(t.model, world, t.effects);
@@ -285,9 +288,8 @@ export const FLASH_MS = 2000;
 // WHISTLE from either mode (ending a key sequence); toggle-keep-mode keeps the mode. A verb
 // that can't run flashes, in the mode it was pressed in.
 function jump(model, world, c) {
-  const colon = c.indexOf(":");
-  const verb = c.slice(0, colon), block = c.slice(colon + 1);
-  const v = verb === KEEP_MODE ? "toggle" : verb;
+  const { verb, block } = verbAndBlock(c);
+  const v = runsAs(verb);
   if (model.mode === "whistle") return whistleMapping({ ...model, sequence: null }, world, v, block);
   const why = cantRun(model, world, v, block);
   if (why) return { model: { ...model, flash: why, flashUntil: world.now + FLASH_MS }, effects: [] };
@@ -490,7 +492,11 @@ function boundKey(world, action) {
 }
 
 // A jump key's command ("<verb>:<block>", ADR 0014) as Herdr hands it over.
-const isJump = (c) => typeof c === "string" && c.includes(":") && JUMP_VERBS.includes(c.slice(0, c.indexOf(":")));
+function isJump(c) {
+  if (typeof c !== "string") return false;
+  const { verb, block } = verbAndBlock(c);
+  return block !== null && JUMP_VERBS.includes(verb);
+}
 
 // Inert or switched off: no WHISTLE, and the switch key and jump keys type through into the
 // focused terminal; every key and command goes on.
@@ -542,7 +548,7 @@ function rest(closed, input, world) {
   const out = "wrote" in input ? wrote(closed.model, world, input) : { model: closed.model, effects: [] };
   const m = out.model;
   const quiet = m.mode === "type" && m.published === null && m.sent.hints === null && m.sent.settings === null;
-  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, box: null } };
+  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, leftOpen: false } };
   return { model, effects: [...closed.effects, ...out.effects], handled: false };
 }
 
@@ -575,16 +581,16 @@ function viewsSent(out, world) {
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
     if (box !== sent.box) effects.push({ openOverlay: HINTS_OVERLAY, spec });
-  } else if (sent.box) effects.push({ closeOverlay: HINTS_OVERLAY });
-  if (hs === sent.hints && ss === sent.settings && box === sent.box) return out;
-  return { ...out, model: { ...m, sent: { hints: hs, settings: ss, box } }, effects };
+  } else if (sent.box || sent.leftOpen) effects.push({ closeOverlay: HINTS_OVERLAY });
+  if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return out;
+  return { ...out, model: { ...m, sent: { hints: hs, settings: ss, box, leftOpen: false } }, effects };
 }
 
 // An inert copy sets no shared keys; it only closes its hints window, if open.
 function hintsClosed(out) {
   const sent = out.model.sent;
-  if (!sent?.box) return out;
-  return { ...out, model: { ...out.model, sent: { ...sent, box: null } }, effects: [...out.effects, { closeOverlay: HINTS_OVERLAY }] };
+  if (!sent?.box && !sent?.leftOpen) return out;
+  return { ...out, model: { ...out.model, sent: { ...sent, box: null, leftOpen: false } }, effects: [...out.effects, { closeOverlay: HINTS_OVERLAY }] };
 }
 
 // The shared key the whistle state goes in (docs/contracts/state.md).
