@@ -125,8 +125,9 @@ taken an own key's action away, its key is free.
 ### 4. A layer above settles it; a mod can be switched off whole
 
 The layout's whistle block or the person's whistle.json can map any mod's key, or set it to
-`null`: that's an override, not a conflict, and settles a conflict on that key. Settings label
-it ("you, over alpha"); nothing flashes. Either can also switch a mod off whole with a `mods`
+`null`: that's an override, not a conflict, and settles a conflict on that key. A mapping or
+`null` on a key where a mod's group is overrides the whole group (a group there merges with it
+instead). Settings label each override ("you, over alpha"); nothing flashes. Either can also switch a mod off whole with a `mods`
 section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's.
 
 ```json example whistle.json switches a mod off, settling its conflict

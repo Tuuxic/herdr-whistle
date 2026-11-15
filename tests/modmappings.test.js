@@ -178,6 +178,35 @@ const SCENARIOS = [
     steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
       model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] } }],
   },
+  {
+    name: "A layer above mapping over a mod's whole group is an override of that group, for settings",
+    world: world({ user: { map: { g: ["Next space", "space.next"] } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], b: { name: "More", map: { c: ["C", "alpha.c"] } } } } }) } }),
+    steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
+      model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] },
+      settings: { overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha"], text: "g: you, over alpha" }] } }],
+  },
+  {
+    name: "A key set to null over a group two mods merged is an override of both",
+    world: world({ props: { mappings: { g: null } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"] } } }), beta: entry({ g: { name: "Beta", map: { b: ["B", "beta.b"] } } }) } }),
+    steps: [...IN, { key: "g", effects: [], handled: false,
+      model: { overrides: [{ seq: ["g"], source: "layout", over: ["alpha", "beta"] }] } }],
+  },
+  {
+    name: "A group over a mod's group merges: no override of the group, only of the keys it maps over",
+    world: world({ user: { map: { g: { map: { a: ["Next space", "space.next"], z: ["Z", "tab.next"] } } } },
+      entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], b: ["B", "alpha.b"] } } }) } }),
+    steps: [...IN, { key: "g" }, { key: "b", effects: ran("alpha.b"),
+      model: { overrides: [{ seq: ["g", "a"], source: "whistle.json", over: ["alpha"] }] } }],
+  },
+  {
+    name: "A mapping over a defaults' group a mod added a key to overrides that mod",
+    world: world({ map: { g: { name: "Go", map: { t: ["Next tab", "tab.next"] } } }, user: { map: { g: ["Next space", "space.next"] } },
+      entries: { alpha: entry({ g: { map: { a: ["A", "alpha.a"] } } }) } }),
+    steps: [...IN, { key: "g", effects: ran("space.next"),
+      model: { overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] } }],
+  },
 
   // Switched off.
   {

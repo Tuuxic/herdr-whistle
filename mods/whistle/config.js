@@ -185,6 +185,19 @@ function mergeOffers(base, offers, ctx, path) {
   return out;
 }
 
+// The mods with a mapping somewhere in a group (of those in `mods`), in the order they come.
+function modsIn(group, mods) {
+  const out = [];
+  const walk = (map) => {
+    for (const v of Object.values(map)) {
+      if (isGroup(v)) walk(v.map);
+      else if (mods.has(v.source) && !out.includes(v.source)) out.push(v.source);
+    }
+  };
+  walk(group.map);
+  return out;
+}
+
 const startsWith = (seq, prefix) => prefix.length <= seq.length && prefix.every((k, i) => seq[i] === k);
 const same = (a, b) => a.length === b.length && startsWith(a, b);
 
@@ -232,7 +245,8 @@ function mergeKeys(base, over, ctx) {
 // missing; the mods layer is { source: MODS, offers: [{ name, entry }] }, in layout order) as
 // one config: { map, keys: action -> keys, own: key -> action, problems,
 //   conflicts: mapping conflicts, for settings [{ seq, mods, own?: the own key's action }],
-//   overrides: keys a later layer maps over a mod's, or over a conflict [{ seq, source, over: mods }],
+//   overrides: keys a later layer maps over a mod's (or over a group holding mods' mappings), or
+//     over a conflict [{ seq, source, over: mods }],
 //   off: the mods switched off (names) }.
 // ctx: { commands: Herdr's command list | null, platform }.
 export function compose(layers, { commands = null, platform = null } = {}) {
@@ -270,8 +284,8 @@ export function compose(layers, { commands = null, platform = null } = {}) {
     const ctx = at(i, 0, layer.source);
     if (!isObject(layer.map)) { ctx.problem("map should be an object"); return; }
     // A key written at a conflict, or above one unless as a group (which merges), settles it;
-    // written over a mod's mapping, it's an override. Either is labelled with the last layer
-    // that wrote it.
+    // written over a mod's mapping, or over a group with mods' mappings in it (unless as a group,
+    // which merges), it's an override. Either is labelled with the last layer that wrote it.
     ctx.wrote = (seq, v, was) => {
       const covers = (s) => same(s, seq) || (!isGroup(v) && startsWith(s, seq));
       for (const o of overrides) if (covers(o.seq)) o.source = layer.source;
@@ -279,7 +293,8 @@ export function compose(layers, { commands = null, platform = null } = {}) {
         overrides.push({ seq: c.seq, source: layer.source, over: c.mods });
         conflicts.splice(conflicts.indexOf(c), 1);
       }
-      if (was && !isGroup(was) && mods.has(was.source)) overrides.push({ seq, source: layer.source, over: [was.source] });
+      const over = !was ? [] : !isGroup(was) ? (mods.has(was.source) ? [was.source] : []) : isGroup(v) ? [] : modsIn(was, mods);
+      if (over.length) overrides.push({ seq, source: layer.source, over });
     };
     map = mergeMap(map, layer.map, ctx, []);
   });
