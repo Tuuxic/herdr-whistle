@@ -62,7 +62,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   title row with the keys so far (bold, `accent`), the group's name (`foreground`) and, at
   the right in `dim`, `Esc cancels`; then the group's keys in columns filled top to bottom,
   each `key → label` (a further group's label `+Name` in `accent`).
-- **Settings** (a dialog, 640 px wide, 80% high, on `chrome`; `ctrl-shift-,` →
+- **Settings** (a dialog, 640 px wide, 80% high, on `chrome`; `alt-,` →
   `whistle.settings` in keys.json's `global` opens it in TYPE, in WHISTLE and switched off): sections PROBLEMS (each
   `<source>: <detail>` in `blocked`, or "None"), MAPPING CONFLICTS (each conflict in `blocked`
   with a `Keep <mod>'s` button per mod), OVER MODS' KEYS (`g: you, over alpha`) and MODS'
@@ -165,7 +165,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
   `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`,
-  `ctrl-shift-, → whistle.settings`;
+  `alt-, → whistle.settings`;
   `mod:whistle: ctrl-space → whistle.type`.
 - **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
@@ -201,7 +201,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   agents field selected, and Alt+S to the spaces field.
 - With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
   hides itself and `mods/whistle/` runs.
-- Ctrl+Shift+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
+- Alt+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
 - With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.whistle`,
   settings list the switch-key problem and the bar shows `⚠ 1`.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
@@ -242,7 +242,9 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    answers only to its folder's name, so write its `global` lines with that name:
    `<folder>.whistle`, `<folder>.focus:agents`, `<folder>.focus:spaces`, `<folder>.settings`
    (whistle writes its own `mod:<folder>` section itself). On macOS, Option+letter types characters, so propose the
-   jump keys as `ctrl-shift-a` / `ctrl-shift-s` instead of `alt-a` / `alt-s`. If the person's
+   jump keys as `ctrl-shift-a` / `ctrl-shift-s` instead of `alt-a` / `alt-s`, and the settings key
+   as `ctrl-shift-,` instead of `alt-,` (macOS matches it by either spelling; elsewhere the
+   shifted character depends on the keyboard layout, so it is never the default). If the person's
    layout has no `agents` or `spaces` block, say the jump keys name blocks by id and offer to
    point them at their layout's ids.
 6. `herdr-app check mods/whistle`.
@@ -272,7 +274,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    not, say they can ask for it any time.
 9. **Close with a short summary** in the person's words: Ctrl+Space switches between typing
    and moving around (the bar shows which); Alt+A and Alt+S (Ctrl+Shift+A / Ctrl+Shift+S on
-   macOS) jump to the agents and spaces lists; **Ctrl+Shift+, opens whistle's settings** (Ctrl+,
+   macOS) jump to the agents and spaces lists; **Alt+, (Ctrl+Shift+, on macOS) opens whistle's settings** (Ctrl+,
    stays Herdr's), from anywhere, even with whistle switched off; and what you set up
    (the bar, Integrate) or left for later.
 

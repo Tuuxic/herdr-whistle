@@ -59,9 +59,11 @@ takes you to a field:
   in settings. A block the shown layout lacks is not one; pressed, it only flashes.
 
 Whistle ships two in the `global` section: `alt-a` (agents) and `alt-s` (spaces), with ids from
-Herdr's `main` layout. Beside them it ships `ctrl-shift-,` → `whistle.settings` (next to Herdr's
-`ctrl-,`), which opens whistle's settings from either mode and while switched off. On macOS, where Option+letter types characters, bind `ctrl-shift-a` /
-`ctrl-shift-s` instead.
+Herdr's `main` layout. Beside them it ships `alt-,` → `whistle.settings` (next to Herdr's
+`ctrl-,`), which opens whistle's settings from either mode and while switched off. On macOS, where Option types characters, bind `ctrl-shift-a` /
+`ctrl-shift-s` / `ctrl-shift-,` instead. (Only macOS matches a shifted punctuation key by either
+spelling; elsewhere Herdr names the shifted character, which depends on the keyboard layout, so
+Ctrl+Shift+, would be `ctrl-<` on a US layout and `ctrl-;` on a German one: hence `alt-,`.)
 
 ## Rules
 

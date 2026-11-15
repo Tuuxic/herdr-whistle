@@ -3,7 +3,7 @@
     "ctrl-space": "whistle.whistle",
     "alt-a": "whistle.focus:agents",
     "alt-s": "whistle.focus:spaces",
-    "ctrl-shift-,": "whistle.settings"
+    "alt-,": "whistle.settings"
   },
   "mod:whistle": {
     "ctrl-space": "whistle.type"

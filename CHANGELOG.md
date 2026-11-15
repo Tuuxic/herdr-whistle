@@ -19,7 +19,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    terminal, as an opt-in) or remove it, so Ctrl+[ reaches terminal programs again. Then offer
    the new jump keys, `"alt-a": "whistle.focus:agents"` and `"alt-s": "whistle.focus:spaces"`
    in the `global` section (`ctrl-shift-a` / `ctrl-shift-s` on macOS, where Option+letter types
-   characters), and the settings key, `"ctrl-shift-,": "whistle.settings"`, and add them if the
+   characters), and the settings key, `"alt-,": "whistle.settings"` (`ctrl-shift-,` on macOS), and add them if the
   person agrees. A copy that stays in another folder gets them as `<folder>.*`. Make no other
   change to keys.json.
 3. **keynav v1 mods**: find mods under `mods/` that announce themselves in
@@ -71,7 +71,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   written into your whistle.json (docs/guide.md, Settings), which is written again whole with
   2-space indents (your entries and their order stay, your own line breaks don't). The hints
   name the key that cancels a sequence.
-- **New**: Ctrl+Shift+, opens whistle's settings from anywhere: in TYPE, in WHISTLE and while
+- **New**: Alt+, (Ctrl+Shift+, on macOS) opens whistle's settings from anywhere: in TYPE, in WHISTLE and while
   whistle is switched off (Ctrl+, stays Herdr's settings).
 - A copy of whistle in another folder (`mods/whistle-2/`) answers only to `whistle-2.*` in
   keys.json; its settings list a config problem while the switch key in `global` names another

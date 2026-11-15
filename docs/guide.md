@@ -6,12 +6,12 @@ Whistle has two modes. In **TYPE** the keyboard belongs to the focused terminal 
 usual. In **WHISTLE** whistle holds it: keys move between fields and run mappings.
 
 `ctrl-space` is the switch key, both ways. Besides it, whistle ships only two jump keys for TYPE
-(`alt-a` and `alt-s`, below) and `ctrl-shift-,` for [its settings](#settings): the rest of
+(`alt-a` and `alt-s`, below) and `alt-,` for [its settings](#settings): the rest of
 whistle's defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds them:
 
 ```json
 "global": { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces",
-            "ctrl-shift-,": "whistle.settings" },
+            "alt-,": "whistle.settings" },
 "mod:whistle": { "ctrl-space": "whistle.type" }
 ```
 
@@ -593,8 +593,8 @@ yours wins) turns the box off.
 
 ## Settings
 
-`ctrl-shift-,` opens them (`whistle.settings` in keys.json's `global`, next to Herdr's own
-`ctrl-,` for Herdr's settings), in TYPE, in WHISTLE and while whistle is switched off; `,` in
+`alt-,` opens them (`whistle.settings` in keys.json's `global`, next to Herdr's own
+`ctrl-,` for Herdr's settings; `ctrl-shift-,` on macOS, where Option types characters), in TYPE, in WHISTLE and while whistle is switched off; `,` in
 WHISTLE opens Herdr's. Whistle's settings list:
 
 - **Problems**: every [config problem](#when-something-is-wrong), with its file (`mappings.json`,
