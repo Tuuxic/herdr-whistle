@@ -203,7 +203,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - After Install on Herdr's `main` layout, Integrate (simple path, Herdr's blocks) shows
   `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without opening a space
   and Enter opens it, and a long spaces list scrolls to keep the cursor and one more space
-  past it in view; the selected field glows in `accent`; files and changes are fields; the
+  past it in view, with a gap below the last space and above the first; the selected field glows in `accent`; files and changes are fields; the
   selected terminal's header glows in `accent` while in WHISTLE with the terminal selected,
   and not while Spaces or Agents is.
 - Update, with a clone's `cloned_from.version` older than its original, offers to make that
@@ -391,8 +391,13 @@ own mod):
    needed, so the cursor item would touch the list's edge: keep **one more item visible past
    the cursor** in the way it moved (as vim's `scrolloff=1`), by scrolling to the child after
    it on a move down or right (`Math.min(index + 1, last)`) and to the child before it on a
-   move up or left (`Math.max(index - 1, 0)`). At the first and last item the cursor item
-   itself touches the edge. When the cursor is put on an item rather than moved (on entering
+   move up or left (`Math.max(index - 1, 0)`). The ends keep a gap too: give the scrolling
+   element an empty spacer child before the first item and after the last, each as tall as
+   the list's own padding at that end (8 px where it has none), and count them as the
+   children before the first item and after the last, so moving onto the last item scrolls to
+   the spacer after it and the list's bottom edge shows below the cursor (where the spacer is
+   taller than what is left to scroll, the list simply scrolls to its end), and the same at the
+   top. When the cursor is put on an item rather than moved (on entering
    the field, or its item gone), scroll to the cursor item itself. A mod that already scrolls to its current item (tabs) scrolls this
    way to the cursor item instead while the field is active.
 4. **Commands**: read `nextCommand()` in a loop started in `init(_props, cx)` (in the block's
