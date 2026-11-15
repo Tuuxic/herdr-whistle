@@ -143,6 +143,6 @@ _Avoid_: error, warning, issue
 
 **Whistle state**:
 What whistle tells other mods about itself: the mode, whether WHISTLE is switched on, the key
-sequence so far and the terminal it has selected. Which field is selected is keynav's to say,
-not whistle state's.
+sequence so far, the terminal it has selected and whether the terminal is the selected field.
+Which keynav field is selected is keynav's to say, not whistle state's.
 _Avoid_: status, whistle API, public state
