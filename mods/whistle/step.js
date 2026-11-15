@@ -35,7 +35,8 @@
 //        { tick: true }                    the shell's timer; world.now and world.barFocused
 //                                          say what changed (a click away, a late focus)
 //        { wrote: path, ok, error }        a write effect's outcome
-//        { ran: command, ok: false, error }  a run effect Herdr refused (it flashes)
+//        { ran: command, ok: false, error }  a run effect that threw (it flashes; today's Herdr
+//                                            doesn't throw, it shows its own error toast)
 //
 // world: { now: ms, layout: Herdr's layout tree, focused: { pane, terminal } | null,
 //          panes: [{ pane, title, program }], barFocused: whether the bar holds the keyboard,

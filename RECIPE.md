@@ -54,15 +54,16 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   theme's `accent` (text in `accent`) or **WHISTLE** filled with `accent` (text in
   `accent_foreground`). Then, 10 px on, in `muted`,
   what has the keyboard: `Terminal`, or in WHISTLE `Terminal · <pane title>` (up to 40
-  characters). A flash (a failed command, `w x is not mapped`) takes the label until the
-  next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
+  characters). A flash (`w x is not mapped`) takes the label until the next key. A command
+  Herdr refuses shows Herdr's own error message (its toast); whistle stays in its mode. While there are config problems, the bar ends with a marker in `blocked`, 10 px
   in from the right: `⚠ <count>`.
 - **Hints** (a window overlay docked on top of the bar, as wide as the bar block, on `chrome` with
   an `accent` border, text 12 px): while a key sequence has reached a group in WHISTLE, a
   title row with the keys so far (bold, `accent`), the group's name (`foreground`) and, at
   the right in `dim`, `Esc cancels`; then the group's keys in columns filled top to bottom,
   each `key → label` (a further group's label `+Name` in `accent`).
-- **Settings** (a dialog, 640 px wide, 80% high, on `chrome`): sections PROBLEMS (each
+- **Settings** (a dialog, 640 px wide, 80% high, on `chrome`; `ctrl-shift-,` →
+  `whistle.settings` in keys.json's `global` opens it in TYPE, in WHISTLE and switched off): sections PROBLEMS (each
   `<source>: <detail>` in `blocked`, or "None"), MAPPING CONFLICTS (each conflict in `blocked`
   with a `Keep <mod>'s` button per mod), OVER MODS' KEYS (`g: you, over alpha`) and MODS'
   MAPPINGS (each mod with an on/off switch, its problems under it in `blocked`).
@@ -103,8 +104,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   safety own keys built into `config.js` (`SAFETY`), a broken install. Every entry is checked
   (key names via `canonicalKey`, commands against Herdr's `commands()`, where a name outside
   Herdr's namespaces is a mod's command); a bad one is skipped and listed. Config problems are
-  `model.problems` (`problems(model)` adds keys.json's). A command Herdr refuses when pressed
-  only flashes. keys.json isn't written while whistle's files aren't read yet, either doesn't
+  `model.problems` (`problems(model)` adds keys.json's). A command Herdr refuses shows Herdr's
+  own error message; whistle stays in its mode. keys.json isn't written while whistle's files aren't read yet, either doesn't
   parse, or mappings.json is missing.
 - **Claimed keys** (ADR 0001): whistle keeps its keys in keys.json's `mod:whistle` section
   (`mod:<folder>` for a renamed copy) as `"<key>": "whistle.key-<key>"`: every chord among its
@@ -163,7 +164,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
-  `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`;
+  `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`,
+  `ctrl-shift-, → whistle.settings`;
   `mod:whistle: ctrl-space → whistle.type`.
 - **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
@@ -171,7 +173,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   `readTextFile` / `writeTextFile` on `appHome()`'s `keys.json` (read every second, written
   with the text it read as `expected`) and `keys.error`, and reads `whistle.json` there
   every second; settings and `whistle.on` / `whistle.off` write `whistle.json`, only whistle's
-  own entries (with the text read as `expected`). No network; no other files outside its folder.
+  own entries (with the text read as `expected`), the whole file again with 2-space indents
+  (entries and key order stay, the person's own line breaks don't). No network; no other files outside its folder.
 - **Tests**: `bash tests/run.sh` (`herdr-app check` on a throwaway test mod); not shipped.
 
 ## Watch out
@@ -180,6 +183,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   still loads whistle, which then stands aside instead of failing to load.
 - A copy counts only while it has a block in the shown layout: a copy whose block is gone
   doesn't keep another copy inert.
+- Herdr hands a keys.json action to the mod its prefix names: a copy in `mods/whistle-2/`
+  answers only to `whistle-2.*`. When `global`'s switch key names another folder
+  (`whistle.whistle`) and none names this copy, the running copy lists a `keys.json` config
+  problem. Whistle only reads `global`; it never writes it (ADR 0001).
+- `run()` returns `null` on a command Herdr refuses, and Herdr shows its own error toast; it
+  doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then the bar
+  flashes).
 - Herdr can hand the keyboard back to a pane late after a command: after a pane move whistle
   holds the keyboard for 600 ms.
 
@@ -191,6 +201,9 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   agents field selected, and Alt+S to the spaces field.
 - With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
   hides itself and `mods/whistle/` runs.
+- Ctrl+Shift+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
+- With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.whistle`,
+  settings list the switch-key problem and the bar shows `⚠ 1`.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
   JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
 - In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
@@ -225,7 +238,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    person before renaming either; a renamed whistle needs `HOME` in its `version.js`
    rewritten to its folder, and a copy in `mods/whistle/` always wins over it.
 5. Merge the repo's `keys.json` into the person's: add its sections and keys, and ask before
-   replacing a key they already use. On macOS, Option+letter types characters, so propose the
+   replacing a key they already use. **A copy in another folder** (say `mods/whistle-2/`)
+   answers only to its folder's name, so write its `global` lines with that name:
+   `<folder>.whistle`, `<folder>.focus:agents`, `<folder>.focus:spaces`, `<folder>.settings`
+   (whistle writes its own `mod:<folder>` section itself). On macOS, Option+letter types characters, so propose the
    jump keys as `ctrl-shift-a` / `ctrl-shift-s` instead of `alt-a` / `alt-s`. If the person's
    layout has no `agents` or `spaces` block, say the jump keys name blocks by id and offer to
    point them at their layout's ids.
@@ -254,6 +270,11 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    list you're in gets a highlight, j/k move in it without opening anything and Enter opens,
    and mark the terminal you've picked. Do that?" If the person says yes, follow Integrate; if
    not, say they can ask for it any time.
+9. **Close with a short summary** in the person's words: Ctrl+Space switches between typing
+   and moving around (the bar shows which); Alt+A and Alt+S (Ctrl+Shift+A / Ctrl+Shift+S on
+   macOS) jump to the agents and spaces lists; **Ctrl+Shift+, opens whistle's settings** (Ctrl+,
+   stays Herdr's), from anywhere, even with whistle switched off; and what you set up
+   (the bar, Integrate) or left for later.
 
 ## Integrate
 
@@ -501,11 +522,13 @@ only through you.
    also apply v1.0.0's Upgrading note in `CHANGELOG.md` in full.**
 2. Replace the contents of `mods/whistle/` with the new `mods/whistle/`: copy every file over
    and delete the files the new version doesn't ship. Don't rename anything. If the only
-   copy is in another folder, move it to `mods/whistle/` and update it there.
+   copy is in another folder, move it to `mods/whistle/` and update it there, and rewrite its
+   `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.whistle`,
+   `whistle.focus:agents`, `whistle.focus:spaces`, `whistle.settings`), keeping their keys.
 3. Other copies stay inert while `mods/whistle/` runs. Ask before deleting them.
 4. Never touch `~/.config/herdr-app/whistle.json`, and don't merge `keys.json` again:
-   whistle reconciles its own `mod:whistle` keys. Change keys.json only where an Upgrading
-   note says to.
+   whistle reconciles its own `mod:whistle` keys. Change keys.json only where step 2 or an
+   Upgrading note says to.
 5. Read `CHANGELOG.md` and tell the person about every entry newer than the old version,
    breaking ones first; follow each entry's **Upgrading** note.
 6. `herdr-app check mods/whistle`.

@@ -116,11 +116,21 @@ function whistleCommand(written, args) {
 // config problems: a command whistle doesn't answer to, such as a jump key with an unknown verb
 // (ADR 0014). A block the layout lacks is not one (pressed, it flashes). A keys.json that
 // doesn't parse is the claims' problem, not listed here.
+// Also a switch key in global that names another folder's switch command while none names this
+// copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)
+// never gets "whistle.whistle" (issue #35). Whistle only reads global; it never writes it.
 export function keysProblems(text, folder) {
   let all;
   try { all = JSON.parse(text ?? "null"); } catch { return []; }
   if (!isObject(all)) return [];
   const out = [];
+  const global = isObject(all.global) ? Object.entries(all.global) : [];
+  if (!global.some(([, a]) => a === `${folder}.whistle`)) {
+    for (const [key, action] of global) {
+      if (typeof action !== "string" || !/^[^.]+\.whistle$/.test(action)) continue;
+      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.whistle` });
+    }
+  }
   for (const [section, keys] of Object.entries(all)) {
     if (!isObject(keys)) continue;
     for (const [key, action] of Object.entries(keys)) {
