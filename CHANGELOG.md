@@ -35,6 +35,14 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   `toggle`, `toggle-keep-mode`) on a layout block from either mode and goes to WHISTLE, so one
   key takes you to a field: Alt+A to the agents, Alt+S to the spaces (docs/guide.md, Jump keys).
   Mappings accept `toggle-keep-mode` too, and run it as `toggle`.
+- **New**: integration. After installing whistle, or whenever you ask, the agent offers to make
+  your layout's blocks into keynav fields (RECIPE.md, Integrate): Herdr's spaces, agents, tabs,
+  files and changes get a cursor that moves without opening, a glow in the theme's `accent`
+  while selected, and `n`/`r`/`x` on spaces and tabs. Herdr's own mods and layouts are
+  cloned (`spaces-whistle`, `main-whistle`); yours are changed in place. A record,
+  `whistle-integration.md` in Herdr's home, lets Update offer to make the clones again when
+  Herdr updates their originals, and Uninstall offer to undo it all. Whistle itself ships no
+  clones and never reads the record.
 
 - Whistle stands aside (inert) on a Herdr older than it needs, or while another copy of
   whistle runs: it claims nothing, Ctrl+Space types through, and the bar says why.

@@ -196,6 +196,13 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
   Herdr's commands, so they have no cursor of their own: moving to an item shows it, and only
   the bar says which stock field is selected. Keys with nothing to do there do nothing.
 - **The files block is not a field**: Herdr gives it no commands. A keynav copy of it would be.
+- **Integration** makes them better fields: ask the agent that installed whistle to integrate
+  it (RECIPE.md, Integrate). It clones Herdr's spaces, agents, tabs, files and changes as
+  keynav mods (`spaces-whistle`, …) in a clone of your layout (`main-whistle`), so each gets a
+  cursor that moves without opening (`enter` opens), a glow in the theme's `accent` while
+  selected, and a few keys of its own (`n`, `r`, `x` on spaces and tabs); files and changes
+  become fields too. Your own layout and mods are changed in place instead. Uninstall offers
+  to undo it.
 
 | Block | Keys | Herdr command | Open (`enter`) |
 |---|---|---|---|
@@ -222,6 +229,33 @@ Whether they wrap around at the ends is up to Herdr.
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" } },
     { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] }
+  ]
+}
+```
+
+After integration the `spaces` block holds the clone, which announces itself through keynav:
+`j` moves its cursor instead of showing the next space.
+
+```json example j on an integrated spaces clone moves its cursor
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "body", "type": "row", "children": [
+        { "id": "spaces", "type": "block", "content": { "mod": "spaces-whistle" } },
+        { "id": "main", "type": "block", "content": { "pane": {} } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "shared": { "keynav.field:spaces-whistle {}": { "v": 2, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
+      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": "spaces-whistle {}" } }] },
+    { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
+    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-open", "args": {} }, { "focusBar": true }] },
+    { "key": "r", "effects": [{ "run": "spaces-whistle.keynav-key-r", "args": {} }, { "focusBar": true }] }
   ]
 }
 ```
