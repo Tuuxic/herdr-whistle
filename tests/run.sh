@@ -14,8 +14,10 @@
 #     (worlds.js) and the *.test.js suites,
 #   - suites.js, written here: imports the suite that check runs and reports its load time,
 #   - texts.js, written here: the text of each spec .md (docs/contracts/, docs/guide.md,
-#     tests/fixtures/), mods/whistle/mod.json and mappings.json, keys.json, RECIPE.md and the core's sources, by repo path. Suites read
-#     them from there: readTextFile is async, and `check` never sees an async failure.
+#     tests/fixtures/), the other docs (README, CHANGELOG, CONTRIBUTING, docs/authors.md, the
+#     checker's README), the workflows, mods/whistle/mod.json and mappings.json, keys.json,
+#     RECIPE.md and the core's sources, by repo path, plus `files`, every file in the repo.
+#     Suites read them from there: readTextFile is async, and `check` never sees an async failure.
 #
 # HERDR_APP picks the herdr-app to run (default: the one on PATH).
 set -u
@@ -45,12 +47,18 @@ literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
 (
   echo 'export default {'
   cd "$root" || exit 1
-  for f in docs/contracts/*.md docs/guide.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json keys.json RECIPE.md; do
+  for f in docs/contracts/*.md docs/guide.md docs/authors.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json \
+      keys.json RECIPE.md README.md CHANGELOG.md CONTRIBUTING.md kit/keynav-checker/README.md .github/workflows/*.yml; do
     [ -f "$f" ] || continue
     printf '  "%s": `' "$f"; literal "$f"; echo '`,'
   done
   for f in $CORE; do printf '  "mods/whistle/%s": `' "$f"; literal "$mod/$f"; echo '`,'; done
   echo '};'
+  # Every file in the repo (tracked or new, not ignored), so links in the docs can be checked.
+  echo 'export const files = ['
+  { git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f ! -path './.git/*' | sed 's|^\./||'; } \
+    | sort -u | sed 's/.*/  "&",/'
+  echo '];'
 ) > "$base/texts.js"
 
 # One test mod per suite, checked JOBS at a time (default 1: checks side by side slow each other
@@ -104,6 +112,30 @@ kit() { # kit pass <mod folder> | kit fail <mod folder> <text the output must ho
 kit pass "$root/mods/whistle"
 kit fail "$here/fixtures/keynav-broken" 'entry: announce wrote {"v":1,"label":"Check","keys":{"d":"Delete"}}'
 kit fail "$here/fixtures" "no keynav.js in"
+
+# The release (.github/workflows/release.yml) through scripts/release.sh: the version it tags is
+# version.js's (which mod.json repeats), and its notes are that version's CHANGELOG entry, without
+# the heading, up to the next entry (a `## ` line in a code fence isn't one).
+release="$root/scripts/release.sh"
+rel() { # rel <name> <wanted output> <release.sh args...>: output and exit 0, or "fails" for a non-zero exit
+  local name="$1" want="$2" got st
+  shift 2
+  got="$(bash "$release" "$@" 2>/dev/null)"; st=$?
+  i=$((i + 1))
+  if [ "$want" = fails ] && [ $st -ne 0 ]; then echo "PASS: release: $name"; return; fi
+  if [ "$want" != fails ] && [ $st -eq 0 ] && [ "$got" = "$want" ]; then echo "PASS: release: $name"; return; fi
+  printf 'got (exit %s):\n%s\n' "$st" "$got"
+  echo "FAIL: release: $name"
+  failed+=("release:$name")
+}
+rel "the version is mod.json's" "$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$mod/mod.json")" version
+rel "notes are the version's entry" "$(tr -d '\r' < "$here/fixtures/release/notes-1.2.0.md")" notes 1.2.0 "$here/fixtures/release/CHANGELOG.md"
+rel "the last entry's notes end at the file's end" "$(printf '### You\n\n- Older.')" notes 1.1.0 "$here/fixtures/release/CHANGELOG.md"
+rel "a version without an entry fails" fails notes 9.9.9 "$here/fixtures/release/CHANGELOG.md"
+i=$((i + 1))
+if [ "$(bash "$release" notes "$(bash "$release" version)" 2>&1 | head -1)" = "### Upgrading" ]; then
+  echo "PASS: release: CHANGELOG.md's notes for this version start with its Upgrading note"
+else echo "FAIL: release: CHANGELOG.md has no notes for this version starting with ### Upgrading"; failed+=("release:changelog"); fi
 
 if [ ${#failed[@]} -eq 0 ]; then echo "PASS: whistle tests ($i checks)"; exit 0; fi
 echo "FAIL: whistle tests (${#failed[@]} of $i checks: ${failed[*]})"

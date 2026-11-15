@@ -4,7 +4,7 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
-## v1.0.0 (unreleased)
+## v1.0.0 (2026-11-15)
 
 ### Upgrading
 
@@ -19,9 +19,9 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    terminal, as an opt-in) or remove it, so Ctrl+[ reaches terminal programs again. Then offer
    the new jump keys, `"alt-a": "whistle.focus:agents"` and `"alt-s": "whistle.focus:spaces"`
    in the `global` section (`ctrl-shift-a` / `ctrl-shift-s` on macOS, where Option+letter types
-   characters), and the settings key, `"alt-,": "whistle.settings"` (`ctrl-shift-,` on macOS), and add them if the
-  person agrees. A copy that stays in another folder gets them as `<folder>.*`. Make no other
-  change to keys.json.
+   characters), and the settings key, `"alt-,": "whistle.settings"` (`ctrl-shift-,` on
+   macOS), and add them if the person agrees. A copy that stays in another folder gets them as
+   `<folder>.*`. Make no other change to keys.json.
 3. **keynav v1 mods**: find mods under `mods/` that announce themselves in
    `shared("keynav.fields")` with `v: 1` (usually through a copied `keynav.js`). Tell the
    person they are no longer fields in whistle 1.0, and offer to fetch each one again from
@@ -50,7 +50,16 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   the installing agent asks, then makes a copy of the layout with the bar (`main-whistle`, the
   same copy integration uses) and switches to it. Agents now talk to you in the words you see
   in the window, and ask only what is yours to choose (RECIPE.md, Talking to the person).
-
+- **New**: Herdr's spaces, tabs and agents lists are fields without integration: whistle drives
+  them with Herdr's own commands (`j`/`k` shows the next space or agent), and the bar names the
+  one selected (docs/guide.md, Fields).
+- **New**: the default map, grouped by noun: `s` spaces, `t` tabs, `w` panes, `a` agents, with
+  terminal scrolling and find (`ctrl-u`, `ctrl-d`, `g`, `G`, `f`). A mapping that makes or opens
+  something you type into (a new tab, a split) ends in TYPE with the keyboard there
+  (docs/guide.md, The default map).
+- **Breaking**: Ctrl+Space is the only shipped switch key; Ctrl+[ no longer enters WHISTLE
+  unless you bind it (docs/guide.md, Modes and the switch key).
+- Switched off, the bar says "Whistle off" and keeps the config-problem marker.
 - Whistle stands aside (inert) on a Herdr older than it needs, or while another copy of
   whistle runs: it claims nothing, Ctrl+Space types through, and the bar says why.
 - Whistle claims the keys it needs in keys.json's `mod:whistle` section itself. It reads keys
@@ -93,6 +102,12 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 
 ### Mod authors
 
+- docs/authors.md routes you to the contract for your job and the helpers to copy.
+- **Breaking**: whistle's commands are a stable set (docs/contracts/commands.md):
+  `whistle.whistle`, `whistle.type`, `whistle.on`, `whistle.off`, `whistle.settings` and the
+  verbs `whistle.field|focus|toggle|toggle-keep-mode:<block>`. `whistle.enter`, `whistle.focus`
+  without a block and the direction commands are gone; `whistle.key-<key>` is only how whistle
+  claims keys, not for binding.
 - **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` (docs/contracts/state.md), read with a copied `mods/whistle/whistle.js`.
   `whistle.enabled` and `whistle.sequence` are gone; other `whistle.*` keys are private.

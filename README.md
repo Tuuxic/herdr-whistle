@@ -1,75 +1,57 @@
 # Whistle
 
-A vim-inspired mode for [Herdr](https://herdr.dev): switch out of typing to navigate and
-control the whole interface with simple key sequences.
+A keyboard mode for [Herdr](https://herdr.dev), borrowed from vim: switch out of typing to move
+around the window and run commands with single keys and short key sequences.
 
-Like vim, it has two modes. In **TYPE** the keyboard belongs to your terminal, as usual. Press
-Ctrl+Space (or Ctrl+[ in a terminal) and you're in **WHISTLE**: single keys move between
-spaces, agents, tabs, panes and side panels, and short sequences run commands (p opens the
-palette, w v splits a pane). A hints box lists the keys that can follow. Press i to type
-again.
+![Whistle: drive Herdr from the keyboard](preview.png)
 
-## Install
+Whistle has two modes. In **TYPE** the keyboard belongs to your terminal, as usual. Press
+**Ctrl+Space** and you're in **WHISTLE**: `Ctrl+H/J/K/L` select a field (the terminal, the
+spaces, tabs or agents list), `h/j/k/l` and the arrows move inside it, and keys and short key
+sequences run Herdr's commands (`p` opens the palette, `w v` splits the pane). Press `i`, or
+Ctrl+Space again, to type again.
 
-Copy `mods/whistle/` to `~/.config/herdr-app/mods/whistle/` and merge `keys.json` into your
-`~/.config/herdr-app/keys.json`. On a layout that doesn't place it, whistle docks itself as a
-thin bar at the bottom.
+- **The bar**, a thin strip in the window, shows the mode and what has the keyboard. A short
+  flash there says when a key isn't mapped or a command failed, and a `⚠` marker counts config
+  problems.
+- **The hints**, a box over the bar, list the keys that can follow while you're inside a group
+  (after `w`, the pane keys).
+- **Settings** list config problems and let you switch off the mappings other mods offer.
 
-## Keys in WHISTLE
+## Keys outside WHISTLE
 
-Defaults; all of them can be changed (see Mappings).
+Whistle leaves TYPE yours: only these keys act there, all regular lines in Herdr's `keys.json`.
 
 | Key | Does |
 |---|---|
-| Ctrl+H/J/K/L | the field in that direction |
-| h/j/k/l, arrows, Enter | move and open inside the field |
-| i, Enter on a terminal | back to TYPE in the selected pane |
-| p, `,`, ? | palette, settings, keys |
-| t, w, S | the Tabs, Panes and Spaces groups (w v splits right) |
-| Esc, Backspace | cancel a key sequence, go back one level |
+| Ctrl+Space | Switch: TYPE to WHISTLE and back |
+| Alt+A | Jump to the agents list, in WHISTLE |
+| Alt+S | Jump to the spaces list, in WHISTLE |
+| Alt+, | Whistle's settings |
 
-Entering and leaving are regular keys in `keys.json`: `whistle.whistle` switches (Ctrl+Space),
-`whistle.enter` only enters (Ctrl+[ in a terminal), `whistle.type` only leaves.
+On macOS, where Option+letter types characters, the installing agent offers Ctrl+Shift+A,
+Ctrl+Shift+S and Ctrl+Shift+, instead. If Ctrl+Space is taken on your setup (an input-source
+switch, an IME), Ctrl+Shift+Space works in its place.
 
-## Mappings
+## Install
 
-Three layers, each over the one before:
+Ask your coding agent to add whistle from `herdr.dev/mods/Tuuxic/whistle`. It installs by
+[RECIPE.md](RECIPE.md): it says what whistle changes before copying anything, adds the keys,
+and makes the bar show. Afterwards it offers **Integrate**: your layout's lists (spaces, tabs,
+agents, files, changes) become keyboard-usable fields, with a highlight on the selected one
+and a cursor that moves without opening. The same agent updates whistle (and tells you what
+changed) and uninstalls it.
 
-1. `mods/whistle/mappings.json`: defaults, Herdr's own commands only (an update replaces it)
-2. the layout: the whistle block's `"mappings"` prop, and its `"enabled"` / `"hints"` props
-   (a layout can ship whistle switched off)
-3. `~/.config/herdr-app/whistle.json`: yours, `{ "enabled", "hints", "bar", "keys", "map" }`
+## Docs
 
-`"map"` holds the mappings, `"keys"` whistle's own keys (action → keys, e.g.
-`"type": ["i"]`; your list replaces the default one; `null` removes the action).
-
-**Whistle edits your `keys.json`.** Herdr runs `keys.json` before whistle sees a key, so a key
-another section binds (a layout's Ctrl+H) would never reach it. Whistle claims those keys in
-the `"mod:whistle"` section, as `"<key>": "whistle.key-<key>"`: every Ctrl/Alt/Super chord in
-its config, and any other of its keys a global or layout section binds. It writes only when
-those entries change, never touches your own entries there, leaves the file alone while
-`keys.error` reports a problem, and puts the old text back if Herdr rejects the new one.
-Herdr stops adding new default shortcuts to a `keys.json` that was edited.
-
-A layout can offer more than one spot for the bar: give each whistle block a `"bar"` prop
-with a name and hide all but one. Whistle's settings then let you pick where it goes.
-
-A key set to `null` removes it. `mappings.json`'s `_help` lists the entry format.
-
-## Fields: the keynav protocol
-
-Whistle knows no other mod by name. The terminal is built in; any mod becomes a field by
-taking part in **keynav** (`keynav.js`, copy it into your mod): it announces itself in
-`shared("keynav.fields")`, draws its own cursor while `shared("keynav").active` names it, and
-handles `<mod>.keynav-up|down|left|right|open|key-<char>` commands. Without a driver like
-whistle, nothing shows.
-
-## Tests
-
-`bash tests/run.sh` checks the key resolver (`keymap.js`) and key names against a table of
-cases. It needs only `herdr-app` on the PATH: it loads the tests as a throwaway mod with
-`herdr-app check`, which fails and lists the failing cases.
+- [The guide](docs/guide.md): the modes, the default map, fields, your config
+  (`whistle.json`), mods' mappings, the hints and settings, and what whistle does when
+  something is wrong.
+- [For authors](docs/authors.md): building a layout or a mod on whistle, through its five
+  contracts.
+- [CHANGELOG](CHANGELOG.md): what changed in each release, and how to upgrade.
+- [CONTRIBUTING](CONTRIBUTING.md): tests, the sandbox and the release.
 
 ## License
 
-MIT (`LICENSE`).
+MIT ([LICENSE](LICENSE)).

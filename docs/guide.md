@@ -559,6 +559,42 @@ the reason goes.
 }
 ```
 
+## The bar
+
+Whistle's bar is a thin strip the layout places (a block of the `whistle` mod). From the left:
+
+- **The mode badge**: `TYPE` or `WHISTLE`.
+- **What has the keyboard**: `Terminal`, in WHISTLE with the selected pane's title
+  (`Terminal · build`), or the selected field's name (`Spaces`). A **flash** takes its place
+  until the next key: a key that isn't mapped (`w x is not mapped`), a verb that can't run, a
+  mapping conflict that just appeared.
+- **The marker**, at the right end while there are [config problems](#when-something-is-wrong):
+  `⚠` and how many. Settings list them.
+
+Switched off, the bar shows "Whistle off" instead of a badge, and the marker still counts.
+Standing aside, it shows only [why](#when-whistle-stands-aside).
+
+```json example Switched off, the bar says Whistle off and still counts config problems
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"enabled\": false, \"keys\": { \"jump\": [\"x\"] } }" }
+  },
+  "steps": [
+    { "tick": 120, "bar": { "badge": null, "label": "Whistle off", "marker": "⚠ 1" } }
+  ]
+}
+```
+
+A layout can offer more than one **spot** for the bar: a whistle block in each, each with its
+own `bar` name, all hidden but one. `"bar": "<name>"` in your whistle.json picks the spot;
+whistle shows it and hides the others. The rules:
+[The layout's whistle block](contracts/layout-block.md#5-bar-names-a-spot-whistlejsons-bar-picks-it).
+
 ## Hints
 
 When a key starts a group in WHISTLE (`w`), a box above the bar lists the keys that can follow
@@ -650,3 +686,23 @@ they wrote on its next read of whistle.json, within a second, as it does for an 
   ]
 }
 ```
+
+## Troubleshooting
+
+- **Ctrl+Space does nothing, or types a character**: look at the bar. "Whistle off" means
+  [switched off](#switching-whistle-off); a reason instead of a badge means whistle
+  [stands aside](#when-whistle-stands-aside). With a badge, the key isn't reaching Herdr: your
+  OS or input method may take it (bind `ctrl-shift-space` instead, see
+  [Modes and the switch key](#modes-and-the-switch-key)), or keys.json has no `global` line
+  `"ctrl-space": "whistle.whistle"`.
+- **There's no bar**: the shown layout has no whistle block. Herdr's own layouts (`main`) never
+  show a new mod's bar; the agent that installed whistle makes a copy with the bar
+  (`main-whistle`) and switches to it. Ask it again, or add a block of the `whistle` mod to your
+  own layout.
+- **A key does nothing in WHISTLE**: another `keys.json` section may bind it, and whistle
+  [claims it](#whistle-edits-your-keysjson) only while keys.json parses and `keys.error` is
+  absent. A mapping on a key two mods want counts for neither until you settle it in
+  [settings](#settings).
+- **Alt+A or Alt+S types a character** (macOS): bind `ctrl-shift-a` and `ctrl-shift-s`
+  instead, see [Jump keys](#jump-keys).
+- **The bar shows ⚠**: open [settings](#settings) (Alt+,) to see each problem and its file.
