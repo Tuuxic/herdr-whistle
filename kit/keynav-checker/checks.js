@@ -37,6 +37,7 @@ const RULES = [
       [MOD, undefined, `${MOD} {}`],
       [MOD, { root: "~" }, `${MOD} {"root":"~"}`],
       [MOD, { b: { y: 1, x: [1, "z"] }, a: "s p" }, `${MOD} {"a":"s p","b":{"x":[1,"z"],"y":1}}`],
+      [MOD, { list: [{ b: 1, a: [{ d: 0, c: 0 }] }, 2] }, `${MOD} {"list":[{"a":[{"c":0,"d":0}],"b":1},2]}`],
     ];
     for (const [mod, props, want] of cases) {
       const got = h.fieldKey(mod, props);

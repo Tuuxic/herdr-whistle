@@ -49,6 +49,13 @@ const SCENARIOS = [
     steps: [...IN, { key: "ctrl-l", effects: [{ setShared: "keynav", value: { v: 2, active: 'tree {"root":"~"}' } }] },
       { key: "j", effects: [{ run: "tree.keynav-down", args: {} }, { focusBar: true }] }],
   },
+  {
+    name: "A field whose props hold an object inside an array is found by its entry, keys sorted inside the array too",
+    world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"),
+      { id: "tree", type: "block", content: { mod: "tree", props: { roots: [{ name: "home", at: "~" }] } } }] }, bar] },
+      shared: { 'keynav.field:tree {"roots":[{"at":"~","name":"home"}]}': { v: 2, label: "Tree", keys: {} } } },
+    steps: [...IN, { key: "ctrl-l", model: { field: "tree" }, bar: { label: "Tree" } }],
+  },
   // Declared keys.
   {
     name: "A declared key beats a mapping while its field is selected, and arrives as keynav-key-<name>",
@@ -194,6 +201,12 @@ export default suite("keynav", (t) => {
   // keynav.js, the helper fields copy: it must spell what the driver reads.
   for (const [mod, props] of [["files", undefined], ["tree", { root: "~", b: [1, { y: 2, x: 1 }] }]])
     t.check(`keynav.js keys ${mod}'s field as whistle does`, helper.fieldKey(mod, props), fieldKey(mod, props));
+  // The contract's form: object keys sorted at every depth, objects inside arrays too; arrays keep
+  // their order.
+  const nested = { root: "~", list: [{ y: 2, x: 1 }, 3], b: { d: 1, c: [] } };
+  const want = 'tree {"b":{"c":[],"d":1},"list":[{"x":1,"y":2},3],"root":"~"}';
+  t.check("whistle keys a field with objects inside arrays sorted at every depth", fieldKey("tree", nested), want);
+  t.check("keynav.js keys a field with objects inside arrays sorted at every depth", helper.fieldKey("tree", nested), want);
   t.check("keynav.js's entry is v 2 with the label and declared keys", helper.entry("Files", { d: "Delete" }), { v: 2, label: "Files", keys: { d: "Delete" } });
   t.check("keynav.js's entry declares no keys by default", helper.entry("Files"), { v: 2, label: "Files", keys: {} });
   t.check("keynav.js reads a move", helper.move("keynav-down"), "down");
