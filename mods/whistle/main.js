@@ -124,7 +124,7 @@ export default class Whistle extends View {
   }
 
   // The hints' and settings' models, set in shared state when they change; the hints window open
-  // while there are hints, docked on top of the bar and as wide as the window.
+  // while there are hints, docked on top of the bar and as wide as it.
   views() {
     const world = this.world();
     const h = hints(this.model, world), s = settings(this.model, world);
@@ -139,9 +139,15 @@ export default class Whistle extends View {
       this.hintsAt = null;
       return;
     }
+    // The bar reaches the window's right edge, so its left edge is the window's width less its
+    // own. A bar set in from the edge says by how much (the layout's whistle block):
+    // hintsInset (px from the window's right edge to the bar's inside), hintsBorder (its border,
+    // so the box lines up with the outside), hintsLift (px from the bar's top to the box, 6).
     const vp = call(() => globalThis.window?.viewport_size?.());
-    const { width, height } = hintsSize(h.items, Math.round(vp?.width ?? 900));
-    const at = vp ? { x: 0, y: Math.max(8, vp.height - BAR_H - height - 6) } : undefined;
+    const inset = Number(h.place?.hintsInset ?? 0), border = Number(h.place?.hintsBorder ?? 0), lift = Number(h.place?.hintsLift ?? 6);
+    const barW = this.barW ?? vp?.width ?? 900;
+    const { width, height } = hintsSize(h.items, Math.round(barW + 2 * border));
+    const at = vp ? { x: Math.max(0, vp.width - inset - barW - border), y: Math.max(8, vp.height - (this.barH ?? BAR_H) - height - lift) } : undefined;
     const spot = JSON.stringify([width, height, at]);
     if (this.hintsId && this.hintsAt === spot) return;
     if (this.hintsId) closeOverlay(this.hintsId);
@@ -204,6 +210,6 @@ export default class Whistle extends View {
       const out = this.feed({ key: keyName(e) });
       if (out.handled) cx.stop_propagation();
       cx.notify();
-    });
+    }, (size) => { this.barW = size.width; this.barH = size.height; });
   }
 }

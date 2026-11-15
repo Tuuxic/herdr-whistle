@@ -40,6 +40,21 @@ const SCENARIOS = [
     steps: [...IN, { key: "w", hints: { exit: "Esc cancels" } }],
   },
   {
+    name: "Hints switched off in the layout's whistle block show nothing",
+    world: world({ map: PANES, props: { hints: false } }),
+    steps: [...IN, { key: "w", model: { sequence: ["w"] }, hints: null }],
+  },
+  {
+    name: "Hints switched off in whistle.json show nothing, over the layout's",
+    world: world({ map: PANES, props: { hints: true }, user: { hints: false } }),
+    steps: [...IN, { key: "w", hints: null }],
+  },
+  {
+    name: "Hints carry the layout's placement for the hints box",
+    world: world({ map: PANES, props: { hintsInset: 12, hintsLift: 4 } }),
+    steps: [...IN, { key: "w", hints: { place: { hintsInset: 12, hintsLift: 4 } } }],
+  },
+  {
     name: "No hints outside a key sequence, nor once it ends",
     world: world({ map: { ...PANES, n: ["Next tab", "tab.next"] } }),
     steps: [...IN, { key: "n", hints: null }, { key: "w" }, { key: "v", hints: null }],

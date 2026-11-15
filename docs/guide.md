@@ -382,7 +382,8 @@ When a key starts a group in WHISTLE (`w`), a box above the bar lists the keys t
 it: the sequence so far and the group's name on top, with the key that cancels the sequence
 (`Esc cancels`), then each key and what it does. A key that starts a further group shows its
 name with a `+`. The box follows the sequence into nested groups and goes away when it ends,
-whether a mapping runs, the cancel key ends it or a key isn't mapped.
+whether a mapping runs, the cancel key ends it or a key isn't mapped. `"hints": false` in your
+whistle.json (or the layout's whistle block; yours wins) turns the box off.
 
 ```json example Hints list the keys that can follow a group
 {

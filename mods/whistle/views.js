@@ -20,11 +20,13 @@ export function problems(model) {
 
 const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 
-// The hints' model while a key sequence has reached a group in WHISTLE, else null:
+// The hints' model while a key sequence has reached a group in WHISTLE and hints are on (the
+// layout's whistle block, whistle.json), else null:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
-//   in the group's order, exit: what ends it ("Esc cancels") | null }.
+//   in the group's order, exit: what ends it ("Esc cancels") | null, place: the layout's
+//   hintsInset / hintsBorder / hintsLift, for docking the box on the bar }.
 export function hints(model, _world) {
-  if (model.mode !== "whistle" || !model.sequence?.length) return null;
+  if (model.mode !== "whistle" || !model.sequence?.length || model.config?.hints === false) return null;
   let group = null, map = model.config?.map ?? {};
   for (const k of model.sequence) {
     group = isGroup(map[k]) ? map[k] : null;
@@ -35,7 +37,8 @@ export function hints(model, _world) {
     ? { key: keyLabel(key), label: v.name ?? key, group: true }
     : { key: keyLabel(key), label: v.label, group: false }));
   const cancel = model.config?.keys?.cancel?.[0];
-  return { keys: seqLabel(model.sequence), title: group.name ?? "", items, exit: cancel ? `${keyLabel(cancel)} cancels` : null };
+  return { keys: seqLabel(model.sequence), title: group.name ?? "", items, exit: cancel ? `${keyLabel(cancel)} cancels` : null,
+    place: model.config?.place ?? {} };
 }
 
 const names = (mods) => (mods.length > 1 ? `${mods.slice(0, -1).join(", ")} and ${mods.at(-1)}` : mods[0] ?? "");
