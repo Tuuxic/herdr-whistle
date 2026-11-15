@@ -106,7 +106,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
   `bar.js`, `hints.js` and `settings.js` draw the bar, the hints and the settings. `whistle.js`
-  is the reader other mods copy (whistle doesn't import it), and `keynav.js` the helper keynav
+  is the helper other mods copy to read whistle state and offer mappings (whistle doesn't
+  import it), and `keynav.js` the helper keynav
   fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own

@@ -7,6 +7,8 @@
 import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
+import { shared, setShared } from "herdr";
+import { offerMappings } from "./whistle.js";
 
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
@@ -312,4 +314,18 @@ export default suite("mod mappings", (t) => {
   } }) };
   const m = core.step(core.start(), { tick: true }, w).model;
   t.check("Two mods' groups merged take the title of the first mod in layout order", m.config.map.g.name, "Beta");
+
+  // whistle.js offerMappings, the helper mods copy: it writes the mod's own entry and keeps the
+  // others', and whistle runs what it wrote.
+  const before = shared("whistle.mappings");
+  setShared("whistle.mappings", { beta: entry({ b: ["B", "beta.b"] }) });
+  offerMappings("alpha", { g: ["Go", "alpha.go"] });
+  const offered = shared("whistle.mappings");
+  t.check("offerMappings writes the mod's entry as v 1 and keeps the other mods'", offered,
+    { beta: entry({ b: ["B", "beta.b"] }), alpha: entry({ g: ["Go", "alpha.go"] }) });
+  offerMappings("alpha", { h: ["Help", "alpha.help"] });
+  t.check("offerMappings again replaces the mod's own entry", shared("whistle.mappings")?.alpha, entry({ h: ["Help", "alpha.help"] }));
+  setShared("whistle.mappings", before ?? null);
+  t.scenario({ name: "A mapping offered through whistle.js's offerMappings runs", world: world({ entries: offered }),
+    steps: [...IN, { key: "g", effects: ran("alpha.go") }] }, core);
 });

@@ -60,6 +60,9 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 - **Breaking**: whistle's state is one public key, `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane }` (docs/contracts/state.md), read with a copied `mods/whistle/whistle.js`.
   `whistle.enabled` and `whistle.sequence` are gone; other `whistle.*` keys are private.
+- **New**: `offerMappings(mod, map)` in the copied `whistle.js` offers your mod's mappings and
+  groups in `shared("whistle.mappings")` (docs/contracts/mod-mappings.md); they count while your
+  mod is in the shown layout.
 
 ### Keynav authors
 

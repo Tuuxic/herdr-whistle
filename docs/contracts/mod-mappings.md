@@ -3,14 +3,17 @@
 For mod authors who want whistle keys for their mod's commands: offer mappings and groups, and
 whistle adds them while your mod is in the shown layout. Current version: **`v: 1`**.
 
-```js
-import { shared, setShared } from "herdr";
+Copy `mods/whistle/whistle.js` into your mod's folder and offer your mappings from `init`:
 
-setShared("whistle.mappings", {
-  ...(shared("whistle.mappings") ?? {}),
-  mymod: { v: 1, map: { g: { name: "My mod", map: { r: ["Refresh", "mymod.refresh"] } } } },
-});
+```js
+import { offerMappings } from "./whistle.js";
+
+offerMappings("mymod", { g: { name: "My mod", map: { r: ["Refresh", "mymod.refresh"] } } });
 ```
+
+`offerMappings(mod, map)` writes your mod's entry (below) and keeps the other mods'. Call it
+again to change your mappings; it writes only when they differ. The contract is the shape
+below, not the helper: writing the entry yourself works the same.
 
 ## Shape
 
