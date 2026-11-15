@@ -42,6 +42,17 @@ _Avoid_: leader, pending keys
 A key pressed with Ctrl, Alt or Super held, such as Ctrl+H; one key, not a key sequence.
 _Avoid_: combo, modifier key, hotkey
 
+**Verb**:
+One of whistle's actions on a layout block, named with the block's id after a colon: select
+the block's field, focus the block (show it, then select its field), or toggle it (hide or show
+it). A mapping or a jump key can run one.
+_Avoid_: in-map verb, block command, action
+
+**Jump key**:
+A regular Herdr key that runs a verb from either mode and goes to WHISTLE, unless its verb says
+to keep the mode; not a switch key, since it never leaves WHISTLE, and not an own key.
+_Avoid_: shortcut, hotkey, quick key
+
 **Own key**:
 A key for one of whistle's own actions in WHISTLE, such as selecting a field or going back to
 TYPE; configurable like mappings, but not a mapping.
