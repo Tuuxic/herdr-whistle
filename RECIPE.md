@@ -13,8 +13,9 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 ## What you see
 
 - **Bar** (a block the layout places, else docked at the bottom, 22 px, on `chrome`, text
-  11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** on the theme's
-  `done` color or **WHISTLE** on `accent`, text in `background`. Then, 10 px on, in `muted`,
+  11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** outlined in the
+  theme's `accent` (text in `accent`) or **WHISTLE** filled with `accent` (text in
+  `accent_foreground`). Then, 10 px on, in `muted`,
   what has the keyboard: `Terminal`, or in WHISTLE `Terminal · <pane title>` (up to 40
   characters). A flash (a failed command, `w x is not mapped`) takes the label until the
   next key. While there are config problems, the bar ends with a marker in `blocked`, 10 px
