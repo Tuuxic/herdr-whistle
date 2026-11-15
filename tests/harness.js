@@ -69,15 +69,11 @@ function inputOf(s, world) {
   return { input: { [kind]: s[kind] }, world };
 }
 
-// Deep-freezes v, so a step that changes the model it was given throws (modules are strict)
-// instead of the harness comparing the whole model as text before and after each step, which
-// grew too slow for check's time budget. Frozen parts are skipped: a model shares most of
-// itself with the one before.
+// Freezes v and everything in it that isn't frozen yet.
 function freeze(v) {
-  if (!v || typeof v !== "object" || Object.isFrozen(v)) return v;
+  if (!v || typeof v !== "object" || Object.isFrozen(v)) return;
   Object.freeze(v);
-  for (const k of Object.keys(v)) freeze(v[k]);
-  return v;
+  for (const x of Object.values(v)) freeze(x);
 }
 
 // Runs one scenario through core ({ start, step, bar }): its failures as lines.
@@ -91,8 +87,12 @@ export function runScenario(sc, core) {
       if (s.world) world = { ...world, ...s.world };
       const next = inputOf(s, world);
       world = next.world;
+      // The model step is given is frozen, so changing it throws (modules are strict). Cheaper
+      // than comparing it as JSON before and after: only objects not frozen yet are walked.
       freeze(model);
-      const out = core.step(model, next.input, world);
+      let out;
+      try { out = core.step(model, next.input, world); }
+      catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
       const effects = out.effects.filter((e) => !isState(e));
       if ("effects" in s && show(effects) !== show(s.effects))
