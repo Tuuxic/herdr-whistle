@@ -4,7 +4,7 @@
 # check fails and lists every failure. Exits non-zero on failure.
 #
 # One check per suite: `check` interrupts a mod whose loading runs longer than about half a
-# second (seen on 0.1.15), and every suite runs while the test mod loads. Each suite's load time
+# second (seen on 0.1.15), and every suite runs while the test mod loads. Each suite's run time
 # is printed, slowest first, so a suite nearing the limit shows before it flakes (split it).
 #
 # The test mod holds:
@@ -75,7 +75,7 @@ ls -d "$dir"/run-* | xargs -P "$JOBS" -I{} sh -c '
 for one in "$dir"/run-*; do
   ms="$(cat "$one/out" "$one/FAILED" 2>/dev/null | sed -n 's/.*load-ms \([0-9]*\).*/\1/p' | head -1)"
   echo "${ms:--} ${one##*/run-???-}"
-done | sort -rn | awk '{ all = all (NR > 1 ? ", " : "") $2 " " $1 } END { print "load ms (limit ~500), slowest first: " all }'
+done | sort -rn | awk '{ all = all (NR > 1 ? ", " : "") $2 " " $1 } END { print "suite ms (of check'"'"'s ~500 ms load limit, parsing not counted), slowest first: " all }'
 failed=()
 for one in "$dir"/run-*; do
   name="${one##*/run-???-}"
