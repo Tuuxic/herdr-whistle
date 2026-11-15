@@ -5,11 +5,12 @@
 Whistle has two modes. In **TYPE** the keyboard belongs to the focused terminal or app, as
 usual. In **WHISTLE** whistle holds it: keys move between fields and run mappings.
 
-`ctrl-space` is the switch key, both ways. It is the only key whistle ships for TYPE: whistle's
-defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds it:
+`ctrl-space` is the switch key, both ways. Besides it, whistle ships only two jump keys for TYPE
+(`alt-a` and `alt-s`, below): the rest of whistle's defaults act only in WHISTLE, so TYPE stays
+yours. Herdr's `keys.json` holds them:
 
 ```json
-"global": { "ctrl-space": "whistle.whistle" },
+"global": { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces" },
 "mod:whistle": { "ctrl-space": "whistle.type" }
 ```
 
@@ -19,6 +20,57 @@ Chinese IME on Windows and fcitx5 on Linux. If yours is taken, bind `ctrl-shift-
 in both places, which nothing in Herdr or the OS takes by default. `"ctrl-[": "whistle.whistle"`
 in the `terminal` section works too, as an opt-in: it takes Esc-by-Ctrl+[ from every terminal
 program, and some keyboard layouts can't press it.
+
+## Jump keys
+
+A **jump key** takes you to a field in one press, from either mode: Alt+A goes to WHISTLE with
+the agents field selected, Alt+S with the spaces field. Each is a line in `keys.json` that runs a
+**verb** on a layout block, named by its id after the first colon:
+
+```json
+"global": { "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces" }
+```
+
+- The verbs are `field` (select the block's field), `focus` (show the block, then select it),
+  `toggle` (hide or show it) and `toggle-keep-mode`. Every jump key goes to WHISTLE, except
+  `toggle-keep-mode`, which stays in the mode you pressed it in: handy to hide or show a sidebar
+  while you type.
+- Everything after the first colon is the block id, as written, so an id with a colon in it
+  works: `whistle.field:test:stay` names block `test:stay`. The ids are the shown layout's
+  (`agents` and `spaces` are Herdr's `main` layout's); a layout of your own may name its blocks
+  otherwise.
+- A block the shown layout doesn't have, or a hidden one for `field`, only flashes on the bar,
+  and you stay where you were.
+- In WHISTLE, a jump key ends a key sequence you started and runs its verb.
+- Switched off, or when whistle stands aside, a jump key types into the terminal as if whistle
+  weren't there.
+- A jump key with an unknown verb (`whistle.fcous:agents`) is listed in settings, like any config
+  problem.
+
+On macOS, Option+letter types characters (Option+A is å), so bind `ctrl-shift-a` and
+`ctrl-shift-s` instead. The full rules: [Whistle's commands](contracts/commands.md#jump-keys).
+
+```json example Alt+A in TYPE goes to WHISTLE on the agents field
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "body", "type": "row", "children": [
+        { "id": "sidebar", "type": "column", "children": [
+          { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
+          { "id": "agents", "type": "block", "content": { "mod": "agents" } }
+        ] },
+        { "id": "main", "type": "block", "content": { "pane": {} } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "bar": { "badge": "WHISTLE" } },
+    { "world": { "barFocused": true }, "command": "focus:spaces", "model": { "mode": "whistle", "field": "spaces" } }
+  ]
+}
+```
 
 ## The default map
 

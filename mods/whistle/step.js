@@ -18,6 +18,7 @@
 //          over mods' (config.js), mods: the shown layout's mods that offer mappings
 //          [{ name, on }],
 //          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null,
+//          flashUntil: ms when a flash with an end goes (a jump key's in TYPE) | 0,
 //          keynavActive: what whistle last wrote as shared("keynav").active, requestAt: the
 //          selected field's requests count after this ms, fieldProblems: keynav fields'
 //          problems [{ source: "keynav", detail }],
@@ -28,6 +29,7 @@
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
+//        { command: "<verb>:<block>" }     a jump key (ADR 0014): "whistle.focus:agents"
 //        { key: "ctrl-l" }                 a key pressed on the bar in WHISTLE (keynames.js)
 //        { tick: true }                    the shell's timer; world.now and world.barFocused
 //                                          say what changed (a click away, a late focus)
@@ -68,7 +70,7 @@
 import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
-import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
+import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems } from "./config.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
@@ -77,7 +79,7 @@ import { problems, hints, settings, hintsBox } from "./views.js";
 
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
-  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, waitFor: null,
+  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
   enabled: true, published: null, sent: { hints: null, settings: null, box: null },
 });
 
@@ -164,7 +166,7 @@ function configured(model, world) {
   const offered = world.modMappings ?? {};
   const offers = modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, entry: offered[name] }));
   const sig = JSON.stringify([texts.defaults, texts.user, props, block.problems, spots(world.layout, folder).map((s) => s.props.bar),
-    offers, world.commands?.length ?? null, world.platform ?? null]);
+    offers, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
   const defaults = readFile(files.defaults, texts.defaults), user = readFile(files.user, texts.user);
@@ -198,6 +200,7 @@ function configured(model, world) {
       ...block.problems.map((detail) => ({ source: LAYOUT, detail })),
       ...chosen.problems.map((detail) => ({ source: USER, detail })),
       ...composed.problems,
+      ...keysProblems(world.keysFile?.text, folder),
     ],
     conflicts: composed.conflicts,
     overrides: composed.overrides,
@@ -234,29 +237,56 @@ const flash = (model, text) => ({ model: { ...model, flash: text }, effects: [],
 const revealing = (world, block) => reveal(world.layout, block).map((r) => (r.show
   ? { run: "layout.show", args: { id: r.show } } : { run: "layout.select", args: { stack: r.stack, child: r.child } }));
 
-// A whistle.<verb> from a mapping (docs/contracts/commands.md).
+// Why a verb can't run on block now (the bar flashes it), or null when it can.
+function cantRun(model, world, v, block) {
+  if (v === "field") return select(model, world, block) ? null : `${block} can't be selected now`;
+  return has(world.layout, block) ? null : `No ${block} in this layout`;
+}
+
+// whistle.toggle on a block the layout has: hidden if it shows (a field selected in it moves to
+// the terminal outside), else shown, without selecting it.
+function toggled(model, world, block) {
+  if (!showing(world.layout, block)) return { model, effects: revealing(world, block) };
+  const target = hideTarget(world.layout, block);
+  let m = model;
+  if (model.field && within(world.layout, target, model.field)) {
+    const t = terminalOutside(world.layout, target, model.recent);
+    m = t ? select(model, world, t.block) : { ...model, field: null };
+  }
+  return { model: m, effects: [{ run: "layout.hide", args: { id: target } }] };
+}
+
+// A whistle.<verb> from a mapping (docs/contracts/commands.md), in WHISTLE.
 function whistleMapping(model, world, v, block) {
-  if (v === "field") {
-    const m = select(model, world, block);
-    return m ? { model: m, effects: [], handled: true } : flash(model, `${block} can't be selected now`);
+  if (!BLOCK_VERBS.includes(v)) return { ...command(model, world, v), handled: true };
+  const why = cantRun(model, world, v, block);
+  if (why) return flash(model, why);
+  if (v === "field") return { model: select(model, world, block), effects: [], handled: true };
+  if (v === "toggle") {
+    const t = toggled(model, world, block);
+    return held(t.model, world, t.effects);
   }
-  if (v === "focus" || v === "toggle") {
-    if (!has(world.layout, block)) return flash(model, `No ${block} in this layout`);
-    if (v === "toggle" && showing(world.layout, block)) {
-      const target = hideTarget(world.layout, block);
-      let m = model;
-      if (model.field && within(world.layout, target, model.field)) {
-        const t = terminalOutside(world.layout, target, model.recent);
-        m = t ? select(model, world, t.block) : { ...model, field: null };
-      }
-      return held(m, world, [{ run: "layout.hide", args: { id: target } }]);
-    }
-    const effects = revealing(world, block);
-    if (v === "toggle") return held(model, world, effects);
-    const m = select(model, world, block);
-    return held(m ?? { ...model, waitFor: { block, until: world.now + WAIT_MS } }, world, effects);
-  }
-  return { ...command(model, world, v), handled: true };
+  const m = select(model, world, block);
+  return held(m ?? { ...model, waitFor: { block, until: world.now + WAIT_MS } }, world, revealing(world, block));
+}
+
+// How long a flash lasts in TYPE, where no key press ends it (ms).
+export const FLASH_MS = 2000;
+
+// A jump key (ADR 0014): "<verb>:<block>", everything after the first colon the block's id, as
+// Herdr hands over "whistle.<verb>:<block>" from keys.json. It runs its verb and goes to
+// WHISTLE from either mode (ending a key sequence); toggle-keep-mode keeps the mode. A verb
+// that can't run flashes, in the mode it was pressed in.
+function jump(model, world, c) {
+  const colon = c.indexOf(":");
+  const verb = c.slice(0, colon), block = c.slice(colon + 1);
+  const v = verb === KEEP_MODE ? "toggle" : verb;
+  if (model.mode === "whistle") return whistleMapping({ ...model, sequence: null }, world, v, block);
+  const why = cantRun(model, world, v, block);
+  if (why) return { model: { ...model, flash: why, flashUntil: world.now + FLASH_MS }, effects: [] };
+  if (verb === KEEP_MODE) return toggled(model, world, block);
+  const out = whistleMapping({ ...onTerminalPane(model, world), mode: "whistle" }, world, v, block);
+  return held(out.model, world, out.effects.filter((e) => !e.focusBar));
 }
 
 // whistle.json with one setting changed, as a write effect (a flash if it can't be).
@@ -358,7 +388,7 @@ function key(model, world, name) {
   const field = fieldAt(world.layout, ready.field, ready.recent, world.shared);
   const declared = field?.kind === KEYNAV ? declaredKeys(field, ready.config.own, world.platform).keys : null;
   const { sequence, act } = resolve(ready.config, ready.sequence, name, declared);
-  const m = { ...ready, sequence, flash: act?.flash ?? null };
+  const m = { ...ready, sequence, flash: act?.flash ?? null, flashUntil: 0 };
   if (!act) return { model: m, effects: [], handled: false };
   if (act.declared !== undefined) return toField(m, world, field, `key-${act.declared}`);
   if (act.run) return runMapping(m, world, act.run);
@@ -419,8 +449,13 @@ function waitTick(model, world) {
   return m ? { ...m, waitFor: null } : model;
 }
 
+// A flash with an end (a jump key's in TYPE, which no key press ends): gone once it's over.
+function flashTick(model, world) {
+  return model.flashUntil && world.now >= model.flashUntil ? { ...model, flash: null, flashUntil: 0 } : model;
+}
+
 function tick(model, world) {
-  const moded = modeTick(waitTick(fieldsChecked(requests(stillThere(configured(model, world), world), world), world), world), world);
+  const moded = modeTick(waitTick(fieldsChecked(requests(stillThere(flashTick(configured(model, world), world), world), world), world), world), world);
   const claimed = claimsTick(moded.model, world);
   return { model: claimed.model, effects: [...moded.effects, ...claimed.effects, ...spotTick(claimed.model, world)] };
 }
@@ -447,18 +482,22 @@ function boundKey(world, action) {
   return found[0]?.keys ?? null;
 }
 
-// Inert or switched off: no WHISTLE, and the switch key types through into the focused
-// terminal; every key and command goes on.
+// A jump key's command ("<verb>:<block>", ADR 0014) as Herdr hands it over.
+const isJump = (c) => typeof c === "string" && c.includes(":") && JUMP_VERBS.includes(c.slice(0, c.indexOf(":")));
+
+// Inert or switched off: no WHISTLE, and the switch key and jump keys type through into the
+// focused terminal; every key and command goes on.
 function standAside(model, input, world) {
   if (model.mode === "whistle") return { ...type(model, world), handled: false };
   const m = { ...model, mode: "type", holdUntil: 0 };
-  if (input.command === "whistle") return typeThrough(m, world);
+  if (input.command === "whistle" || isJump(input.command)) return typeThrough(m, world, input.command);
   return { model: m, effects: [], handled: false };
 }
 
-// The switch key typed through into the focused terminal, as if whistle weren't there.
-function typeThrough(model, world) {
-  const k = boundKey(world, "whistle.whistle"), t = world.focused?.terminal;
+// The key bound to whistle.<command> typed through into the focused terminal, as if whistle
+// weren't there.
+function typeThrough(model, world, command) {
+  const k = boundKey(world, `whistle.${command}`), t = world.focused?.terminal;
   return { model, effects: k && t ? [{ typeKey: k, terminal: t }] : [] };
 }
 
@@ -587,7 +626,7 @@ function publishKeynav(out, world) {
 
 function running(model, input, world) {
   // A flash lasts until the next key, the switch key included.
-  if ("command" in input && model.flash) model = { ...model, flash: null };
+  if ("command" in input && model.flash) model = { ...model, flash: null, flashUntil: 0 };
   model = configured(model, world);
   const none = { model, effects: [] };
   if (["on", "off", "settings"].includes(input.command)) return command(model, world, input.command);
@@ -601,6 +640,7 @@ function running(model, input, world) {
   }
   const pressed = (name) => (model.mode === "whistle" && name ? key(model, world, name) : { ...none, handled: false });
   if (input.command === "whistle" || input.command === "type") return command(model, world, input.command);
+  if (isJump(input.command)) return jump(model, world, input.command);
   if (typeof input.command === "string" && input.command.startsWith("key-"))
     return pressed(canonicalKey(input.command.slice(4), world.platform));
   if ("key" in input) return pressed(input.key);
