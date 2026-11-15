@@ -530,7 +530,7 @@ export function step(model, input, world) {
   const why = inert(world);
   if (why) return hintsClosed(stepped(model, input, world, why));
   if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);
-  return publish(viewsSent(stepped(model, input, world, why), world));
+  return publish(viewsSent(stepped(model, input, world, why), world), world);
 }
 
 // A hidden bar copy rests while another spot's copy runs: in TYPE, it claims, publishes and
@@ -590,22 +590,25 @@ function hintsClosed(out) {
 export const STATE = "whistle";
 
 // The whistle state (ADR 0010): { v: 1, mode, enabled, sequence: null | { keys, group },
-// pane }. mode is "type" while WHISTLE is switched off; group is the name of the group the
-// sequence has reached.
-export function state(model) {
+// pane, onTerminal }. mode is "type" while WHISTLE is switched off; group is the name of the
+// group the sequence has reached; onTerminal says the terminal is the selected field in
+// WHISTLE (ADR 0016: keynav's active can't say it).
+export function state(model, world) {
   const enabled = model.enabled !== false;
   const keys = model.sequence ?? null;
   const group = keys?.length ? groupAt(model.config?.map, keys) : null;
+  const mode = enabled && model.mode === "whistle" ? "whistle" : "type";
   return {
-    v: 1, mode: enabled && model.mode === "whistle" ? "whistle" : "type", enabled,
+    v: 1, mode, enabled,
     sequence: keys && keys.length ? { keys: [...keys], group: group?.name ?? null } : null,
     pane: model.pane ?? null,
+    onTerminal: mode === "whistle" && onTerminal(model, world),
   };
 }
 
 // The state published after a step, when it changed (and only then).
-function publish(out) {
-  const value = state(out.model);
+function publish(out, world) {
+  const value = state(out.model, world);
   const sig = JSON.stringify(value);
   if (out.model.published === sig) return out;
   return { ...out, model: { ...out.model, published: sig }, effects: [...out.effects, { setShared: STATE, value }] };

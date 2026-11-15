@@ -4,7 +4,8 @@
 // these functions.
 //
 // shared("whistle"):          { v: 1, mode: "type" | "whistle", enabled, sequence: null |
-//                               { keys, group }, pane: the terminal pane whistle has selected | null }
+//                               { keys, group }, pane: the terminal pane whistle has selected | null,
+//                               onTerminal: whether the terminal is the selected field in WHISTLE }
 //                             Written only by whistle. `v` goes up only on breaking changes; new
 //                             fields may come under v 1, and a reader ignores fields it doesn't know.
 // shared("whistle.mappings"): { [mod]: { v: 1, map } }, each mod's offered mappings under its
@@ -16,8 +17,9 @@ import { shared, setShared } from "herdr";
 // installed, not loaded yet, or standing aside) or publishes a version this copy can't read.
 export function readState(value) {
   if (!value || typeof value !== "object" || value.v !== 1) return null;
-  const { mode, enabled, sequence, pane } = value;
-  return { mode, enabled, sequence, pane };
+  const { mode, enabled, sequence, pane, onTerminal } = value;
+  // onTerminal came later under v 1 (whistle 1.0.0 has it); missing, it reads as false.
+  return { mode, enabled, sequence, pane, onTerminal: onTerminal === true };
 }
 
 // Whistle's state now: call it when you draw.
