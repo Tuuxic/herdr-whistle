@@ -73,6 +73,24 @@ const SCENARIOS = [
     steps: [{ tick: 0, published: state({ enabled: false }) }],
   },
   {
+    name: "whistle.off and whistle.on change enabled in the whistle state, once whistle.json says so",
+    world: WORLD,
+    steps: [
+      { tick: 120, published: state() },
+      // whistle.off writes whistle.json; enabled changes when whistle reads it back.
+      { command: "off", effects: [{ write: "whistle.json", text: `${JSON.stringify({ enabled: false }, null, 2)}
+`, expected: null }], published: null },
+      { world: { configFiles: { defaults: DEFAULTS, user: `${JSON.stringify({ enabled: false }, null, 2)}
+` } }, wrote: "whistle.json", published: null },
+      { tick: 120, published: state({ enabled: false }) },
+      { command: "on", effects: [{ write: "whistle.json", text: `${JSON.stringify({ enabled: true }, null, 2)}
+`, expected: `${JSON.stringify({ enabled: false }, null, 2)}
+` }], published: null },
+      { world: { configFiles: { defaults: DEFAULTS, user: `${JSON.stringify({ enabled: true }, null, 2)}
+` } }, tick: 120, published: state() },
+    ],
+  },
+  {
     name: "An inert copy publishes nothing",
     world: { ...WORLD, herdr: "0.1.14" },
     steps: [{ tick: 120, published: null }, { command: "whistle", published: null }],
