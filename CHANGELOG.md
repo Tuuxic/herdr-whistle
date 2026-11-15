@@ -43,6 +43,10 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   bar shows a marker while there are any. A command that fails when pressed only flashes.
   keys.json isn't written while a file is broken, and whistle's claims come back by themselves
   once it's fixed.
+- Settings list config problems, mapping conflicts between mods (with "Keep <mod>'s") and the
+  keys you or the layout map over mods', and switch a mod's mappings off; each change is
+  written into your whistle.json (docs/guide.md, Settings). The hints name the key that
+  cancels a sequence.
 
 ### Mod authors
 

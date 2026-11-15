@@ -317,6 +317,9 @@ layout. Your whistle.json and the layout can map over any of them, or set a key 
 { "mods": { "alpha": false } }
 ```
 
+  [Settings](#settings) write this for you, and can keep one mod's mapping on a conflicting
+  key by writing it into your whistle.json.
+
 ### When something is wrong
 
 Whistle works around what's wrong in its config and lists each **config problem** in its
@@ -360,6 +363,90 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "n",
       "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
+  ]
+}
+```
+
+## Hints
+
+When a key starts a group in WHISTLE (`w`), a box above the bar lists the keys that can follow
+it: the sequence so far and the group's name on top, with the key that cancels the sequence
+(`Esc cancels`), then each key and what it does. A key that starts a further group shows its
+name with a `+`. The box follows the sequence into nested groups and goes away when it ends,
+whether a mapping runs, the cancel key ends it or a key isn't mapped.
+
+```json example Hints list the keys that can follow a group
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": {
+      "defaults": "{ \"keys\": { \"type\": [\"i\"], \"cancel\": [\"escape\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"], \"m\": { \"name\": \"Move\", \"map\": {} } } } } }",
+      "user": null
+    }
+  },
+  "steps": [
+    { "command": "whistle", "hints": null },
+    { "world": { "barFocused": true }, "key": "w",
+      "hints": { "keys": "w", "title": "Panes", "exit": "Esc cancels", "items": [
+        { "key": "v", "label": "Split right", "group": false },
+        { "key": "m", "label": "Move", "group": true }
+      ] } },
+    { "key": "escape", "hints": null }
+  ]
+}
+```
+
+## Settings
+
+Whistle's settings list:
+
+- **Problems**: every [config problem](#when-something-is-wrong), with its file (`mappings.json`,
+  `layout`, `whistle.json` or `keys.json`) and what's wrong; the bar's marker counts them.
+- **Mapping conflicts**: each key two mods want, or a mod wants over one of whistle's own keys,
+  with the mods (`alpha and beta both want g d`). Each has a **Keep &lt;mod&gt;'s** button
+  for every mod in it, which writes that mod's mapping into your whistle.json: yours goes over
+  the mods, which settles the conflict.
+- **Over mods' keys**: each key the layout or you map over a mod's, labelled with who did
+  (`g: you, over alpha`). These aren't problems.
+- **Mods' mappings**: each mod in the shown layout that offers mappings, with a switch. Switching
+  one off writes `"mods": { "<mod>": false }` into your whistle.json (on again: `true`); a
+  problem in what a mod offers is listed under it, and isn't counted in the bar's marker.
+
+Settings never write a whistle.json that doesn't parse: fix it first. The bar picks up what
+they wrote on its next read of whistle.json, within a second, as it does for an edit by hand.
+
+```json example Settings list a conflict and switching a mod off settles it
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "alpha", "type": "block", "content": { "mod": "alpha" } },
+      { "id": "beta", "type": "block", "content": { "mod": "beta" } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "modMappings": {
+      "alpha": { "v": 1, "map": { "g": ["Go", "alpha.go"] } },
+      "beta": { "v": 1, "map": { "g": ["Go", "beta.go"] } }
+    },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }", "user": null }
+  },
+  "steps": [
+    { "tick": 120, "settings": {
+      "conflicts": [{ "keys": "g", "seq": ["g"], "mods": ["alpha", "beta"], "own": null,
+        "text": "alpha and beta both want g",
+        "keep": [{ "mod": "alpha", "value": ["Go", "alpha.go"] }, { "mod": "beta", "value": ["Go", "beta.go"] }] }],
+      "mods": [{ "name": "alpha", "on": true, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
+    { "world": { "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }",
+        "user": "{ \"mods\": { \"alpha\": false } }" } }, "tick": 1000,
+      "settings": { "conflicts": [], "mods": [{ "name": "alpha", "on": false, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "g",
+      "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
   ]
 }
 ```

@@ -211,7 +211,8 @@ function mergeKeys(base, over, ctx) {
 // missing; the mods layer is { source: MODS, offers: [{ name, entry }] }, in layout order) as
 // one config: { map, keys: action -> keys, own: key -> action, problems,
 //   conflicts: mapping conflicts, for settings [{ seq, mods, own?: the own key's action }],
-//   overrides: keys a later layer maps over a mod's, or over a conflict [{ seq, source, over: mods }] }.
+//   overrides: keys a later layer maps over a mod's, or over a conflict [{ seq, source, over: mods }],
+//   off: the mods switched off (names) }.
 // ctx: { commands: Herdr's command list | null, platform }.
 export function compose(layers, { commands = null, platform = null } = {}) {
   // Problems are listed layer by layer, each layer's map before its keys and mods.
@@ -262,7 +263,8 @@ export function compose(layers, { commands = null, platform = null } = {}) {
     map = mergeMap(map, layer.map, ctx, []);
   });
   const problems = found.sort((a, b) => a.i - b.i || a.part - b.part).map(({ source, detail }) => ({ source, detail }));
-  return { map, keys, own, problems, conflicts, overrides };
+  const off = Object.keys(on).filter((name) => on[name] === false);
+  return { map, keys, own, problems, conflicts, overrides, off };
 }
 
 // Every key the config uses: own keys, and mapped keys at every depth.
@@ -281,4 +283,42 @@ export function flatten(map, path = [], group = "") {
     if (isGroup(v)) return flatten(v.map, [...path, key], v.name ?? key);
     return [{ seq: [...path, key], action: v.run, group }];
   });
+}
+
+// whistle.json's text (null: no file) with a mod switched on or off in its "mods" section, for
+// settings to write: { text } | { problem } (a whistle.json that doesn't read is left alone).
+export function switchMod(text, name, on) {
+  return edit(text, (json) => {
+    if (json.mods != null && !isObject(json.mods)) return "whistle.json's mods isn't an object: fix it first";
+    json.mods = { ...(json.mods ?? {}), [name]: on };
+    return null;
+  });
+}
+
+// whistle.json's text (null: no file) with a mod's mapping (as the mod wrote it) at the key
+// sequence seq, for settings' "keep <mod>'s": { text } | { problem }. Groups on the way that
+// whistle.json doesn't have yet are added (no name: the one below keeps its title).
+export function keepMapping(text, seq, value) {
+  return edit(text, (json) => {
+    if (json.map != null && !isObject(json.map)) return "whistle.json's map isn't an object: fix it first";
+    json.map = { ...(json.map ?? {}) };
+    let map = json.map;
+    for (const k of seq.slice(0, -1)) {
+      map[k] = isGroup(map[k]) ? { ...map[k], map: { ...map[k].map } } : { map: {} };
+      map = map[k].map;
+    }
+    map[seq.at(-1)] = value;
+    return null;
+  });
+}
+
+// whistle.json's text changed by change(json) (which may say why it can't): { text } | { problem }.
+function edit(text, change) {
+  let json = {};
+  if (text != null) {
+    try { json = JSON.parse(text); } catch { return { problem: `${USER} doesn't parse: fix it first` }; }
+    if (!isObject(json)) return { problem: `${USER} isn't a JSON object: fix it first` };
+  }
+  const problem = change(json);
+  return problem ? { problem } : { text: `${JSON.stringify(json, null, 2)}\n` };
 }

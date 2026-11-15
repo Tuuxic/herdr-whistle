@@ -13,7 +13,10 @@
 //          hid for that, to show again,
 //          files: { defaults, user }: mappings.json's and whistle.json's last good versions
 //          ({ text, json } | null), config: the layers composed (config.js) and whether a
-//          source is broken, problems: config problems [{ source, detail }] for the views,
+//          source is broken, problems: config problems [{ source, detail }] for the views
+//          (a mod's under its name), conflicts, overrides: mapping conflicts and the keys mapped
+//          over mods' (config.js), mods: the shown layout's mods that offer mappings
+//          [{ name, on }],
 //          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null,
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null }
@@ -57,6 +60,10 @@ import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, 
 import { resolve } from "./keymap.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
+import { problems, hints, settings } from "./views.js";
+
+// The views' models live in views.js; the core hands them out with the bar's.
+export { problems, hints, settings };
 
 // claims: { pending: the write on its way { text, raw, revert } | null, check: a write waiting
 // for Herdr's verdict { until, text, raw } | null, failed: a text that failed or Herdr rejected,
@@ -65,7 +72,7 @@ const CLAIMS = { pending: null, check: null, failed: null };
 
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
-  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], sequence: null, flash: null,
+  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null,
   enabled: true, published: null,
 });
 
@@ -177,6 +184,7 @@ function configured(model, world) {
     problems: [...fileProblems, ...c.problems],
     conflicts: c.conflicts,
     overrides: c.overrides,
+    mods: modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, on: !c.off.includes(name) })),
     flash: fresh ? conflictFlash(fresh) : model.flash,
   };
 }
@@ -407,12 +415,6 @@ function active(model, input, world) {
   if ("key" in input) return pressed(input.key);
   if (input.tick) return tick(model, world);
   return none;
-}
-
-// Every config problem, for settings: [{ source, detail }], whistle's config first, then
-// keys.json's.
-export function problems(model) {
-  return [...(model.problems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
 }
 
 // Where the keyboard is, for the bar's label.

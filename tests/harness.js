@@ -22,6 +22,8 @@
 //                                          // (shared("whistle")), or null: none
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
+//         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
+//         settings: { conflicts: [] },     // these fields of the settings' view model
 //         handled: true },                 // whether a key was handled
 //     ],
 //   }
@@ -69,7 +71,15 @@ function inputOf(s, world) {
   return { input: { [kind]: s[kind] }, world };
 }
 
-// Runs one scenario through core ({ start, step, bar }): its failures as lines.
+// v frozen all the way down (parts already frozen, kept from an earlier step, are skipped).
+function freeze(v) {
+  if (!v || typeof v !== "object" || Object.isFrozen(v)) return v;
+  Object.freeze(v);
+  for (const x of Object.values(v)) freeze(x);
+  return v;
+}
+
+// Runs one scenario through core ({ start, step, bar, hints, settings }): its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
   let world = { ...DEFAULT_WORLD, ...(sc.world ?? {}) };
@@ -80,9 +90,8 @@ export function runScenario(sc, core) {
       if (s.world) world = { ...world, ...s.world };
       const next = inputOf(s, world);
       world = next.world;
-      const before = show(model);
-      const out = core.step(model, next.input, world);
-      if (show(model) !== before) fails.push(`${at}: step changed the model it was given`);
+      // Frozen, so a step that changes the model it was given throws (modules are strict).
+      const out = core.step(freeze(model), next.input, world);
       const isState = (e) => e?.setShared === STATE;
       const effects = out.effects.filter((e) => !isState(e));
       if ("effects" in s && show(effects) !== show(s.effects))
@@ -99,6 +108,16 @@ export function runScenario(sc, core) {
         const bar = core.bar(out.model, world);
         for (const [k, want] of Object.entries(s.bar))
           if (show(bar[k]) !== show(want)) fails.push(`${at}: bar.${k} ${show(bar[k])}, want ${show(want)}`);
+      }
+      for (const view of ["hints", "settings"]) {
+        if (!(view in s)) continue;
+        const vm = core[view](out.model, world);
+        if (s[view] === null || vm === null) {
+          if (show(vm) !== show(s[view])) fails.push(`${at}: ${view} ${show(vm)}, want ${show(s[view])}`);
+          continue;
+        }
+        for (const [k, want] of Object.entries(s[view]))
+          if (show(vm[k]) !== show(want)) fails.push(`${at}: ${view}.${k} ${show(vm[k])}, want ${show(want)}`);
       }
       if ("handled" in s && Boolean(out.handled) !== s.handled)
         fails.push(`${at}: handled ${Boolean(out.handled)}, want ${s.handled}`);
