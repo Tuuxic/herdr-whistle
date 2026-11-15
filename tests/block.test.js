@@ -163,7 +163,7 @@ const SCENARIOS = [
   {
     name: "The shown bar copy runs: it claims its keys and publishes",
     world: { ...spots({}), props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null },
+    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
       effects: [{ write: "keys.json", text: `${JSON.stringify({ "mod:whistle": {
         "ctrl-h": "whistle.key-ctrl-h", "ctrl-j": "whistle.key-ctrl-j", "ctrl-k": "whistle.key-ctrl-k", "ctrl-l": "whistle.key-ctrl-l" } }, null, 2)}
 `, expected: "{}" }] }],
@@ -181,9 +181,9 @@ const SCENARIOS = [
   {
     name: "A copy publishes its state again when shown after resting: the other spot's copy wrote it meanwhile",
     world: { ...spots({}), props: { bar: "Bottom" } },
-    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null } },
+    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
-      { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null },
+      { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
         shared: { "whistle.hints": null } }],
   },
   {
@@ -191,7 +191,7 @@ const SCENARIOS = [
     world: { ...spots({}), props: { bar: "Top" } },
     steps: [{ tick: 120, published: null },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120,
-        published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null } }],
+        published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } }],
   },
 ];
 

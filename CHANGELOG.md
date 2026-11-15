@@ -88,6 +88,11 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
 - **New**: `offerMappings(mod, map)` in the copied `whistle.js` offers your mod's mappings and
   groups in `shared("whistle.mappings")` (docs/contracts/mod-mappings.md); they count while your
   mod is in the shown layout.
+- **New**: whistle state's `onTerminal`, `true` while in WHISTLE with the terminal the selected
+  field, `false` otherwise (TYPE, switched off, a keynav or stock field selected). Keynav's
+  `active` is `null` for both the terminal and a stock field, so read `onTerminal` to mark the
+  selected terminal: `mode === "whistle" && onTerminal && pane === <your pane>`. The terminal
+  is whistle's own field, never a keynav field (ADR 0016). `readWhistle()` gives it.
 
 ### Keynav authors
 

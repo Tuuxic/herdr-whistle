@@ -202,9 +202,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   on `main-whistle`; the conversation uses the words the person sees.
 - After Install on Herdr's `main` layout, Integrate (simple path, Herdr's blocks) shows
   `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without opening a space
-  and Enter opens it, and a long spaces list scrolls to keep the cursor in view; the selected
-  field glows in `accent`; files and changes are fields; the selected terminal's header glows
-  in `accent` while in WHISTLE.
+  and Enter opens it, and a long spaces list scrolls to keep the cursor and one more space
+  past it in view; the selected field glows in `accent`; files and changes are fields; the
+  selected terminal's header glows in `accent` while in WHISTLE with the terminal selected,
+  and not while Spaces or Agents is.
 - Update, with a clone's `cloned_from.version` older than its original, offers to make that
   clone again; Uninstall offers to undo Integrate, and yes brings back `main` and deletes the
   clones and the record.
@@ -289,7 +290,10 @@ Ask one thing: **Herdr's blocks** only, or **all blocks**.
 - **Herdr's blocks** are the blocks with the ids `spaces`, `agents`, `tabs`, `files` and
   `changes`, whatever mod sits there now. A layout with none of these ids has no Herdr's
   blocks: say so and offer all blocks instead.
-- **All blocks**: every mod block in the layout that isn't already a field.
+- **All blocks**: every mod block in the layout that has items to move through (a list, a
+  tree, a row of tabs) and isn't already a field. A block with nothing to move through (a
+  header, a footer, a status line, a logo) isn't one: don't adapt it, and when you ask, name
+  only the lists that would get a highlight and a cursor.
 
 Then, without asking more:
 
@@ -339,8 +343,9 @@ Then, without asking more:
    look. On the simple path it counts among Herdr's blocks: do it with either answer.
 6. **Check** each mod you changed, write the [record](#the-record), and tell the person, in
    plain words, what you made: which lists now get a highlight and a cursor, that the
-   terminal they've picked is marked in its title strip while whistle's mode is on, that
-   `ctrl-h/j/k/l` in WHISTLE now reach those lists, and that Uninstall offers to undo it.
+   terminal they've picked is marked in its title strip while whistle's mode is on and no list
+   is selected, that `ctrl-h/j/k/l` in WHISTLE now reach those lists, and that Uninstall
+   offers to undo it.
 
 ### Advanced path
 
@@ -382,9 +387,14 @@ own mod):
    `.track_scroll(this.scroll)` on that element. After each move, call
    `this.scroll.scroll_to_item(<index>)` with the index of the element's direct child that
    holds the cursor item (a group of rows drawn as one child counts as one: make the rows
-   direct children if the groups are tall). It moves the list only as much as needed. A mod
-   that already scrolls to its current item (tabs) scrolls to the cursor item instead while
-   the field is active.
+   direct children if the groups are tall). `scroll_to_item` moves the list only as much as
+   needed, so the cursor item would touch the list's edge: keep **one more item visible past
+   the cursor** in the way it moved (as vim's `scrolloff=1`), by scrolling to the child after
+   it on a move down or right (`Math.min(index + 1, last)`) and to the child before it on a
+   move up or left (`Math.max(index - 1, 0)`). At the first and last item the cursor item
+   itself touches the edge. When the cursor is put on an item rather than moved (on entering
+   the field, or its item gone), scroll to the cursor item itself. A mod that already scrolls to its current item (tabs) scrolls this
+   way to the cursor item instead while the field is active.
 4. **Commands**: read `nextCommand()` in a loop started in `init(_props, cx)` (in the block's
    copy only; if the mod already reads commands, add to its loop: each command reaches one
    reader):
@@ -423,8 +433,11 @@ state.
    in place. Point `header.content.mod` in the layout file at the clone.
 3. **Copy** `mods/whistle/whistle.js` into its folder, and in `render` read
    `const w = readWhistle()` (docs/contracts/state.md). The header is selected while
-   `w?.mode === "whistle" && w.pane === props()?.pane`. Setting shared state draws every mod
-   again, so nothing else needs to listen.
+   `w?.mode === "whistle" && w.onTerminal && w.pane === props()?.pane`: in WHISTLE, with the
+   terminal the selected field (not Spaces, Agents or another field) and this header's pane
+   the one whistle has selected. `pane` alone keeps its value while another field is
+   selected, so don't leave out `onTerminal`. Setting shared state draws every mod again, so
+   nothing else needs to listen.
 4. **The look**, drawn only while selected: whistle's suggested look is the selected field's
    glow (the header's outer element made `.relative()`, a last child
    `div().absolute().inset_0().border_2().border_color(t.accent)`), so nothing moves; on the
