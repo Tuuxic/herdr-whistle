@@ -380,6 +380,61 @@ off: the switch key types into the terminal as if whistle weren't there, and the
 setting for you; `whistle.settings` opens the settings. Every command whistle answers to is in
 [Whistle's commands](contracts/commands.md).
 
+## When whistle stands aside
+
+Sometimes whistle can't run safely, so it loads but stands aside (it is **inert**) and says why
+in the bar instead of a mode badge:
+
+- **Herdr is older than whistle needs** (`mods/whistle/mod.json` says which, under `herdr`):
+  the bar reads "Whistle needs Herdr ≥ …". Update Herdr.
+- **Another copy of whistle runs**: two folders under `mods/` hold whistle (say an old one and
+  `mods/whistle/`) and both are in the shown layout. The copy in `mods/whistle/` runs (else the
+  first folder by name); the others hide their bars and read "Another whistle runs, from
+  mods/whistle/". Delete the copies you don't want.
+
+Standing aside, whistle claims no keys, leaves keys.json alone, publishes nothing to other
+mods, and the switch key types into the terminal as if whistle weren't there. Unlike
+[switching it off](#switching-whistle-off), it isn't your choice: it runs again by itself once
+the reason goes.
+
+```json example On a Herdr that's too old, the switch key types through and the bar says why
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "herdr": "0.1.0",
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
+      "bar": { "badge": null } }
+  ]
+}
+```
+
+```json example A second copy of whistle stands aside for the one in mods/whistle/
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "old-bar", "type": "block", "content": { "mod": "whistle-old" } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "folder": "whistle-old",
+    "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
+      "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+  ]
+}
+```
+
 ## Hints
 
 When a key starts a group in WHISTLE (`w`), a box above the bar lists the keys that can follow
