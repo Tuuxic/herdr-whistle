@@ -6,11 +6,12 @@ Whistle has two modes. In **TYPE** the keyboard belongs to the focused terminal 
 usual. In **WHISTLE** whistle holds it: keys move between fields and run mappings.
 
 `ctrl-space` is the switch key, both ways. Besides it, whistle ships only two jump keys for TYPE
-(`alt-a` and `alt-s`, below): the rest of whistle's defaults act only in WHISTLE, so TYPE stays
-yours. Herdr's `keys.json` holds them:
+(`alt-a` and `alt-s`, below) and `ctrl-shift-,` for [its settings](#settings): the rest of
+whistle's defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds them:
 
 ```json
-"global": { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces" },
+"global": { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces",
+            "ctrl-shift-,": "whistle.settings" },
 "mod:whistle": { "ctrl-space": "whistle.type" }
 ```
 
@@ -428,7 +429,7 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
 - **An entry that makes no sense** (an unknown command, a key name whistle can't read, an
   unknown action, an entry of the wrong form) is skipped and listed; the rest of its file
   counts.
-- **A command that fails when pressed** only flashes in the bar, until the next key.
+- **A command Herdr refuses** shows Herdr's own error message; whistle stays in its mode.
 - **keys.json is never written** while one of whistle's files doesn't parse, while
   `mappings.json` is missing, or while `keys.json` itself doesn't parse or `keys.error`
   exists. Whistle looks again every second, so its claims come back by themselves once the
@@ -480,6 +481,36 @@ in the bar instead of a mode badge:
   `mods/whistle/`) and both are in the shown layout. The copy in `mods/whistle/` runs (else the
   first folder by name); the others hide their bars and read "Another whistle runs, from
   mods/whistle/". Delete the copies you don't want.
+
+### A copy in another folder
+
+Herdr hands a `keys.json` action to the mod its prefix names, so a copy of whistle in another
+folder (say `mods/whistle-2/`, because another mod is already named `whistle`) answers only to
+`whistle-2.*`: its lines read `"ctrl-space": "whistle-2.whistle"`, and the same for the jump
+keys and the settings key. The installing agent writes them so. If the switch key in `global`
+names another folder's copy (`whistle.whistle`) and none names this one, the running copy lists
+it as a [config problem](#when-something-is-wrong) from `keys.json`, with the line to write.
+Whistle only reads `global`; it never changes it.
+
+```json example A copy in mods/whistle-2/ whose switch key runs whistle.whistle lists a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle-2" } }
+    ] },
+    "folder": "whistle-2",
+    "copies": { "whistle-2": "1.0.0" },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keysFile": { "text": "{ \"global\": { \"ctrl-space\": \"whistle.whistle\" } }", "error": null, "at": 0 }
+  },
+  "steps": [
+    { "tick": 120, "model": { "problems": [{ "source": "keys.json",
+        "detail": "global › ctrl-space runs whistle.whistle, but this copy is whistle-2: make it whistle-2.whistle" }] },
+      "bar": { "marker": "⚠ 1" } }
+  ]
+}
+```
 
 Standing aside, whistle claims no keys, leaves keys.json alone, publishes nothing to other
 mods, and the switch key types into the terminal as if whistle weren't there. Unlike
@@ -562,7 +593,9 @@ yours wins) turns the box off.
 
 ## Settings
 
-Whistle's settings list:
+`ctrl-shift-,` opens them (`whistle.settings` in keys.json's `global`, next to Herdr's own
+`ctrl-,` for Herdr's settings), in TYPE, in WHISTLE and while whistle is switched off; `,` in
+WHISTLE opens Herdr's. Whistle's settings list:
 
 - **Problems**: every [config problem](#when-something-is-wrong), with its file (`mappings.json`,
   `layout`, `whistle.json` or `keys.json`) and what's wrong; the bar's marker counts them.
@@ -576,7 +609,10 @@ Whistle's settings list:
   one off writes `"mods": { "<mod>": false }` into your whistle.json (on again: `true`); a
   problem in what a mod offers is listed under it, and isn't counted in the bar's marker.
 
-Settings never write a whistle.json that doesn't parse: fix it first. The bar picks up what
+A switch or a **Keep** button writes the whole whistle.json again in a standard layout (2-space
+indents): your entries and their key order stay, your own line breaks don't (JSON has no
+comments, so nothing else is lost). Settings never write a whistle.json that doesn't parse: fix
+it first. The bar picks up what
 they wrote on its next read of whistle.json, within a second, as it does for an edit by hand.
 
 ```json example Settings list a conflict and switching a mod off settles it
