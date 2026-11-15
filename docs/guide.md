@@ -199,10 +199,12 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
 - **Integration** makes them better fields: ask the agent that installed whistle to integrate
   it (RECIPE.md, Integrate). It clones Herdr's spaces, agents, tabs, files and changes as
   keynav mods (`spaces-whistle`, …) in a clone of your layout (`main-whistle`), so each gets a
-  cursor that moves without opening (`enter` opens), a glow in the theme's `accent` while
-  selected, and a few keys of its own (`n`, `r`, `x` on spaces and tabs); files and changes
-  become fields too. Your own layout and mods are changed in place instead. Uninstall offers
-  to undo it.
+  cursor that moves without opening (`enter` opens) and stays in view in a long list, a glow
+  in the theme's `accent` while selected, and a few keys of its own (`n`, `r`, `x` on spaces
+  and tabs); files and changes become fields too. The layout's pane header is copied as well
+  (`pane-whistle`) and glows on the terminal whistle has selected while in WHISTLE, since the
+  bar holds the keyboard and Herdr's focus border can't show it. Your own layout and mods are
+  changed in place instead. Uninstall offers to undo it.
 
 | Block | Keys | Herdr command | Open (`enter`) |
 |---|---|---|---|
