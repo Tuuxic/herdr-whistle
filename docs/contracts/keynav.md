@@ -96,7 +96,10 @@ longer in the layout are ignored, so a field never has to clean up after itself.
 
 `active` is the selected field's key while the driver holds the keyboard, and `null` otherwise
 (another kind of field selected, or back to typing). The driver writes it only when it
-changes. Draw your cursor while `active` is your key.
+changes. Draw your cursor while `active` is your key. It is `null` while the terminal or a stock
+field is selected too, because those are the driver's own fields, not keynav fields: to know
+whether the terminal is selected, read `onTerminal` in whistle state (docs/contracts/state.md;
+[ADR 0016](../adr/0016-the-terminal-is-whistles-own-field-whistle-state-says-when-it-is-selected.md)).
 
 ```json example Back to TYPE, keynav names no field
 {
