@@ -106,6 +106,12 @@ _Avoid_: field key, field mapping, key-char
 A mod that takes part in keynav; each of its copies in a layout is a field.
 _Avoid_: taking-part mod, participant
 
+**Integration**:
+An agent's optional pass, after whistle is installed or when asked, that makes the blocks of a
+person's layout into keynav fields with a look for the selected one; it leaves Herdr's own mods
+and layouts as they are and works on clones of them.
+_Avoid_: setup, adaptation, onboarding
+
 **Driver**:
 A mod that moves the keyboard between fields through keynav; whistle is one.
 _Avoid_: controller, host, navigator
