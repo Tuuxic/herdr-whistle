@@ -46,6 +46,8 @@ export const SAFETY = {
 
 export const DEFAULTS = "mappings.json";
 export const USER = "whistle.json";
+// Herdr's keys.json, as a problem's source.
+export const KEYS = "keys.json";
 export const LAYOUT = "layout";
 export const MODS = "mods";
 
@@ -92,6 +94,11 @@ function command(written, args, commands) {
 // block ("whistle.field:<block>") and those that don't.
 export const VERBS = ["whistle", "type", "on", "off", "settings"];
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
+// The verb a jump key may add to keep the mode it was pressed in (ADR 0014); a mapping runs it
+// as toggle.
+export const KEEP_MODE = "toggle-keep-mode";
+// The verbs a jump key (keys.json "whistle.<verb>:<block>") may run.
+export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
 
 // A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
 // | a reason it's bad.
@@ -99,10 +106,33 @@ function whistleCommand(written, args) {
   const { name, arg } = nameAndArg(written);
   const v = name.slice("whistle.".length);
   if (VERBS.includes(v)) return { run: name, args: {} };
-  if (!BLOCK_VERBS.includes(v)) return `unknown whistle command ${name}`;
+  if (!JUMP_VERBS.includes(v)) return `unknown whistle command ${name}`;
   const block = arg ?? args?.block;
   if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
-  return { run: name, args: { block } };
+  return { run: v === KEEP_MODE ? "whistle.toggle" : name, args: { block } };
+}
+
+// What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
+// config problems: a command whistle doesn't answer to, such as a jump key with an unknown verb
+// (ADR 0014). A block the layout lacks is not one (pressed, it flashes). A keys.json that
+// doesn't parse is the claims' problem, not listed here.
+export function keysProblems(text, folder) {
+  let all;
+  try { all = JSON.parse(text ?? "null"); } catch { return []; }
+  if (!isObject(all)) return [];
+  const out = [];
+  for (const [section, keys] of Object.entries(all)) {
+    if (!isObject(keys)) continue;
+    for (const [key, action] of Object.entries(keys)) {
+      if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
+      const c = action.slice(folder.length + 1);
+      const { name, arg } = nameAndArg(c);
+      if (arg === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(name)) continue;
+      const why = arg === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
+      out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
+    }
+  }
+  return out;
 }
 
 // One mapping as written: { label, run, args, then } | a reason it's bad.

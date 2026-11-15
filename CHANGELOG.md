@@ -16,8 +16,10 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    (inert) and say which copy runs.
 2. **keys.json**: if the `terminal` section still binds `ctrl-[` to `whistle.enter`, ask the
    person whether to rebind it to `whistle.whistle` (Ctrl+[ then enters WHISTLE from a
-   terminal, as an opt-in) or remove it, so Ctrl+[ reaches terminal programs again. Make no
-   other change to keys.json.
+   terminal, as an opt-in) or remove it, so Ctrl+[ reaches terminal programs again. Then offer
+   the new jump keys, `"alt-a": "whistle.focus:agents"` and `"alt-s": "whistle.focus:spaces"`
+   in the `global` section (`ctrl-shift-a` / `ctrl-shift-s` on macOS, where Option+letter types
+   characters), and add them if the person agrees. Make no other change to keys.json.
 3. **keynav v1 mods**: find mods under `mods/` that announce themselves in
    `shared("keynav.fields")` with `v: 1` (usually through a copied `keynav.js`). Tell the
    person they are no longer fields in whistle 1.0, and offer to fetch each one again from
@@ -28,6 +30,11 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    fallback), and new defaults added.
 
 ### You
+
+- **New**: jump keys. A `keys.json` line `whistle.<verb>:<block>` runs a verb (`field`, `focus`,
+  `toggle`, `toggle-keep-mode`) on a layout block from either mode and goes to WHISTLE, so one
+  key takes you to a field: Alt+A to the agents, Alt+S to the spaces (docs/guide.md, Jump keys).
+  Mappings accept `toggle-keep-mode` too, and run it as `toggle`.
 
 - Whistle stands aside (inert) on a Herdr older than it needs, or while another copy of
   whistle runs: it claims nothing, Ctrl+Space types through, and the bar says why.

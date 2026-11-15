@@ -1,6 +1,6 @@
 // The stable command set (docs/contracts/commands.md): whistle.whistle and whistle.type (modes
-// suite), whistle.on, whistle.off and whistle.settings, and the in-map verbs whistle.field,
-// whistle.focus and whistle.toggle.
+// suite), whistle.on, whistle.off and whistle.settings, and the verbs whistle.field,
+// whistle.focus and whistle.toggle run by mappings (jump keys: the jump keys suite).
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";

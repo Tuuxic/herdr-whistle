@@ -40,6 +40,15 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
   terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.type`),
   `i` or Enter go back to TYPE in the selected pane. A click anywhere else ends WHISTLE; a
   click on the bar enters it.
+- **Jump keys** (ADR 0014): a keys.json line `whistle.<verb>:<block>` (verbs `field`, `focus`,
+  `toggle`, `toggle-keep-mode`; everything after the first colon is the block id, colons
+  included) runs the verb from either mode and goes to WHISTLE; `toggle-keep-mode` keeps the
+  mode. In WHISTLE it ends a key sequence first. A verb that can't run (no such block, a hidden
+  block for `field`) stays in the mode and flashes; in TYPE the flash ends after 2 s. Switched
+  off or inert, the key bound to it is typed into the terminal, like the switch key. A keys.json
+  line with an unknown `whistle.` command is a config problem (`config.js` `keysProblems`).
+  Shipped: `alt-a` → `whistle.focus:agents`, `alt-s` → `whistle.focus:spaces` (ids from Herdr's
+  `main` layout).
 - **Moving** (the default own keys): `ctrl-h/j/k/l` select the field in that direction (for
   now, terminal blocks); `h/j/k/l` and the arrows move between the selected terminal's split
   panes.
@@ -117,6 +126,7 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
+  `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`;
   `mod:whistle: ctrl-space → whistle.type`.
 - **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
@@ -139,6 +149,8 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
 
 - The bar shows a TYPE badge; `ctrl-space` turns it into WHISTLE with `Terminal · <title>`,
   `ctrl-space` again (or `i`) goes back.
+- In TYPE in Herdr's `main` layout, Alt+A (Ctrl+Shift+A on macOS) goes to WHISTLE with the
+  agents field selected, and Alt+S to the spaces field.
 - With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
   hides itself and `mods/whistle/` runs.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
@@ -163,7 +175,10 @@ terminal as usual, or **WHISTLE**, where whistle holds it.
    person before renaming either; a renamed whistle needs `HOME` in its `version.js`
    rewritten to its folder, and a copy in `mods/whistle/` always wins over it.
 5. Merge the repo's `keys.json` into the person's: add its sections and keys, and ask before
-   replacing a key they already use.
+   replacing a key they already use. On macOS, Option+letter types characters, so propose the
+   jump keys as `ctrl-shift-a` / `ctrl-shift-s` instead of `alt-a` / `alt-s`. If the person's
+   layout has no `agents` or `spaces` block, say the jump keys name blocks by id and offer to
+   point them at their layout's ids.
 6. `herdr-app check mods/whistle`.
 
 ## Update

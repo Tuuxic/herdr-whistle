@@ -1,11 +1,11 @@
 // The shipped defaults (Defaults for stock Herdr, issue #11): mappings.json in the 1.0 form,
 // every entry good, every action keyed; the default map grouped by noun, with terminal scroll
 // and find keys, and every mapping that makes a terminal ending in TYPE; ctrl-space the only
-// TYPE key in the shipped keys.json.
+// switch key in the shipped keys.json, beside two jump keys.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
-import { compose, flatten, ACTIONS } from "./config.js";
+import { compose, flatten, ACTIONS, keysProblems } from "./config.js";
 import { IN_TERMINAL } from "./worlds.js";
 import texts from "./texts.js";
 
@@ -62,8 +62,10 @@ export default suite("shipped defaults", (t) => {
 
   let keys = null;
   try { keys = JSON.parse(texts["keys.json"]); } catch (e) { t.fail("keys.json parses", String(e?.message ?? e)); }
-  t.check("ctrl-space is the only TYPE key the shipped keys.json binds",
-    keys && { global: keys.global, terminal: keys.terminal ?? null }, { global: { "ctrl-space": "whistle.whistle" }, terminal: null });
+  t.check("the shipped keys.json binds ctrl-space, the switch key, and the jump keys alt-a and alt-s (ids from Herdr's main layout)",
+    keys && { global: keys.global, terminal: keys.terminal ?? null },
+    { global: { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces" }, terminal: null });
+  t.check("the shipped keys.json has no config problem", keysProblems(texts["keys.json"], "whistle"), []);
 
   for (const sc of SCENARIOS) t.scenario(sc, core);
 });
