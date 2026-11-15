@@ -13,7 +13,10 @@
 //          hid for that, to show again,
 //          files: { defaults, user }: mappings.json's and whistle.json's last good versions
 //          ({ text, json } | null), config: the layers composed (config.js) and whether a
-//          source is broken, problems: config problems [{ source, detail }] for the views,
+//          source is broken, problems: config problems [{ source, detail }] for the views
+//          (a mod's under its name), conflicts, overrides: mapping conflicts and the keys mapped
+//          over mods' (config.js), mods: the shown layout's mods that offer mappings
+//          [{ name, on }],
 //          sequence: the key sequence so far (["w"]) | null, flash: the bar's flash | null,
 //          keynavActive: what whistle last wrote as shared("keynav").active, requestAt: the
 //          selected field's requests count after this ms, fieldProblems: keynav fields'
@@ -60,9 +63,13 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claim } from "./claims.js";
 import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings, spots } from "./block.js";
+import { blockProps, settings as blockSettings, spots } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION } from "./version.js";
+import { problems, hints, settings } from "./views.js";
+
+// The views' models live in views.js; the core hands them out with the bar's.
+export { problems, hints, settings };
 
 // claims: { pending: the write on its way { text, raw, revert } | null, check: a write waiting
 // for Herdr's verdict { until, text, raw } | null, failed: a text that failed or Herdr rejected,
@@ -71,7 +78,7 @@ const CLAIMS = { pending: null, check: null, failed: null };
 
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
-  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], sequence: null, flash: null, waitFor: null,
+  files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, waitFor: null,
   enabled: true, published: null,
 });
 
@@ -160,7 +167,7 @@ function configured(model, world) {
   else if (d.missing || d.broken) fileProblems.push({ source: DEFAULTS, detail: `${why(d)}: a broken install; whistle runs on its built-in safety keys` });
   if (u.broken) fileProblems.push({ source: USER, detail: `${u.broken}; ${u.good ? "whistle runs on its last good version" : "whistle leaves it out until it parses"}` });
   const userGood = u.missing ? null : u.good;
-  const set = settings(props, userGood?.json, world.layout, folder);
+  const set = blockSettings(props, userGood?.json, world.layout, folder);
   const c = compose([
     { source: DEFAULTS, ...(d.good?.json ?? SAFETY) },
     { source: MODS, offers },
@@ -184,6 +191,7 @@ function configured(model, world) {
     ],
     conflicts: c.conflicts,
     overrides: c.overrides,
+    mods: modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, on: !c.off.includes(name) })),
     flash: fresh ? conflictFlash(fresh) : model.flash,
   };
 }
@@ -591,12 +599,6 @@ function running(model, input, world) {
   if ("key" in input) return pressed(input.key);
   if (input.tick) return tick(model, world);
   return none;
-}
-
-// Every config problem, for settings: [{ source, detail }], whistle's config first, then the
-// keynav fields', then keys.json's.
-export function problems(model) {
-  return [...(model.problems ?? []), ...(model.fieldProblems ?? []), ...(model.claimProblem ? [{ source: "keys.json", detail: model.claimProblem }] : [])];
 }
 
 // Where the keyboard is, for the bar's label.

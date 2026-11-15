@@ -22,6 +22,8 @@
 //                                          // (shared("whistle")), or null: none
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
+//         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
+//         settings: { conflicts: [] },     // these fields of the settings' view model
 //         handled: true },                 // whether a key was handled
 //     ],
 //   }
@@ -76,7 +78,7 @@ function freeze(v) {
   for (const x of Object.values(v)) freeze(x);
 }
 
-// Runs one scenario through core ({ start, step, bar }): its failures as lines.
+// Runs one scenario through core ({ start, step, bar, hints, settings }): its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
   let world = { ...DEFAULT_WORLD, ...(sc.world ?? {}) };
@@ -109,6 +111,16 @@ export function runScenario(sc, core) {
         const bar = core.bar(out.model, world);
         for (const [k, want] of Object.entries(s.bar))
           if (show(bar[k]) !== show(want)) fails.push(`${at}: bar.${k} ${show(bar[k])}, want ${show(want)}`);
+      }
+      for (const view of ["hints", "settings"]) {
+        if (!(view in s)) continue;
+        const vm = core[view](out.model, world);
+        if (s[view] === null || vm === null) {
+          if (show(vm) !== show(s[view])) fails.push(`${at}: ${view} ${show(vm)}, want ${show(s[view])}`);
+          continue;
+        }
+        for (const [k, want] of Object.entries(s[view]))
+          if (show(vm[k]) !== show(want)) fails.push(`${at}: ${view}.${k} ${show(vm[k])}, want ${show(want)}`);
       }
       if ("handled" in s && Boolean(out.handled) !== s.handled)
         fails.push(`${at}: handled ${Boolean(out.handled)}, want ${s.handled}`);

@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Runs whistle's tests on Herdr's own engine: builds a throwaway test mod in a fresh temp folder
-# and loads it with `herdr-app check` (ADR 0013). A failing case throws, so the check fails and
-# lists every failure, grouped by suite. Exits non-zero on failure.
+# and loads it with `herdr-app check` (ADR 0013), once per suite. A failing case throws, so the
+# check fails and lists every failure. Exits non-zero on failure.
+#
+# One check per suite, run side by side: `check` interrupts a mod whose loading runs longer than
+# about half a second (seen on 0.1.15), and every suite runs while the test mod loads.
 #
 # The test mod holds:
 #   - the core's modules (CORE below: everything but the shell and the views) and the
 #     helpers mods copy (HELPERS),
 #   - tests/mod.json and every tests/*.js: main.js (the test mod), harness.js, shared data
 #     (worlds.js) and the *.test.js suites,
-#   - suites.js, written here: imports that mod's one suite,
+#   - suites.js, written here: imports the suite that check runs,
 #   - texts.js, written here: the text of each spec .md (docs/contracts/, docs/guide.md,
 #     tests/fixtures/), mods/whistle/mod.json and mappings.json, keys.json and the core's sources, by repo path. Suites read
 #     them from there: readTextFile is async, and `check` never sees an async failure.
@@ -21,17 +24,15 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js keymap.js step.js"
+CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js keymap.js views.js step.js"
 
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT
-base="$dir/base"
-mkdir "$base"
-for f in $CORE; do cp "$mod/$f" "$base/"; done
+for f in $CORE; do cp "$mod/$f" "$dir/"; done
 # Helpers other mods copy (they import herdr, so they aren't core): their suites import them.
 HELPERS="whistle.js keynav.js"
-for f in $HELPERS; do cp "$mod/$f" "$base/"; done
-cp "$here/mod.json" "$here"/*.js "$base/"
+for f in $HELPERS; do cp "$mod/$f" "$dir/"; done
+cp "$here/mod.json" "$here"/*.js "$dir/"
 
 # texts.js: { "<repo path>": "<text>" }, each text as a template literal.
 literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
@@ -44,30 +45,33 @@ literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
   done
   for f in $CORE; do printf '  "mods/whistle/%s": `' "$f"; literal "$mod/$f"; echo '`,'; done
   echo '};'
-) > "$base/texts.js"
+) > "$dir/texts.js"
 
-# One test mod per suite file, its suites.js importing just that suite, checked in file order.
-total=0
-failed=()
+# One test mod per suite (suites.js imports just that one), checked side by side, JOBS at a time.
+# A new *.test.js gets its own check with no change here. Folders are numbered so they list in
+# file order.
+JOBS="${JOBS:-4}"
+i=0
 for f in "$here"/*.test.js; do
-  name="$(basename "$f" .test.js)"
-  one="$dir/$name"
-  cp -r "$base" "$one"
-  printf 'import s from "./%s";
-export default [s];
-' "$(basename "$f")" > "$one/suites.js"
-  out="$("$app" check "$one" 2>&1)"
-  status=$?
-  total=$((total + 1))
-  if [ $status -eq 0 ]; then echo "ok   $name"
-  else
+  one="$dir/run-$(printf '%03d' "$i")-$(basename "$f" .test.js)"
+  mkdir "$one"
+  find "$dir" -maxdepth 1 -type f -exec cp {} "$one/" \;
+  printf 'import s from "./%s";\nexport default [s];\n' "$(basename "$f")" > "$one/suites.js"
+  i=$((i + 1))
+done
+# A failed check leaves its output in FAILED, printed below in suite order.
+ls -d "$dir"/run-* | xargs -P "$JOBS" -I{} sh -c '
+  "$1" check "$2" > "$2/out" 2>&1 || mv "$2/out" "$2/FAILED"
+' sh "$app" {}
+failed=()
+for one in "$dir"/run-*; do
+  name="${one##*/run-???-}"
+  if [ -f "$one/FAILED" ]; then
     failed+=("$name")
-    echo "FAIL $name ($app check exit $status)"
-    [ -n "$out" ] && printf '%s
-' "$out" | sed 's/^/     /'
+    echo "FAIL $name"
+    sed 's/^/     /' "$one/FAILED"
   fi
 done
-
-if [ ${#failed[@]} -eq 0 ]; then echo "PASS: whistle tests ($total suites)"; exit 0; fi
-echo "FAIL: whistle tests (${#failed[@]} of $total suites: ${failed[*]})"
+if [ ${#failed[@]} -eq 0 ]; then echo "PASS: whistle tests ($i suites)"; exit 0; fi
+echo "FAIL: whistle tests (${#failed[@]} of $i suites: ${failed[*]})"
 exit 1
