@@ -1,8 +1,8 @@
 // The test harness: suites, the step scenario runner and the spec-example fixture reader.
 // Pure, like the core it tests. tests/run.sh copies it next to the core's modules.
 //
-// A suite file exports `suite(name, (t) => { ... })`; the test mod (main.js) imports every suite
-// through the generated suites.js and throws one Error listing every failure, grouped by suite.
+// A suite file exports `suite(name, (t) => { ... })`; the test mod (main.js) imports the suite
+// under check through the generated suites.js and throws one Error listing every failure, grouped by suite.
 //
 // A scenario is data:
 //   {
