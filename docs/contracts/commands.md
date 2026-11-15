@@ -59,7 +59,8 @@ takes you to a field:
   in settings. A block the shown layout lacks is not one; pressed, it only flashes.
 
 Whistle ships two in the `global` section: `alt-a` (agents) and `alt-s` (spaces), with ids from
-Herdr's `main` layout. On macOS, where Option+letter types characters, bind `ctrl-shift-a` /
+Herdr's `main` layout. Beside them it ships `ctrl-shift-,` → `whistle.settings` (next to Herdr's
+`ctrl-,`), which opens whistle's settings from either mode and while switched off. On macOS, where Option+letter types characters, bind `ctrl-shift-a` /
 `ctrl-shift-s` instead.
 
 ## Rules

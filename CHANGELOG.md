@@ -19,7 +19,9 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
    terminal, as an opt-in) or remove it, so Ctrl+[ reaches terminal programs again. Then offer
    the new jump keys, `"alt-a": "whistle.focus:agents"` and `"alt-s": "whistle.focus:spaces"`
    in the `global` section (`ctrl-shift-a` / `ctrl-shift-s` on macOS, where Option+letter types
-   characters), and add them if the person agrees. Make no other change to keys.json.
+   characters), and the settings key, `"ctrl-shift-,": "whistle.settings"`, and add them if the
+  person agrees. A copy that stays in another folder gets them as `<folder>.*`. Make no other
+  change to keys.json.
 3. **keynav v1 mods**: find mods under `mods/` that announce themselves in
    `shared("keynav.fields")` with `v: 1` (usually through a copied `keynav.js`). Tell the
    person they are no longer fields in whistle 1.0, and offer to fetch each one again from
@@ -60,13 +62,21 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   stay apart, and a key or action set to `null` is taken away (docs/guide.md, Your config).
 - Something wrong in your config no longer stops whistle: a file that doesn't parse runs on
   its last good version, a bad entry is skipped, settings list every config problem and the
-  bar shows a marker while there are any. A command that fails when pressed only flashes.
+  bar shows a marker while there are any. A command Herdr refuses shows Herdr's own error
+  message, and whistle stays in its mode.
   keys.json isn't written while a file is broken, and whistle's claims come back by themselves
   once it's fixed.
 - Settings list config problems, mapping conflicts between mods (with "Keep <mod>'s") and the
   keys you or the layout map over mods', and switch a mod's mappings off; each change is
-  written into your whistle.json (docs/guide.md, Settings). The hints name the key that
-  cancels a sequence.
+  written into your whistle.json (docs/guide.md, Settings), which is written again whole with
+  2-space indents (your entries and their order stay, your own line breaks don't). The hints
+  name the key that cancels a sequence.
+- **New**: Ctrl+Shift+, opens whistle's settings from anywhere: in TYPE, in WHISTLE and while
+  whistle is switched off (Ctrl+, stays Herdr's settings).
+- A copy of whistle in another folder (`mods/whistle-2/`) answers only to `whistle-2.*` in
+  keys.json; its settings list a config problem while the switch key in `global` names another
+  folder's copy (docs/guide.md, A copy in another folder). Install writes such a copy's keys
+  with its folder's name, and Update rewrites them to `whistle.*` when it moves the copy back.
 
 ### Layout authors
 
