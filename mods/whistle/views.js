@@ -1,7 +1,7 @@
 // The views' models (ADR 0011): what the hints and settings draw, worked out from the core's
 // model. Pure: the views (hints.js, settings.js) only draw what these return.
 
-import { isGroup, ACTIONS, USER, LAYOUT } from "./config.js";
+import { isGroup, groupAt, ACTIONS, USER, LAYOUT } from "./config.js";
 import { keyLabel, canonicalKey } from "./keynames.js";
 import { fieldAt, declaredKeys, KEYNAV } from "./fields.js";
 
@@ -31,13 +31,9 @@ const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 export function hints(model, world) {
   if (model.mode !== "whistle" || model.config?.hints === false) return null;
   if (!model.sequence?.length) return declaredHints(model, world);
-  let group = null, map = model.config?.map ?? {};
-  for (const k of model.sequence) {
-    group = isGroup(map[k]) ? map[k] : null;
-    if (!group) return null;
-    map = group.map;
-  }
-  const items = Object.entries(map).map(([key, v]) => (isGroup(v)
+  const group = groupAt(model.config?.map, model.sequence);
+  if (!group) return null;
+  const items = Object.entries(group.map).map(([key, v]) => (isGroup(v)
     ? { key: keyLabel(key), label: v.name ?? key, group: true }
     : { key: keyLabel(key), label: v.label, group: false }));
   const cancel = model.config?.keys?.cancel?.[0];

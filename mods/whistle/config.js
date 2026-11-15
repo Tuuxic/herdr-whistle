@@ -49,7 +49,7 @@ export const USER = "whistle.json";
 export const LAYOUT = "layout";
 export const MODS = "mods";
 
-const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
+export const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
 // One file's text against its last good version (good: { text, json } | null):
 // { good, missing } | { good, broken: why } | { good: the new version }. A text of undefined
@@ -64,13 +64,18 @@ export function readFile(good, text) {
   return { good: { text, json } };
 }
 
+// A command as written, "<name>" or "<name>:<arg>": { name, arg: the text after the colon | null }.
+function nameAndArg(written) {
+  const colon = written.indexOf(":");
+  return colon > 0 ? { name: written.slice(0, colon), arg: written.slice(colon + 1) } : { name: written, arg: null };
+}
+
 // A command as written ("pane.split", "space.select:1") with Herdr's command list
 // ([{ name, args: [{ name }] }], or null: unknown, so anything goes): { run, args } | null when
 // Herdr has no such command. Mods' own commands (<mod>.<command>) aren't listed, so a name
 // outside Herdr's namespaces counts.
 function command(written, args, commands) {
-  const colon = written.indexOf(":");
-  const name = colon > 0 ? written.slice(0, colon) : written;
+  const { name, arg } = nameAndArg(written);
   if (!commands) return { run: written, args: args ?? {} };
   const known = commands.find((c) => c.name === name);
   if (!known) {
@@ -79,7 +84,7 @@ function command(written, args, commands) {
     return herdrs || !name.includes(".") ? null : { run: written, args: args ?? {} };
   }
   const first = known.args?.[0]?.name;
-  if (colon > 0 && !args && first) return { run: name, args: { [first]: written.slice(colon + 1) } };
+  if (arg !== null && !args && first) return { run: name, args: { [first]: arg } };
   return { run: written, args: args ?? {} };
 }
 
@@ -88,14 +93,14 @@ function command(written, args, commands) {
 export const VERBS = ["whistle", "type", "on", "off", "settings"];
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
 
-// A whistle.<verb> as written: { run: "whistle.<verb>", args: { block } | {} } | a reason it's bad.
-function verb(written, args) {
-  const colon = written.indexOf(":");
-  const name = colon > 0 ? written.slice(0, colon) : written;
+// A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
+// | a reason it's bad.
+function whistleCommand(written, args) {
+  const { name, arg } = nameAndArg(written);
   const v = name.slice("whistle.".length);
   if (VERBS.includes(v)) return { run: name, args: {} };
   if (!BLOCK_VERBS.includes(v)) return `unknown whistle command ${name}`;
-  const block = colon > 0 ? written.slice(colon + 1) : args?.block;
+  const block = arg ?? args?.block;
   if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
   return { run: name, args: { block } };
 }
@@ -107,7 +112,7 @@ function mapping(v, commands) {
   if (v[2] != null && !isObject(v[2])) return "its args should be an object";
   if (v[3] != null && v[3] !== "type") return 'its 4th item can only be "type"';
   if (v[1].startsWith("whistle.")) {
-    const w = verb(v[1], v[2]);
+    const w = whistleCommand(v[1], v[2]);
     return typeof w === "string" ? w : { label: v[0], ...w, then: v[3] ?? null };
   }
   const c = command(v[1], v[2], commands);
@@ -116,6 +121,17 @@ function mapping(v, commands) {
 }
 
 export const isGroup = (v) => isObject(v) && isObject(v.map) && !("run" in v);
+
+// The group a key sequence reaches in a map, or null when it doesn't reach one (no sequence: the
+// map itself, as { map }).
+export function groupAt(map, seq) {
+  let group = { map: map ?? {} };
+  for (const k of seq ?? []) {
+    group = isGroup(group.map[k]) ? group.map[k] : null;
+    if (!group) return null;
+  }
+  return group;
+}
 
 // One entry of a map as written: null | a group (checked, as written) | a mapping
 // ({ label, run, args, then }) | a reason it's bad ({ bad }).

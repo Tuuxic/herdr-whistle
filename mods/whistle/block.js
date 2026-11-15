@@ -9,13 +9,13 @@
 // whistle.json's `enabled`, `hints` and `bar` go over the layout's (settings()).
 
 import { fieldKey, eachNode } from "./fields.js";
+import { isObject } from "./config.js";
 
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
 const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part"];
 
-const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
 // Every block id in the layout.
 function ids(layout) {

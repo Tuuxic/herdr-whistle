@@ -68,7 +68,7 @@
 import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claim } from "./claims.js";
-import { compose, readFile, usedKeys, isGroup, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
+import { compose, readFile, usedKeys, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS } from "./config.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
@@ -598,8 +598,7 @@ export const STATE = "whistle";
 export function state(model) {
   const enabled = model.enabled !== false;
   const keys = model.sequence ?? null;
-  let group = null, map = model.config?.map ?? {};
-  for (const k of keys ?? []) { group = isGroup(map[k]) ? map[k] : null; map = group?.map ?? {}; }
+  const group = keys?.length ? groupAt(model.config?.map, keys) : null;
   return {
     v: 1, mode: enabled && model.mode === "whistle" ? "whistle" : "type", enabled,
     sequence: keys && keys.length ? { keys: [...keys], group: group?.name ?? null } : null,
