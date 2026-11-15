@@ -246,7 +246,8 @@ Then, without asking more:
      theme's `accent` and the element's own corner radius, so nothing moves.
    - The **cursor item** gets a 1 px `accent` outline. Give every item a 1 px border, in
      `accent` on the cursor item and transparent (`accent + "00"`) on the others, so rows
-     don't shift.
+     don't shift. Items that already have a border (Herdr's tabs) keep it and turn it
+     `accent` on the cursor item.
 4. **Declared keys** only for actions the mod already has, acting on the cursor item. For
    Herdr's blocks:
 
@@ -266,8 +267,9 @@ Then, without asking more:
    `n` runs the command with no args; `r` and `x` pass the cursor item, `{ "id": <its id> }`
    (Herdr asks for the name, and asks before closing a space). For other mods, declare keys
    for the mod's clear actions on one item (what its buttons or its menu do to an item),
-   never one of whistle's own keys (`h`/`j`/`k`/`l`, the arrows, `i`, `enter`, `escape`, by
-   default) and never a chord.
+   never a chord and never one of whistle's own keys (the `keys` in `mods/whistle/mappings.json`
+   and the person's `whistle.json`: `h`/`j`/`k`/`l`, the arrows, `enter`, `i`, `escape`,
+   `backspace` by default).
 5. **Check** each mod you changed, write the [record](#the-record), and tell the person what
    you made, that `ctrl-h/j/k/l` in WHISTLE now reach those fields, and that Uninstall offers
    to undo it.
@@ -298,13 +300,17 @@ own mod):
    shows it, and the declared keys (`{}` for none).
 3. **A cursor** over the items a click acts on, in the order they are shown (rows, tabs, the
    files and folders the tree shows). Keep it as the item's id, not its index, so it survives
-   the list changing; if its item goes, put it on the first. In `render`,
-   `if (entered(this, this.key))` puts it on the item that is current now (the shown space,
-   the focused agent, the shown tab, the open diff), else the first. Scroll it into view if
-   the list scrolls and the mod has a scroll handle.
-4. **Commands**: read `nextCommand()` in a loop started in `init` (in the block's copy only; if
-   the mod already reads commands, add to its loop: each command reaches one reader):
-   `cx.spawn(async (cx) => { for (;;) { this.keynav(await nextCommand()); cx.notify(); } })`.
+   the list changing. In `render`, before drawing the items, settle it:
+   `if (entered(this, this.key))` put it on the item that is current now (the shown space,
+   the focused agent, the shown tab, the open diff), else the first; if its item is gone, on
+   the first. Herdr refuses `cx.notify()` during `render`, so where the items are only known
+   once drawn (agents' rows, files' tree), draw them, settle the cursor, and draw them again
+   if it moved. Scroll it into view where the mod has a scroll handle (tabs).
+4. **Commands**: read `nextCommand()` in a loop started in `init(_props, cx)` (in the block's
+   copy only; if the mod already reads commands, add to its loop: each command reaches one
+   reader):
+   `cx.spawn(async (cx) => { for (;;) { this.keynav(await nextCommand(), cx); cx.notify(); } })`
+   (pass `cx` on where the mod's own click handlers need it).
    `keynav(c)` does nothing unless `isActive(this.key)`. `move(c)`: `up`/`down` move the
    cursor through a list (`left`/`right` through a row, such as tabs) without opening anything;
    `open` does what a click on the cursor item does; in a tree, `left` closes the cursor's
