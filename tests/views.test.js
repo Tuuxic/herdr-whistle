@@ -46,6 +46,14 @@ const SCENARIOS = [
     steps: [...IN, { key: "w" }, { key: "escape", hintsWindow: [{ closeOverlay: "hints" }] }],
   },
   {
+    // Herdr makes a new copy of whistle when the layout changes; the old copy's hints window
+    // stays open unless the new one closes it (hand pass, #33).
+    name: "A copy that starts closes a hints window an earlier copy left open, before it opens one",
+    world: { ...world({ map: PANES }), ...MEASURED },
+    steps: [{ tick: 120, hintsWindow: [{ closeOverlay: "hints" }] }, { tick: 120, hintsWindow: [] },
+      ...IN, { key: "w", hintsWindow: [HINTS(1000, ONE_ROW, { x: 0, y: 600 - 22 - ONE_ROW - 6 })] }],
+  },
+  {
     name: "A nested group of the same size keeps the hints window where it is",
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { key: "m", hintsWindow: [] }],

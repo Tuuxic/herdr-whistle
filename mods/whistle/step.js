@@ -25,7 +25,8 @@
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null,
 //          sent: the views' models last set in their shared keys and the hints window last
-//          opened, as JSON ({ hints, settings, box }; null: none yet / not open) }
+//          opened, as JSON ({ hints, settings, box }; null: none yet / not open; box starts
+//          "left open", so a copy that starts closes a hints window an earlier copy left) }
 //
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
@@ -77,10 +78,14 @@ import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
 
+// sent.box when a copy starts: a hints window may be open, left by an earlier copy of whistle
+// (Herdr makes a new copy when the layout changes), so the first step closes it.
+const LEFT_OPEN = "left open";
+
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
-  enabled: true, published: null, sent: { hints: null, settings: null, box: null },
+  enabled: true, published: null, sent: { hints: null, settings: null, box: LEFT_OPEN },
 });
 
 // This copy's folder (world.folder), its blocks' mod name.
@@ -535,7 +540,7 @@ function rest(closed, input, world) {
   const out = "wrote" in input ? wrote(closed.model, world, input) : { model: closed.model, effects: [] };
   const m = out.model;
   const quiet = m.mode === "type" && m.published === null && m.sent.hints === null && m.sent.settings === null;
-  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: start().sent };
+  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, box: null } };
   return { model, effects: [...closed.effects, ...out.effects], handled: false };
 }
 
