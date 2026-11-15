@@ -5,6 +5,7 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { switchMod, keepMapping } from "./config.js";
+import { HINTS_BOX, labelWidth, keyWidth, columnWidth } from "./views.js";
 import { term, bar } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
@@ -232,6 +233,14 @@ SCENARIOS.push({
 
 export default suite("views", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // The hand pass (#33) saw "Rename" drawn "Rena…" in the Spaces field's hints. "Rename" at
+  // 12 px is about 43 px in Segoe UI and 46 px in Inter; a column must leave it at least 48.
+  const spaces = [{ key: "n", label: "New", group: false }, { key: "r", label: "Rename", group: false }, { key: "x", label: "Close", group: false }];
+  t.check("A hints column leaves its longest label, Rename, room for its full width", labelWidth(spaces) >= 48, true);
+  t.check("A hints column is as wide as its key, arrow and longest label side by side",
+    columnWidth(spaces), keyWidth(spaces) + HINTS_BOX.ARROW + labelWidth(spaces) + 2 * HINTS_BOX.INNER);
+  t.check("A group's label in the hints counts its +", labelWidth([{ key: "w", label: "Panes", group: true }]) > labelWidth([{ key: "w", label: "Panes", group: false }]), true);
 
   t.check("Switching a mod off adds it to whistle.json's mods, keeping the rest",
     switched, { text: pretty({ ...MINE, mods: { alpha: false } }) });

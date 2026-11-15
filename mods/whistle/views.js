@@ -52,13 +52,22 @@ function declaredHints(model, world) {
 }
 
 // The hints window's measures (px): a row, the side padding, the title row, the gap between
-// columns, a character's width (estimated). hints.js draws by them.
-export const HINTS_BOX = { ROW: 18, PAD: 12, HEAD: 22, GAP: 32, CH: 7.2 };
-const { ROW, PAD, HEAD, GAP, CH } = HINTS_BOX;
+// columns, the arrow's width and the gap on each side of it. hints.js draws by them.
+export const HINTS_BOX = { ROW: 18, PAD: 12, HEAD: 22, GAP: 32, ARROW: 14, INNER: 8 };
+const { ROW, PAD, HEAD, GAP, ARROW, INNER } = HINTS_BOX;
 const itemText = (i) => (i.group ? `+${i.label}` : i.label);
-// One column's widths: its longest key, and key + arrow + its longest label.
-export const keyWidth = (col) => Math.ceil(Math.max(...col.map((i) => i.key.length)) * CH) + 4;
-export const columnWidth = (col) => keyWidth(col) + 8 + 10 + 8 + Math.ceil(Math.max(...col.map((i) => itemText(i).length)) * CH);
+
+// A text's width at the hints' 12 px, estimated on the wide side (whistle can't measure text):
+// narrow letters, wide ones (m, w, capitals), the rest. Bold keys run a little wider.
+const NARROW = /[il.,:;'|!ftjrI \[\]()]/, WIDE = /[mwMW@%]/, CAPS = /[A-Z0-9+]/;
+const charWidth = (c) => (NARROW.test(c) ? 4.5 : WIDE.test(c) ? 11 : CAPS.test(c) ? 9 : 7.5);
+const textWidth = (text, bold = false) => Math.ceil([...text].reduce((w, c) => w + charWidth(c), 0) * (bold ? 1.08 : 1));
+
+// One column's widths: its longest key, its longest label (all of it: labels are never cut),
+// and the column, key + arrow + label with the gaps between.
+export const keyWidth = (col) => Math.max(...col.map((i) => textWidth(i.key, true))) + 4;
+export const labelWidth = (col) => Math.max(...col.map((i) => textWidth(itemText(i)))) + 4;
+export const columnWidth = (col) => keyWidth(col) + INNER + ARROW + INNER + labelWidth(col);
 
 // The hints' items in columns filled top to bottom, each as wide as its own items: the most
 // columns that fit the width. { columns, rows }.
