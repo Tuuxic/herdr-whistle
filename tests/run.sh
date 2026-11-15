@@ -32,6 +32,8 @@ for f in $CORE; do cp "$mod/$f" "$dir/"; done
 # Helpers other mods copy (they import herdr, so they aren't core): their suites import them.
 HELPERS="whistle.js keynav.js"
 for f in $HELPERS; do cp "$mod/$f" "$dir/"; done
+# The keynav checker's rules (kit/keynav-checker/): its suite runs them on whistle's keynav.js.
+cp "$root/kit/keynav-checker/checks.js" "$dir/"
 cp "$here/mod.json" "$here"/*.js "$dir/"
 
 # texts.js: { "<repo path>": "<text>" }, each text as a template literal.
@@ -67,4 +69,22 @@ for one in "$dir"/run-*; do
 done
 if [ $status -eq 0 ]; then echo "PASS: whistle tests ($i suites)"
 else echo "FAIL: whistle tests"; fi
+
+# The keynav checker end to end (kit/keynav-checker/check.sh): it passes on whistle's own
+# keynav.js, and fails saying why on a deliberately broken copy (tests/fixtures/keynav-broken/,
+# whose announce writes v 1 entries) and on a folder with no keynav.js.
+checker="$root/kit/keynav-checker/check.sh"
+kit() { # kit pass <mod folder> | kit fail <mod folder> <text the output must hold>
+  local got st
+  got="$(bash "$checker" "$2" 2>&1)"; st=$?
+  if [ "$1" = pass ] && [ $st -eq 0 ]; then echo "PASS: keynav checker passes $2"; return; fi
+  if [ "$1" = fail ] && [ $st -ne 0 ] && printf '%s\n' "$got" | grep -qF -- "$3"; then echo "PASS: keynav checker fails $2"; return; fi
+  printf '%s\n' "$got"
+  if [ "$1" = pass ]; then echo "FAIL: keynav checker should pass $2"
+  else echo "FAIL: keynav checker should fail $2, saying: $3"; fi
+  status=1
+}
+kit pass "$root/mods/whistle"
+kit fail "$here/fixtures/keynav-broken" 'entry: announce wrote {"v":1,"label":"Check","keys":{"d":"Delete"}}'
+kit fail "$here/fixtures" "no keynav.js in"
 exit $status
