@@ -1,0 +1,51 @@
+# Whistle's tests and the mod check on Herdr's own engine (ADR 0013), on the latest Herdr and
+# on the minimum whistle declares in mods/whistle/version.js. Linux and macOS must pass;
+# Windows runs but doesn't block until it's shown to work.
+name: tests
+
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Herdr ${{ matrix.herdr }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        herdr: [latest, minimum]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # Herdr's window libraries, and xvfb for when `check` won't run headless.
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth libxkbcommon0 libxkbcommon-x11-0 \
+            libvulkan1 mesa-vulkan-drivers libgl1-mesa-dri libegl1 libwayland-client0 libxcb1 libfontconfig1
+
+      - name: Install Herdr (${{ matrix.herdr }})
+        run: |
+          app="$(bash tests/install-herdr.sh '${{ matrix.herdr }}' "$RUNNER_TEMP/herdr")"
+          echo "HERDR_APP=$app" >> "$GITHUB_ENV"
+          "$app" --version
+
+      # On Linux `check` falls back to headless without a display; xvfb-run is the fallback's fallback.
+      - name: Tests
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then bash tests/run.sh || xvfb-run -a bash tests/run.sh
+          else bash tests/run.sh; fi
+
+      - name: Mod check
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then "$HERDR_APP" check mods/whistle || xvfb-run -a "$HERDR_APP" check mods/whistle
+          else "$HERDR_APP" check mods/whistle; fi

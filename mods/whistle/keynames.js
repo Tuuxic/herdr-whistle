@@ -14,6 +14,36 @@ export function keyName(e) {
   return [...held, ...(shift ? ["shift"] : []), key].join("-");
 }
 
+// Modifiers as keys.json may spell them (any case), each as keyName writes it. cmd, super and
+// win are the platform modifier on every OS; secondary is cmd on macOS and ctrl elsewhere.
+const MODS = { ctrl: "ctrl", alt: "alt", shift: "shift", cmd: "super", super: "super", win: "super" };
+const ORDER = ["ctrl", "alt", "super", "shift"];
+
+// Any spelling Herdr's keys.json accepts for one key ("Cmd-K", "shift-ctrl-x", "ctrl-X",
+// "secondary-k") as keyName writes the press (`super-k`, `ctrl-shift-x`, `ctrl-shift-x`, and
+// `super-k` on macOS, `ctrl-k` elsewhere). platform: "macos" | "linux" | "windows". Null for
+// what isn't one key whistle can name: a key sequence, an unknown modifier (option, fn).
+// Shifted punctuation can't be worked out without the keyboard layout: write the character
+// ("ctrl-?", not "ctrl-shift-/").
+export function canonicalKey(written, platform) {
+  if (typeof written !== "string" || !written || /\s/.test(written)) return null;
+  const parts = keyParts(written);
+  let key = parts.pop();
+  const held = new Set();
+  for (const p of parts) {
+    const m = p.toLowerCase() === "secondary" ? (platform === "macos" ? "super" : "ctrl") : MODS[p.toLowerCase()];
+    if (!m) return null;
+    held.add(m);
+  }
+  if (key.length > 1 && key.includes("-")) return null; // "ctrl-": a modifier with no key
+  if (key.length > 1) key = key.toLowerCase();
+  else if (/[A-Z]/.test(key)) { held.add("shift"); key = key.toLowerCase(); }
+  const chord = held.has("ctrl") || held.has("alt") || held.has("super");
+  // Without ctrl/alt/super, shift and a letter is the capital it types.
+  if (!chord && held.has("shift") && /^[a-z]$/.test(key)) return key.toUpperCase();
+  return [...ORDER.filter((m) => held.has(m)), key].join("-");
+}
+
 // A key with ctrl/alt/super held: keys.json's sections are likely to bind it.
 export const isChord = (k) => /^(ctrl|alt|super)-./.test(k);
 

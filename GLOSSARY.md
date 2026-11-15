@@ -14,7 +14,7 @@ The mode where whistle holds the keyboard and keys move between fields or run ma
 _Avoid_: command mode, vim mode, leader mode
 
 **Switch key**:
-A regular Herdr key that enters or leaves WHISTLE (Ctrl+Space both ways, Ctrl+[ only in);
+A regular Herdr key that enters or leaves WHISTLE (Ctrl+Space, both ways);
 not an own key, since TYPE never hands whistle the keyboard.
 _Avoid_: entry key, toggle, hotkey
 
@@ -41,6 +41,17 @@ _Avoid_: leader, pending keys
 **Chord**:
 A key pressed with Ctrl, Alt or Super held, such as Ctrl+H; one key, not a key sequence.
 _Avoid_: combo, modifier key, hotkey
+
+**Verb**:
+One of whistle's actions on a layout block, named with the block's id after a colon: select
+the block's field, focus the block (show it, then select its field), or toggle it (hide or show
+it). A mapping or a jump key can run one.
+_Avoid_: in-map verb, block command, action
+
+**Jump key**:
+A regular Herdr key that runs a verb from either mode and goes to WHISTLE, unless its verb says
+to keep the mode; not a switch key, since it never leaves WHISTLE, and not an own key.
+_Avoid_: shortcut, hotkey, quick key
 
 **Own key**:
 A key for one of whistle's own actions in WHISTLE, such as selecting a field or going back to
@@ -72,7 +83,8 @@ _Avoid_: collision, clash, shadowing
 
 **Field**:
 A part of the window whistle can select in WHISTLE: the terminal, a copy of a keynav mod, or a
-stock field.
+stock field. The terminal and stock fields are whistle's own, driven with Herdr's commands; the
+terminal is never a keynav field, since it is no mod.
 _Avoid_: panel, block, pane
 
 **Stock field**:
@@ -94,6 +106,12 @@ _Avoid_: field key, field mapping, key-char
 **Keynav mod**:
 A mod that takes part in keynav; each of its copies in a layout is a field.
 _Avoid_: taking-part mod, participant
+
+**Integration**:
+An agent's optional pass, after whistle is installed or when asked, that makes the blocks of a
+person's layout into keynav fields with a look for the selected one; it leaves Herdr's own mods
+and layouts as they are and works on clones of them.
+_Avoid_: setup, adaptation, onboarding
 
 **Driver**:
 A mod that moves the keyboard between fields through keynav; whistle is one.
@@ -126,6 +144,6 @@ _Avoid_: error, warning, issue
 
 **Whistle state**:
 What whistle tells other mods about itself: the mode, whether WHISTLE is switched on, the key
-sequence so far and the terminal it has selected. Which field is selected is keynav's to say,
-not whistle state's.
+sequence so far, the terminal it has selected and whether the terminal is the selected field.
+Which keynav field is selected is keynav's to say, not whistle state's.
 _Avoid_: status, whistle API, public state

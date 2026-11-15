@@ -1,9 +1,9 @@
 {
   "global": {
-    "ctrl-space": "whistle.whistle"
-  },
-  "terminal": {
-    "ctrl-[": "whistle.enter"
+    "ctrl-space": "whistle.whistle",
+    "alt-a": "whistle.focus:agents",
+    "alt-s": "whistle.focus:spaces",
+    "alt-,": "whistle.settings"
   },
   "mod:whistle": {
     "ctrl-space": "whistle.type"
