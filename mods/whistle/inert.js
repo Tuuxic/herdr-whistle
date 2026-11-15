@@ -9,13 +9,11 @@
 // The shell passes world.folder, this copy's folder, from HOME in version.js: a path the
 // renaming in Herdr's add procedure rewrites.
 
-import { MIN_HERDR } from "./version.js";
+import { MIN_HERDR, FOLDER } from "./version.js";
 import { eachNode } from "./fields.js";
 
 // The private shared key copies announce themselves under.
 export const COPIES = "whistle.copies";
-// The folder of the copy that runs when there are several.
-export const MAIN = "whistle";
 
 // "mods/whistle/" -> "whistle".
 export const folderOf = (home) => String(home).replace(/\\/g, "/").replace(/\/+$/, "").split("/").pop();
@@ -47,7 +45,7 @@ export function runningCopy(world) {
   const shown = modsIn(world.layout);
   const live = Object.keys(world.copies ?? {}).filter((f) => shown.has(f));
   const all = [...new Set([world.folder, ...live])].sort();
-  return all.includes(MAIN) ? MAIN : all[0];
+  return all.includes(FOLDER) ? FOLDER : all[0];
 }
 
 // Why whistle is inert in this world: null, or { reason: "herdr" | "copy", problem: text }.

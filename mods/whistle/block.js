@@ -10,6 +10,7 @@
 
 import { fieldKey, eachNode } from "./fields.js";
 import { isObject } from "./config.js";
+import { FOLDER } from "./version.js";
 
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
@@ -26,7 +27,7 @@ function ids(layout) {
 
 // This copy's blocks in the layout (not whistle's own overlay copies): [{ id, hidden, props }],
 // in layout order. hidden: the block or one of its groups is hidden.
-export function bars(layout, folder = "whistle") {
+export function bars(layout, folder = FOLDER) {
   const out = [];
   eachNode(layout, (n, _parent, hidden) => {
     const c = n.content;
@@ -56,7 +57,7 @@ function readNav(nav, known, problem) {
 // The props of this copy's blocks, checked: { props, problems: [detail] }. Each prop comes from
 // the first block that has it (a second bar needn't repeat the mappings); `bar` is each
 // block's own, so it is only checked here.
-export function blockProps(layout, folder = "whistle") {
+export function blockProps(layout, folder = FOLDER) {
   const problems = [];
   const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
   const known = ids(layout);

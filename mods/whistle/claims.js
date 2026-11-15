@@ -14,12 +14,13 @@
 
 import { canonicalKey, isChord } from "./keynames.js";
 import { usedKeys } from "./config.js";
+import { FOLDER } from "./version.js";
 
 // keys.json's text (null: no file), with the keys whistle needs (canonical names), the shown
 // layout's name, the platform and whistle's folder (a renamed copy's section and commands are
 // mod:<folder> and <folder>.key-<key>). Returns { text } to write, { same: true } when
 // keys.json already says it, or { problem } when whistle can't or mustn't write.
-export function claim(fileText, needed, layoutName, platform, mod = "whistle") {
+export function claim(fileText, needed, layoutName, platform, mod = FOLDER) {
   const SECTION = `mod:${mod}`;
   const isOwnEntry = (key, value) => value === `${mod}.key-${key}`;
   if (fileText == null) return { same: true }; // no keys.json: Herdr's defaults; writing one would replace them
@@ -71,7 +72,7 @@ export function claimsTick(model, world) {
     return problem === why ? none : kept({}, why);
   }
   if (model.config?.broken) return none;
-  const wanted = claim(keys.text, usedKeys(model.config), world.layoutName, world.platform, world.folder ?? undefined);
+  const wanted = claim(keys.text, usedKeys(model.config), world.layoutName, world.platform, world.folder ?? FOLDER);
   if (wanted.problem) return problem === wanted.problem ? none : kept({}, wanted.problem);
   if (wanted.same) return problem == null && claims.failed == null ? none : kept({ failed: null }, null);
   if (wanted.text === claims.failed) return none;

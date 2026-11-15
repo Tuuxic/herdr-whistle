@@ -72,7 +72,7 @@ import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MO
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
-import { VERSION } from "./version.js";
+import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
 
 export const start = () => ({
@@ -80,6 +80,9 @@ export const start = () => ({
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, waitFor: null,
   enabled: true, published: null, sent: { hints: null, settings: null, box: null },
 });
+
+// This copy's folder (world.folder), its blocks' mod name.
+const folderOf = (world) => world.folder ?? FOLDER;
 
 // The model with block selected as the field (or the field inside it), if one shows.
 function select(model, world, block) {
@@ -92,12 +95,16 @@ function select(model, world, block) {
   };
 }
 
-// WHISTLE on the terminal (the one used last), its pane the one the keyboard just left.
-function whistle(model, world) {
+// The model with the terminal field selected (the one used last), its pane the one Herdr
+// focused (else the one selected before).
+function onTerminalPane(model, world) {
   const t = terminal(world.layout, model.recent);
   const m = (t && select(model, world, t.block)) ?? model;
-  return { model: { ...m, mode: "whistle", pane: world.focused?.pane ?? m.pane }, effects: [{ focusBar: true }] };
+  return { ...m, pane: world.focused?.pane ?? m.pane };
 }
+
+// WHISTLE on the terminal, its pane the one the keyboard just left.
+const whistle = (model, world) => ({ model: { ...onTerminalPane(model, world), mode: "whistle" }, effects: [{ focusBar: true }] });
 
 const onTerminal = (model, world) => fieldAt(world.layout, model.field, model.recent, world.shared)?.kind === TERMINAL;
 
@@ -111,16 +118,17 @@ function type(model, world) {
 // pane late, so until then the bar takes it back instead of leaving WHISTLE.
 export const HOLD_MS = 600;
 
+// The effects, then the bar holds the keyboard for HOLD_MS (modeTick takes it back).
+const held = (model, world, effects) => ({ model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [...effects, { focusBar: true }], handled: true });
+
 // h/j/k/l over split panes: from the selected pane, let pane.go find the neighbour, then hold
 // the keyboard (the tick follows the pane it lands on).
 function paneMove(model, world, direction) {
   const from = model.pane ?? world.focused?.pane;
-  const effects = [
+  return held({ ...model, pane: from ?? null }, world, [
     ...(from ? [{ run: "pane.focus", args: { pane: from } }] : []),
     { run: "pane.go", args: { direction } },
-    { focusBar: true },
-  ];
-  return { model: { ...model, pane: from ?? null, holdUntil: world.now + HOLD_MS }, effects, handled: true };
+  ]);
 }
 
 // The mods with a block in the shown layout, in layout order (hidden blocks count).
@@ -128,7 +136,7 @@ function modsShown(world) {
   const out = [];
   eachNode(world.layout, (n) => {
     const m = n.content?.mod;
-    if (m && m !== (world.folder ?? "whistle") && !out.includes(m)) out.push(m);
+    if (m && m !== (folderOf(world)) && !out.includes(m)) out.push(m);
   });
   return out;
 }
@@ -150,7 +158,7 @@ const problemId = (p) => JSON.stringify([p.source, p.detail]);
 // conflict, or a problem in a mod's mappings, that wasn't there before flashes, once.
 function configured(model, world) {
   const texts = world.configFiles ?? {};
-  const folder = world.folder ?? "whistle";
+  const folder = folderOf(world);
   const block = blockProps(world.layout, folder);
   const props = block.props;
   const offered = world.modMappings ?? {};
@@ -159,41 +167,41 @@ function configured(model, world) {
     offers, world.commands?.length ?? null, world.platform ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
-  const d = readFile(files.defaults, texts.defaults), u = readFile(files.user, texts.user);
+  const defaults = readFile(files.defaults, texts.defaults), user = readFile(files.user, texts.user);
   const fileProblems = [];
-  const why = (r) => (r.missing ? "is missing" : r.broken);
-  if ((d.missing || d.broken) && d.good) fileProblems.push({ source: DEFAULTS, detail: `${why(d)}; whistle runs on its last good version` });
-  else if (d.missing || d.broken) fileProblems.push({ source: DEFAULTS, detail: `${why(d)}: a broken install; whistle runs on its built-in safety keys` });
-  if (u.broken) fileProblems.push({ source: USER, detail: `${u.broken}; ${u.good ? "whistle runs on its last good version" : "whistle leaves it out until it parses"}` });
-  const userGood = u.missing ? null : u.good;
-  const set = blockSettings(props, userGood?.json, world.layout, folder);
-  const c = compose([
-    { source: DEFAULTS, ...(d.good?.json ?? SAFETY) },
+  const why = (read) => (read.missing ? "is missing" : read.broken);
+  if ((defaults.missing || defaults.broken) && defaults.good) fileProblems.push({ source: DEFAULTS, detail: `${why(defaults)}; whistle runs on its last good version` });
+  else if (defaults.missing || defaults.broken) fileProblems.push({ source: DEFAULTS, detail: `${why(defaults)}: a broken install; whistle runs on its built-in safety keys` });
+  if (user.broken) fileProblems.push({ source: USER, detail: `${user.broken}; ${user.good ? "whistle runs on its last good version" : "whistle leaves it out until it parses"}` });
+  const userGood = user.missing ? null : user.good;
+  const chosen = blockSettings(props, userGood?.json, world.layout, folder);
+  const composed = compose([
+    { source: DEFAULTS, ...(defaults.good?.json ?? SAFETY) },
     { source: MODS, offers },
     { source: LAYOUT, map: props.mappings, keys: props.keys, mods: props.mods },
     { source: USER, ...(userGood?.json ?? {}) },
   ], { commands: world.commands ?? null, platform: world.platform ?? null });
   // Broken (or not read yet): keys.json isn't written until every source reads.
   const before = new Set((model.conflicts ?? []).map(conflictId));
-  const fresh = c.conflicts.find((x) => !before.has(conflictId(x)));
+  const fresh = composed.conflicts.find((x) => !before.has(conflictId(x)));
   const offering = new Set(offers.map((o) => o.name));
   const known = new Set((model.problems ?? []).filter((p) => offering.has(p.source)).map(problemId));
-  const freshModProblem = c.problems.find((p) => offering.has(p.source) && !known.has(problemId(p)));
-  const broken = Boolean(d.unread || d.missing || d.broken || u.unread || u.broken);
+  const freshModProblem = composed.problems.find((p) => offering.has(p.source) && !known.has(problemId(p)));
+  const broken = Boolean(defaults.unread || defaults.missing || defaults.broken || user.unread || user.broken);
   return {
     ...model,
-    files: { defaults: d.good, user: userGood },
-    config: { sig, map: c.map, keys: c.keys, own: c.own, broken, ...set.settings },
-    enabled: set.settings.enabled,
+    files: { defaults: defaults.good, user: userGood },
+    config: { sig, map: composed.map, keys: composed.keys, own: composed.own, broken, ...chosen.settings },
+    enabled: chosen.settings.enabled,
     problems: [
       ...fileProblems,
       ...block.problems.map((detail) => ({ source: LAYOUT, detail })),
-      ...set.problems.map((detail) => ({ source: USER, detail })),
-      ...c.problems,
+      ...chosen.problems.map((detail) => ({ source: USER, detail })),
+      ...composed.problems,
     ],
-    conflicts: c.conflicts,
-    overrides: c.overrides,
-    mods: modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, on: !c.off.includes(name) })),
+    conflicts: composed.conflicts,
+    overrides: composed.overrides,
+    mods: offers.map(({ name }) => ({ name, on: !composed.off.includes(name) })),
     flash: fresh ? conflictFlash(fresh) : freshModProblem ? modProblemFlash(freshModProblem) : model.flash,
   };
 }
@@ -205,15 +213,14 @@ const takesKeyboard = (name) => /^(mod\.open|app\.)/.test(name) || /rename/.test
 // then the bar holds the keyboard. A mapping that ends in TYPE goes to TYPE instead, and holds
 // the keyboard for the terminal (modeTick): the command may have made one, which Herdr focuses.
 function runMapping(model, world, e) {
-  if (e.run.startsWith("whistle.")) return verb(model, world, e.run.slice(8), e.args?.block);
+  if (e.run.startsWith("whistle.")) return whistleMapping(model, world, e.run.slice(8), e.args?.block);
   const effects = [];
   const pane = onTerminal(model, world) && model.pane;
   if (/^(pane|terminal)\./.test(e.run) && pane) effects.push({ run: "pane.focus", args: { pane } });
   effects.push({ run: e.run, args: e.args });
   if (e.then === "type") return { model: { ...model, mode: "type", holdUntil: world.now + HOLD_MS }, effects, handled: true };
   if (takesKeyboard(e.run)) return { model, effects, handled: true };
-  effects.push({ focusBar: true });
-  return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects, handled: true };
+  return held(model, world, effects);
 }
 
 // A move or a declared key sent to a keynav field as <mod>.keynav-<what>; the bar holds the
@@ -224,12 +231,11 @@ const toField = (model, world, field, what) => runMapping(model, world, { run: `
 export const WAIT_MS = 1500;
 
 const flash = (model, text) => ({ model: { ...model, flash: text }, effects: [], handled: true });
-const held = (model, world, effects) => ({ model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [...effects, { focusBar: true }], handled: true });
 const revealing = (world, block) => reveal(world.layout, block).map((r) => (r.show
   ? { run: "layout.show", args: { id: r.show } } : { run: "layout.select", args: { stack: r.stack, child: r.child } }));
 
 // A whistle.<verb> from a mapping (docs/contracts/commands.md).
-function verb(model, world, v, block) {
+function whistleMapping(model, world, v, block) {
   if (v === "field") {
     const m = select(model, world, block);
     return m ? { model: m, effects: [], handled: true } : flash(model, `${block} can't be selected now`);
@@ -276,7 +282,7 @@ function leaving(model, world, out) {
 }
 
 const SETTINGS = (world) => ({ openOverlay: "settings",
-  spec: { mod: world.folder ?? "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings" } } });
+  spec: { mod: folderOf(world), kind: "dialog", width: 640, height: 0.8, props: { part: "settings" } } });
 
 // whistle.on, whistle.off, whistle.settings: they work whether whistle is on or off.
 function command(model, world, c) {
@@ -294,16 +300,12 @@ function stockMove(model, world, field, dir) {
   if (dir === "right" && STOCK_FIELDS[field.stock].open === "terminal") return toTerminal(model, world);
   const command = STOCK_FIELDS[field.stock][dir];
   if (!command) return { model, effects: [], handled: true };
-  return { model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [{ run: command, args: {} }, { focusBar: true }], handled: true };
+  return held(model, world, [{ run: command, args: {} }]);
 }
 
 // From a stock field into what its item shows: the terminal field, at the pane Herdr focused
 // (the agent's).
-function toTerminal(model, world) {
-  const t = terminal(world.layout, model.recent);
-  const m = (t && select(model, world, t.block)) ?? model;
-  return { model: { ...m, pane: world.focused?.pane ?? m.pane }, effects: [], handled: true };
-}
+const toTerminal = (model, world) => ({ model: onTerminalPane(model, world), effects: [], handled: true });
 
 // An own key's action.
 function ownKey(model, world, action) {
@@ -352,15 +354,15 @@ function fieldsChecked(model, world) {
 
 // A key pressed in WHISTLE: a flash lasts until the next key.
 function key(model, world, name) {
-  const m0 = fieldsChecked(configured(model, world), world);
-  const field = fieldAt(world.layout, m0.field, m0.recent, world.shared);
-  const declared = field?.kind === KEYNAV ? declaredKeys(field, m0.config.own, world.platform).keys : null;
-  const r = resolve(m0.config, m0.sequence, name, declared);
-  const m = { ...m0, sequence: r.sequence, flash: r.act?.flash ?? null };
-  if (!r.act) return { model: m, effects: [], handled: false };
-  if (r.act.declared !== undefined) return toField(m, world, field, `key-${r.act.declared}`);
-  if (r.act.run) return runMapping(m, world, r.act.run);
-  if (r.act.own) return ownKey(m, world, r.act.own);
+  const ready = fieldsChecked(configured(model, world), world);
+  const field = fieldAt(world.layout, ready.field, ready.recent, world.shared);
+  const declared = field?.kind === KEYNAV ? declaredKeys(field, ready.config.own, world.platform).keys : null;
+  const { sequence, act } = resolve(ready.config, ready.sequence, name, declared);
+  const m = { ...ready, sequence, flash: act?.flash ?? null };
+  if (!act) return { model: m, effects: [], handled: false };
+  if (act.declared !== undefined) return toField(m, world, field, `key-${act.declared}`);
+  if (act.run) return runMapping(m, world, act.run);
+  if (act.own) return ownKey(m, world, act.own);
   return { model: m, effects: [], handled: true };
 }
 
@@ -404,12 +406,8 @@ function requests(model, world) {
   const f = fieldAt(world.layout, model.field, model.recent, world.shared);
   const r = f?.kind === KEYNAV ? world.shared?.[requestKey(f.key)] : null;
   if (!r || typeof r.at !== "number" || !(r.at > (model.requestAt ?? 0))) return model;
-  let m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
-  if (r.to === TERMINAL) {
-    const t = terminal(world.layout, m.recent);
-    if (t) m = { ...select(m, world, t.block), pane: world.focused?.pane ?? m.pane };
-  }
-  return m;
+  const m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
+  return r.to === TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;
 }
 
 // whistle.focus waiting for the block it showed: selected once it shows, given up at the deadline.
@@ -422,9 +420,9 @@ function waitTick(model, world) {
 }
 
 function tick(model, world) {
-  const m = modeTick(waitTick(fieldsChecked(requests(stillThere(configured(model, world), world), world), world), world), world);
-  const c = claimsTick(m.model, world);
-  return { model: c.model, effects: [...m.effects, ...c.effects, ...spotTick(c.model, world)] };
+  const moded = modeTick(waitTick(fieldsChecked(requests(stillThere(configured(model, world), world), world), world), world), world);
+  const claimed = claimsTick(moded.model, world);
+  return { model: claimed.model, effects: [...moded.effects, ...claimed.effects, ...spotTick(claimed.model, world)] };
 }
 
 // The bar in the spot whistle.json picks (block.js checked it exists): that spot shown, the
@@ -433,7 +431,7 @@ function spotTick(model, world) {
   const want = model.config?.bar;
   if (!want) return [];
   const effects = [];
-  for (const s of spots(world.layout, world.folder ?? "whistle")) {
+  for (const s of spots(world.layout, folderOf(world))) {
     const mine = s.props.bar === want;
     if (mine && s.hidden) effects.push({ run: "layout.show", args: { id: s.id } });
     if (!mine && !s.hidden) effects.push({ run: "layout.hide", args: { id: s.id } });
@@ -449,8 +447,9 @@ function boundKey(world, action) {
   return found[0]?.keys ?? null;
 }
 
-// Inert: no WHISTLE, and the switch key types through into the focused terminal.
-function inertStep(model, input, world) {
+// Inert or switched off: no WHISTLE, and the switch key types through into the focused
+// terminal; every key and command goes on.
+function standAside(model, input, world) {
   if (model.mode === "whistle") return { ...type(model, world), handled: false };
   const m = { ...model, mode: "type", holdUntil: 0 };
   if (input.command === "whistle") return typeThrough(m, world);
@@ -465,7 +464,7 @@ function typeThrough(model, world) {
 
 // On each tick, whatever the mode: this copy announces itself in whistle.copies, and hides its
 // bars while it stands aside for another copy (showing again those it hid once it doesn't).
-function chores(out, world, why) {
+function copiesTick(out, world, why) {
   const effects = [...out.effects];
   const copies = announce(world, VERSION);
   if (copies) effects.push({ setShared: COPIES, value: copies });
@@ -485,7 +484,7 @@ function chores(out, world, why) {
 export function step(model, input, world) {
   const why = inert(world);
   if (why) return hintsClosed(stepped(model, input, world, why));
-  if (resting(world.layout, world.folder ?? "whistle", world.props)) return rest(hintsClosed({ model, effects: [] }), input, world);
+  if (resting(world.layout, folderOf(world), world.props)) return rest(hintsClosed({ model, effects: [] }), input, world);
   return publish(viewsSent(stepped(model, input, world, why), world));
 }
 
@@ -506,8 +505,8 @@ function stepped(model, input, world, why) {
   if ("wrote" in input) return wrote(model, world, input);
   // A command that failed when pressed only flashes.
   if ("ran" in input) return { model: { ...model, flash: `${input.ran} failed: ${input.error ?? "unknown error"}` }, effects: [] };
-  const out = why ? inertStep(model, input, world) : active(model, input, world);
-  return input.tick ? chores(out, world, why) : out;
+  const out = why ? standAside(model, input, world) : active(model, input, world);
+  return input.tick ? copiesTick(out, world, why) : out;
 }
 
 // The private shared keys the views' models go in (ADR 0010): the hints window and the
@@ -526,7 +525,7 @@ function viewsSent(out, world) {
   let box = null;
   if (h) {
     const b = hintsBox(h.items, m.config?.place ?? {}, world);
-    const spec = { mod: world.folder ?? "whistle", kind: "window", frame: "none", width: b.width, height: b.height,
+    const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
     if (box !== sent.box) effects.push({ openOverlay: HINTS_OVERLAY, spec });
@@ -592,16 +591,16 @@ function running(model, input, world) {
   model = configured(model, world);
   const none = { model, effects: [] };
   if (["on", "off", "settings"].includes(input.command)) return command(model, world, input.command);
-  // Switched off: no WHISTLE, and the switch key types through.
+  // Switched off: standing aside, but still keeping its claims and the bar in its spot.
   if (model.enabled === false) {
-    if (model.mode === "whistle") return { ...type(model, world), handled: false };
-    if (input.command === "whistle") return typeThrough(model, world);
-    if (input.tick) { const c = claimsTick(model, world); return { ...c, effects: [...c.effects, ...spotTick(c.model, world)] }; }
-    return { ...none, handled: false };
+    if (input.tick && model.mode !== "whistle") {
+      const claimed = claimsTick(model, world);
+      return { ...claimed, effects: [...claimed.effects, ...spotTick(claimed.model, world)] };
+    }
+    return standAside(model, input, world);
   }
   const pressed = (name) => (model.mode === "whistle" && name ? key(model, world, name) : { ...none, handled: false });
-  if (input.command === "whistle") return model.mode === "whistle" ? type(model, world) : whistle(model, world);
-  if (input.command === "type") return model.mode === "whistle" ? type(model, world) : none;
+  if (input.command === "whistle" || input.command === "type") return command(model, world, input.command);
   if (typeof input.command === "string" && input.command.startsWith("key-"))
     return pressed(canonicalKey(input.command.slice(4), world.platform));
   if ("key" in input) return pressed(input.key);
