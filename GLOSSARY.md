@@ -83,7 +83,8 @@ _Avoid_: collision, clash, shadowing
 
 **Field**:
 A part of the window whistle can select in WHISTLE: the terminal, a copy of a keynav mod, or a
-stock field.
+stock field. The terminal and stock fields are whistle's own, driven with Herdr's commands; the
+terminal is never a keynav field, since it is no mod.
 _Avoid_: panel, block, pane
 
 **Stock field**:
