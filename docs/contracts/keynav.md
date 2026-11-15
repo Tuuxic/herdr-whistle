@@ -152,7 +152,8 @@ the next field. Leaving a field is always the driver's job.
 
 A declared key arrives as `<mod>.keynav-key-<key>`, spelled as the field wrote it, even where
 the driver maps that key. It counts only while the field is selected and outside a key
-sequence. Announce again to change the keys at any time.
+sequence, and whistle's hints list the declared keys with their labels meanwhile. Announce
+again to change the keys at any time.
 
 ```json example A declared key beats a mapping while its field is selected
 {
@@ -174,7 +175,7 @@ sequence. Announce again to change the keys at any time.
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] },
-    { "key": "ctrl-l" },
+    { "key": "ctrl-l", "hints": { "title": "Files", "items": [{ "key": "d", "label": "Delete", "group": false }] } },
     { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusBar": true }] }
   ]
 }

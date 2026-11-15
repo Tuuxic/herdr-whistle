@@ -554,7 +554,7 @@ const HINTS_OVERLAY = "hints";
 // window opened, moved or closed to match the hints (docked on the bar: views.js hintsBox).
 function viewsSent(out, world) {
   const m = out.model, sent = m.sent ?? start().sent, effects = [...out.effects];
-  const h = hints(m), s = settings(m, world), hs = JSON.stringify(h), ss = JSON.stringify(s);
+  const h = hints(m, world), s = settings(m, world), hs = JSON.stringify(h), ss = JSON.stringify(s);
   if (hs !== sent.hints) effects.push({ setShared: VIEWS.hints, value: h });
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;

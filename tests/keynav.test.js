@@ -58,6 +58,27 @@ const SCENARIOS = [
   },
   // Declared keys.
   {
+    name: "A selected keynav field's declared keys show in the hints, with the labels it gave",
+    world: { ...WORLD, shared: entry({ d: "Delete", R: "Rename" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { keys: "", title: "Files", exit: null, items: [
+      { key: "d", label: "Delete", group: false }, { key: "R", label: "Rename", group: false }] } }],
+  },
+  {
+    name: "Declared keys whistle ignores (an own key, a chord) aren't in the hints",
+    world: { ...WORLD, shared: entry({ j: "Down", "ctrl-d": "Delete", d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "d", label: "Delete", group: false }] } }],
+  },
+  {
+    name: "A keynav field that declares no keys shows no hints",
+    world: { ...WORLD, shared: entry() },
+    steps: [...IN, { key: "ctrl-l", hints: null }],
+  },
+  {
+    name: "Declared keys leave the hints when the field isn't selected any more, or whistle goes to TYPE",
+    world: { ...WORLD, shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "ctrl-h", hints: null }, { key: "ctrl-l" }, { key: "i", hints: null }],
+  },
+  {
     name: "A declared key beats a mapping while its field is selected, and arrives as keynav-key-<name>",
     world: { ...WORLD, ...MAPPED, shared: entry({ d: "Delete" }) },
     steps: [...IN,

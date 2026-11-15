@@ -3,6 +3,7 @@
 
 import { isGroup, ACTIONS, USER, LAYOUT } from "./config.js";
 import { keyLabel, canonicalKey } from "./keynames.js";
+import { fieldAt, declaredKeys, KEYNAV } from "./fields.js";
 
 // A problem in a mod's offered mappings (listed under the mod's name, issue #10).
 const fromMod = (model) => {
@@ -20,12 +21,16 @@ export function problems(model) {
 
 const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 
-// The hints' model while a key sequence has reached a group in WHISTLE and hints are on (the
-// layout's whistle block, whistle.json), else null:
+// The hints' model in WHISTLE while hints are on (the layout's whistle block, whistle.json),
+// else null. While a key sequence has reached a group, its keys:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
 //   in the group's order, exit: what ends it ("Esc cancels") | null }.
-export function hints(model) {
-  if (model.mode !== "whistle" || !model.sequence?.length || model.config?.hints === false) return null;
+// Outside a sequence, the selected keynav field's declared keys (ADR 0009), if it has any that
+// count: { keys: "", title: the field's label, items: [{ key, label: the field's, group: false }],
+// exit: null }.
+export function hints(model, world) {
+  if (model.mode !== "whistle" || model.config?.hints === false) return null;
+  if (!model.sequence?.length) return declaredHints(model, world);
   let group = null, map = model.config?.map ?? {};
   for (const k of model.sequence) {
     group = isGroup(map[k]) ? map[k] : null;
@@ -37,6 +42,17 @@ export function hints(model) {
     : { key: keyLabel(key), label: v.label, group: false }));
   const cancel = model.config?.keys?.cancel?.[0];
   return { keys: seqLabel(model.sequence), title: group.name ?? "", items, exit: cancel ? `${keyLabel(cancel)} cancels` : null };
+}
+
+function declaredHints(model, world) {
+  const field = world?.shared ? fieldAt(world.layout, model.field, model.recent, world.shared) : null;
+  if (field?.kind !== KEYNAV) return null;
+  const declared = declaredKeys(field, model.config?.own, world.platform ?? null).keys;
+  const items = Object.entries(declared).map(([key, written]) => {
+    const label = field.keys[written];
+    return { key: keyLabel(key), label: typeof label === "string" ? label : written, group: false };
+  });
+  return items.length ? { keys: "", title: field.label, items, exit: null } : null;
 }
 
 // The hints window's measures (px): a row, the side padding, the title row, the gap between
