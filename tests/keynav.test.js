@@ -8,6 +8,7 @@ import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
 import { fieldKey } from "./fields.js";
 import * as helper from "./keynav.js";
+import texts from "./texts.js";
 
 // A terminal with a files block to its right, over the bar.
 const files = (props) => ({ id: "files", type: "block", content: { mod: "files", ...(props ? { props } : {}) } });
@@ -19,7 +20,9 @@ const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: 
 const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
-const ACTIVE = { setShared: "keynav", value: { v: 2, active: KEY } };
+// The shipped defaults (mappings.json), no whistle.json.
+const SHIPPED = { configFiles: { defaults: texts["mods/whistle/mappings.json"], user: null } };
+const ACTIVE ={ setShared: "keynav", value: { v: 2, active: KEY } };
 
 const SCENARIOS = [
   // A field appearing.
@@ -94,6 +97,22 @@ const SCENARIOS = [
         model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, one of whistle's own keys; it's ignored" }] } },
       { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusBar: true }] },
       { tick: 120, bar: { marker: "⚠ 1" } }],
+  },
+  {
+    name: "On the shipped defaults a field may declare Backspace: it reaches the field, with no config problem",
+    world: { ...WORLD, ...SHIPPED, shared: entry({ backspace: "Up a folder" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "⌫", label: "Up a folder", group: false }] } },
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "A whistle.json mapping on Backspace runs where no selected field declares it; the field wins where one does",
+    world: { ...WORLD, configFiles: { ...SHIPPED.configFiles, user: JSON.stringify({ map: { backspace: ["Previous tab", "tab.prev"] } }) },
+      shared: entry({ backspace: "Up a folder" }) },
+    steps: [...IN,
+      { key: "backspace", handled: true, effects: [{ run: "tab.prev", args: {} }, { focusBar: true }] },
+      { key: "ctrl-l" },
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] }],
   },
   {
     name: "A key the field doesn't declare never reaches it",
