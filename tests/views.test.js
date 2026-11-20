@@ -2,7 +2,7 @@
 // choices of the current key sequence; settings list config problems, mapping conflicts and
 // labelled overrides, and the mods whose mappings can be switched off (issue #7, issue #10).
 
-import { suite, TEST_DEFAULTS } from "./harness.js";
+import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
 import { switchMod, keepMapping } from "./config.js";
 import { HINTS_BOX, labelWidth, keyWidth, columnWidth } from "./views.js";
@@ -146,13 +146,15 @@ const SCENARIOS = [
     ],
   },
   {
-    // The bar draws this key and computes nothing (#47); each folder's copy has its own key.
+    // The bar draws this key (#47), working out only where the keyboard is from `where`;
+    // each folder's copy has its own key.
     name: "The bar's model goes in its private shared key when it changes, and only then",
     world: world(),
     steps: [
-      { tick: 120, shared: { "whistle.bar:whistle": { badge: "TYPE", label: "Terminal", marker: null } } },
+      { tick: 120, shared: { "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } },
       { tick: 120, shared: { "whistle.bar:whistle": undefined } },
-      { command: "whistle", shared: { "whistle.bar:whistle": { badge: "WHISTLE", label: "Terminal · zsh", marker: null } } },
+      { command: "whistle", shared: { "whistle.bar:whistle": { badge: "WHISTLE", marker: null,
+        where: { mode: "whistle", field: "main", recent: ["main"], pane: "p1" } } } },
     ],
   },
   {
@@ -290,8 +292,31 @@ SCENARIOS.push({
     { key: "g", effects: [{ run: "alpha.go", args: {} }, { focusBar: true }] }],
 });
 
+// The bar's model as the core last set it in its shared key, after these inputs in world w.
+function barShared(w, inputs) {
+  let model = core.start(), value;
+  for (const input of inputs) {
+    const out = core.step(model, input, w);
+    model = out.model;
+    value = out.effects.findLast((e) => e.setShared === core.barKey("whistle"))?.value ?? value;
+  }
+  return value;
+}
+
 export default suite("views", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // The bar works out its label from the world it draws in (#47 review), which Herdr redraws on
+  // every focus or terminal change: a change shows at once, not on the core's next tick.
+  const w = { ...DEFAULT_WORLD, ...world() };
+  const typing = barShared(w, [{ tick: true }]);
+  t.check("In TYPE, the bar's label follows focus with no step between",
+    [core.drawnBar(typing, w).label, core.drawnBar(typing, { ...w, focused: null }).label], ["Terminal", ""]);
+  const whistling = barShared(w, [{ tick: true }, { command: "whistle" }]);
+  t.check("In WHISTLE, the bar's label follows the terminal's title with no step between",
+    core.drawnBar(whistling, { ...w, panes: [{ pane: "p1", title: "vim" }] }).label, "Terminal · vim");
+  t.check("The bar draws a flash as the core set it", core.drawnBar({ badge: "WHISTLE", label: "x: not mapped", marker: null }, w).label, "x: not mapped");
+  t.check("Before the core sets it, the bar draws empty", core.drawnBar(null, w), { badge: null, label: "", marker: null });
 
   // The hand pass (#33) saw "Rename" drawn "Rena…" in the Spaces field's hints. "Rename" at
   // 12 px is about 43 px in Segoe UI and 46 px in Inter; a column must leave it at least 48.

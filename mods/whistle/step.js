@@ -545,7 +545,10 @@ function copiesTick(out, world, why) {
 }
 
 export function step(model, input, world) {
-  return sizeSent(routed(model, input, world), world);
+  // What the views were last sent (model.sent) is read after every step below: a model from
+  // before it was kept gets it here, once.
+  const m = model.sent ? model : { ...model, sent: start().sent };
+  return sizeSent(routed(m, input, world), world);
 }
 
 function routed(model, input, world) {
@@ -619,24 +622,24 @@ const sizeOf = (spot, world) => (!isAnchor(world.props) && world.barSize) || wor
 // drawing): its measured size published in its spot's key when it changes.
 function sizeSent(out, world) {
   if (!world.barSize || isAnchor(world.props)) return out;
-  const sent = out.model.sent ?? start().sent, size = JSON.stringify(world.barSize);
+  const sent = out.model.sent, size = JSON.stringify(world.barSize);
   if (size === sent.size) return out;
   return { ...out, model: { ...out.model, sent: { ...sent, size } },
     effects: [...out.effects, { setShared: barSizeKey(folderOf(world), world.props), value: world.barSize }] };
 }
 
-// After a step: the bar's model (bar()) set in this folder's bar key when it changes.
+// After a step: the bar's model (barModel()) set in this folder's bar key when it changes.
 function barSent(out, world) {
-  const sent = out.model.sent ?? start().sent;
-  const b = bar(out.model, world), bs = JSON.stringify(b);
-  if (bs === sent.bar) return out.model.sent ? out : { ...out, model: { ...out.model, sent } };
+  const sent = out.model.sent;
+  const b = barModel(out.model, world), bs = JSON.stringify(b);
+  if (bs === sent.bar) return out;
   return { ...out, model: { ...out.model, sent: { ...sent, bar: bs } }, effects: [...out.effects, { setShared: barKey(folderOf(world)), value: b }] };
 }
 
 // An inert copy sets no shared keys but its bar's model (barSent); it closes its hints window, if open.
 function hintsClosed(out) {
   const sent = out.model.sent;
-  if (!sent?.box && !sent?.leftOpen) return out;
+  if (!sent.box && !sent.leftOpen) return out;
   return { ...out, model: { ...out.model, sent: { ...sent, box: null, leftOpen: false } }, effects: [...out.effects, { closeOverlay: HINTS_OVERLAY }] };
 }
 
@@ -721,14 +724,30 @@ function where(model, world) {
   return name ? `Terminal · ${name}` : "Terminal";
 }
 
-// The bar's view model: { badge: "TYPE" | "WHISTLE" | null (inert, switched off), label: where the keyboard
-// is, or a flash, marker: "⚠ <count>" while there are config problems | null, problem: why
-// whistle is inert, if it is }.
-export function bar(model, world) {
+// The bar's model as the core sets it in this folder's bar key (barSent): { badge: "TYPE" |
+// "WHISTLE" | null (inert, switched off), marker: "⚠ <count>" while there are config problems |
+// null, problem: why whistle is inert, if it is, and either label: what the core decides the
+// bar says (a flash, "Whistle off") or where: what the bar works out where the keyboard is from
+// ({ mode, field, recent, pane }: drawnBar), so it follows focus and titles with no step between }.
+function barModel(model, world) {
   const why = inert(world);
   if (why) return { badge: null, label: "", marker: null, problem: why.problem };
   const n = problems(model).length;
   const marker = n ? `⚠ ${n}` : null;
   if (model.enabled === false) return { badge: null, label: model.flash ?? "Whistle off", marker };
-  return { badge: model.mode === "whistle" ? "WHISTLE" : "TYPE", label: model.flash ?? where(model, world), marker };
+  const badge = model.mode === "whistle" ? "WHISTLE" : "TYPE";
+  if (model.flash) return { badge, label: model.flash, marker };
+  return { badge, marker, where: { mode: model.mode, field: model.field ?? null, recent: model.recent ?? [], pane: model.pane ?? null } };
 }
+
+// The bar as it draws, from its shared model (barModel; null: not set yet, drawn empty) and the
+// world it draws in: { badge, label, marker, problem? }.
+export function drawnBar(vm, world) {
+  if (!vm) return { badge: null, label: "", marker: null };
+  if (!vm.where) return vm;
+  const { where: at, ...rest } = vm;
+  return { ...rest, label: where(at, world) };
+}
+
+// The bar's view model, as it draws in this world: drawnBar of barModel.
+export const bar = (model, world) => drawnBar(barModel(model, world), world);

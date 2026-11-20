@@ -188,7 +188,7 @@ const SCENARIOS = [
     steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
       { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", label: "Terminal", marker: null } } }],
+        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
   },
   {
     name: "A bar copy shown again stops resting",

@@ -17,7 +17,9 @@
 // window, all as effects; the shell measures the window and the bar for it (a bar's copy
 // publishes its size, as an effect, for the anchor, which draws no bar). The bar draws the
 // same way: from the model the core sets in this folder's bar key (step.js barKey), never its
-// own. A view draws on each render, which Herdr reruns when shared state changes. Settings change things by
+// own, working out only where the keyboard is (step.js drawnBar) from what Herdr shows as it
+// draws. A view draws on each render, which Herdr reruns when shared state, focus or terminals
+// change. Settings change things by
 // writing whistle.json through config.js; the bar picks the change up on its next read
 // (ADR 0011).
 //
@@ -29,7 +31,7 @@ import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec, props } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
-import { start, step, VIEWS, barKey, barSizeKey } from "./step.js";
+import { start, step, VIEWS, barKey, barSizeKey, drawnBar } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
 import { renderBar } from "./bar.js";
@@ -212,8 +214,10 @@ export default class Whistle extends View {
       cx.notify();
     };
     if (isAnchor(call(() => props()))) return renderAnchor(this.handle, onKey);
-    // Until the core first sets it (its first step), the bar draws empty.
-    const vm = shared(barKey(FOLDER)) ?? { badge: null, label: "", marker: null };
+    // The model the core sets (empty until its first step), its label worked out from what
+    // Herdr shows now: render reruns on every focus or terminal change, so it never lags.
+    const tree = layout();
+    const vm = drawnBar(shared(barKey(FOLDER)) ?? null, { layout: tree, focused: focused(), panes: panes(), shared: this.keynavShared(tree) });
     return renderBar(vm, theme(), this.handle, onKey, (size) => { this.barSize = { width: size.width, height: size.height }; });
   }
 }

@@ -407,7 +407,8 @@ straight away.
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "whistle", "shared": { "whistle.bar:whistle": { "badge": "WHISTLE", "label": "Terminal", "marker": null } } },
+    { "command": "whistle", "shared": { "whistle.bar:whistle": { "badge": "WHISTLE", "marker": null,
+      "where": { "mode": "whistle", "field": "main", "recent": ["main"], "pane": "p1" } } } },
     { "world": { "barFocused": true, "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
