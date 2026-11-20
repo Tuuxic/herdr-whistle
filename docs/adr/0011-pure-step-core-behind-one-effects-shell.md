@@ -26,4 +26,6 @@ an async core handed an io object; and timers kept in the shell.
   field only through keynav.
 - The settings copy changes things by writing whistle.json through the config module; the bar
   picks the change up on its next poll, as for a hand edit.
-- Each bar copy runs its own core; a hidden copy rests.
+- Each bar copy runs its own core; a hidden copy rests. Superseded by
+  [ADR 0018](0018-whistle-runs-in-an-invisible-anchor-bars-are-views.md): the anchor runs
+  whistle, and bars are views.

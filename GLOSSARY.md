@@ -77,7 +77,7 @@ _Avoid_: synced key, reserved key
 
 **Config layer**:
 One of the four places whistle's config comes from, each over the one before: the defaults,
-mod mappings, the layout's whistle block, and the person's own whistle.json.
+mod mappings, the layout's anchor, and the person's own whistle.json.
 _Avoid_: mapping layer, override
 
 **Mod mappings**:
@@ -131,9 +131,16 @@ _Avoid_: controller, host, navigator
 
 ## Display
 
+**Anchor**:
+The element in the layout that whistle runs in and holds the keyboard through; it draws
+nothing, and whistle works whether any bar shows or not. A layout has one; in a layout
+without one, a bar stands in for it.
+_Avoid_: core, engine, host, driver block
+
 **Bar**:
-Whistle's strip in the window showing the mode badge and where the keyboard is; a layout can
-offer several spots for it.
+Whistle's strip in the window showing the mode badge and where the keyboard is; only an aid,
+so hiding it changes what you see, never what whistle does. A layout can offer several spots
+for it.
 _Avoid_: status bar, statusline
 
 **Mode badge**:
