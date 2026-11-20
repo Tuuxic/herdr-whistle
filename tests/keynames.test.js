@@ -12,6 +12,7 @@ const TABLE = [
   ["already canonical", "?", "linux", "?"],
   ["already canonical", "ctrl--", "linux", "ctrl--"],
   ["already canonical", "shift-tab", "linux", "shift-tab"],
+  ["already canonical", "shift-space", "linux", "shift-space"],
 
   ["platform modifier: cmd is super", "cmd-k", "macos", "super-k"],
   ["platform modifier: cmd is super", "cmd-k", "windows", "super-k"],
@@ -60,9 +61,16 @@ export default suite("keynames", (t) => {
     { key: "tab", modifiers: { shift: true } },
     { key: "x", key_char: "X", modifiers: { shift: true } },
     { key: "space", key_char: " ", modifiers: {} },
+    { key: "space", key_char: " ", modifiers: { shift: true } },
   ];
   for (const e of presses) {
     const name = keyName(e);
     t.check(`a press's name is canonical: ${name}`, canonicalKey(name, "linux"), name);
   }
+
+  // Space types a blank, so it is named apart from typed characters: shift must still count,
+  // as Herdr reports Shift+Space (keystroke "shift-space") for a field to declare. Issue #42.
+  t.check("Space is space", keyName({ key: "space", key_char: " ", modifiers: {} }), "space");
+  t.check("Shift+Space is shift-space", keyName({ key: "space", key_char: " ", modifiers: { shift: true } }), "shift-space");
+  t.check("Shift+Enter is shift-enter", keyName({ key: "enter", modifiers: { shift: true } }), "shift-enter");
 });

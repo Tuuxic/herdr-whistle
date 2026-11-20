@@ -28,6 +28,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 - **Changed**: Backspace is an ordinary key. Map it in `whistle.json`, and a keynav field may
   declare it (a tree's "up a folder"); while such a field is selected, its key goes over your
   mapping, as for any declared key.
+- **Fixed**: Shift+Space is its own key, `shift-space`, which you can map. Before, it did what
+  Space does.
 - **New**: unbinding an own key frees it. Set any own key to `null` or `[]` in whistle.json
   (the switch key still leaves WHISTLE); the freed key then belongs to a selected keynav field
   that declares it, or to your mapping where none does. With `pick` unbound, a field that
@@ -63,6 +65,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   declaring it is no longer a config problem.
 - Rule 5: a declared key that is one of whistle's own keys counts once the person unbinds that
   own key; until then it is a config problem naming the own key (docs/contracts/keynav.md).
+- **Fixed**: a field that declares `shift-space` gets it. Whistle named Shift+Space `space`, so
+  the declared key never ran and Shift+Space did what Space does.
 
 ## v1.0.0 (2026-11-15)
 
