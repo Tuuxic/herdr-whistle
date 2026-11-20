@@ -1,4 +1,4 @@
-// Keynav v2 (ADR 0009, docs/contracts/keynav.md): a mod's block is a field once its entry
+// Keynav v3 (ADR 0009, ADR 0017, docs/contracts/keynav.md): a mod's block is a field once its entry
 // shared("keynav.field:<fieldKey>") says v 3 (or v 2, still driven); whistle names the selected one in
 // shared("keynav") = { v: 3, active }, sends it moves and its declared keys as
 // <mod>.keynav-* commands, and reads only its request slot.
