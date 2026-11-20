@@ -8,6 +8,7 @@ import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
 import { fieldKey } from "./fields.js";
 import * as helper from "./keynav.js";
+import texts from "./texts.js";
 
 // A terminal with a files block to its right, over the bar.
 const files = (props) => ({ id: "files", type: "block", content: { mod: "files", ...(props ? { props } : {}) } });
@@ -21,6 +22,10 @@ const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: 
 const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
+// The shipped defaults (mappings.json), no whistle.json.
+const SHIPPED = { configFiles: { defaults: texts["mods/whistle/mappings.json"], user: null } };
+// The test defaults with whistle.json setting own keys (null: unbound) and, optionally, mappings.
+const unbound = (keys, map) => ({ configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: JSON.stringify({ keys, ...(map ? { map } : {}) }) } });
 const ACTIVE = { setShared: "keynav", value: { v: 3, active: KEY } };
 
 const SCENARIOS = [
@@ -93,9 +98,79 @@ const SCENARIOS = [
     world: { ...WORLD, shared: entry({ j: "Jump", x: "Cut" }) },
     steps: [...IN, { key: "ctrl-l" },
       { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }],
-        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, one of whistle's own keys; it's ignored" }] } },
+        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, down's own key; it counts once you unbind down" }] } },
       { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusBar: true }] },
       { tick: 120, bar: { marker: "⚠ 1" } }],
+  },
+  // Own keys the person unbinds (issue #44): a freed key is an ordinary key.
+  {
+    name: "With pick unbound, Enter on a field that declares it is the field's key, listed in the hints, with no config problem",
+    world: { ...WORLD, ...unbound({ pick: null }), shared: entry({ enter: "Go in" }) },
+    steps: [...IN,
+      { key: "ctrl-l", hints: { title: "Files", items: [{ key: "Enter", label: "Go in", group: false }] } },
+      { key: "enter", handled: true, effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "Pick left without keys ([]) frees Enter the same way",
+    world: { ...WORLD, ...unbound({ pick: [] }), shared: entry({ enter: "Go in" }) },
+    steps: [...IN, { key: "ctrl-l" },
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "With pick unbound, Enter on a field that doesn't declare it reaches no field",
+    world: { ...WORLD, ...unbound({ pick: null }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "enter", handled: false, effects: [] }],
+  },
+  {
+    name: "With pick unbound, a whistle.json mapping on Enter runs where no selected field declares it",
+    world: { ...WORLD, ...unbound({ pick: null }, { enter: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "enter", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+  },
+  {
+    name: "With down unbound, j on a field that declares it is the field's key, with no config problem",
+    world: { ...WORLD, ...unbound({ down: ["down"] }), shared: entry({ j: "Jump" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "j", label: "Jump", group: false }] } },
+      { key: "j", effects: [{ run: "files.keynav-key-j", args: {} }, { focusBar: true }] },
+      { key: "down", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "With down unbound, j reaches no field that doesn't declare it, and a mapping on j runs instead",
+    world: { ...WORLD, ...unbound({ down: null }, { j: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "j", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+  },
+  {
+    name: "With pick bound, a field declaring Enter is a config problem naming pick and how to free it; Enter still picks and the hints leave it out",
+    world: { ...WORLD, shared: entry({ enter: "Go in", d: "Delete" }) },
+    steps: [...IN,
+      { key: "ctrl-l", hints: { items: [{ key: "d", label: "Delete", group: false }] } },
+      { key: "enter", effects: [{ run: "files.keynav-pick", args: {} }, { focusBar: true }],
+        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares enter, pick's own key; it counts once you unbind pick" }] } }],
+  },
+  {
+    name: "Unbinding the own key a field declares takes its config problem away",
+    world: { ...WORLD, shared: entry({ enter: "Go in" }) },
+    steps: [...IN, { key: "ctrl-l" }, { tick: 120, bar: { marker: "⚠ 1" } },
+      { world: unbound({ pick: null }), tick: 120, bar: { marker: null } },
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] }],
+  },
+  {
+    name: "On the shipped defaults a field may declare Backspace: it reaches the field, with no config problem",
+    world: { ...WORLD, ...SHIPPED, shared: entry({ backspace: "Up a folder" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "⌫", label: "Up a folder", group: false }] } },
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "A whistle.json mapping on Backspace runs where no selected field declares it; the field wins where one does",
+    world: { ...WORLD, configFiles: { ...SHIPPED.configFiles, user: JSON.stringify({ map: { backspace: ["Previous tab", "tab.prev"] } }) },
+      shared: entry({ backspace: "Up a folder" }) },
+    steps: [...IN,
+      { key: "backspace", handled: true, effects: [{ run: "tab.prev", args: {} }, { focusBar: true }] },
+      { key: "ctrl-l" },
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] }],
   },
   {
     name: "A key the field doesn't declare never reaches it",

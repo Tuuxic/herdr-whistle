@@ -4,12 +4,14 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
-## v1.1.0 (2026-11-20)
+## v1.1.0 (unreleased)
 
 ### Upgrading
 
-1. **whistle.json**: if its `keys` set `open`, offer to rename it to `pick`. Whistle reads
-   `open` as `pick` meanwhile and lists it in settings.
+1. **whistle.json**: if its `keys` section sets `"back"`, tell the person whistle has no back
+   key any more (the setting is ignored and listed as a config problem), and offer to remove
+   the line. If it sets `"open"`, offer to rename it to `"pick"`; whistle reads `open` as
+   `pick` meanwhile and lists it in settings. Make no other change.
 2. **Keynav v2 mods**: whistle still drives them. For each clone or in-place mod in
    `whistle-integration.md` whose `keynav.js` has `V = 2`, offer to adapt it to keynav v3
    (RECIPE.md, Integrate: replace its `keynav.js`, and its `open` move becomes `pick`). For a
@@ -17,9 +19,21 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ### You
 
-- Whistle's own key `open` is now `pick` (Enter by default; on the terminal it still goes back
-  to TYPE there), and the hints say Pick. A whistle.json that still sets `"open"` keeps
-  working, and settings ask you to rename it; if it sets both, `"pick"` wins.
+- **Changed**: whistle's own key `open` is now `pick` (Enter by default; on the terminal it
+  still goes back to TYPE there), and the hints say Pick. A whistle.json that still sets
+  `"open"` keeps working, and settings ask you to rename it; if it sets both, `"pick"` wins.
+- **Removed**: the own key `back`. A key sequence has no step back any more: Escape ends it and
+  you start again. A config layer that still sets `"back"` is ignored and listed as a config
+  problem in whistle's settings.
+- **Changed**: Backspace is an ordinary key. Map it in `whistle.json`, and a keynav field may
+  declare it (a tree's "up a folder"); while such a field is selected, its key goes over your
+  mapping, as for any declared key.
+- **New**: unbinding an own key frees it. Set any own key to `null` or `[]` in whistle.json
+  (the switch key still leaves WHISTLE); the freed key then belongs to a selected keynav field
+  that declares it, or to your mapping where none does. With `pick` unbound, a field that
+  declares `enter` gets Enter (docs/guide.md, Unbinding an own key).
+- A field that declares one of whistle's own keys is still a config problem, which now names
+  the own key and says the field's key counts once you unbind it.
 
 ### Layout authors
 
@@ -45,6 +59,10 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   settings ask them to update their `keynav.js`. v1 stays unsupported.
 - The keynav checker checks keynav v3, and names the rule a copy breaks that still reads
   `open` or writes v2's requests.
+- **Changed**: a field may declare Backspace. It is no longer one of whistle's own keys, so
+  declaring it is no longer a config problem.
+- Rule 5: a declared key that is one of whistle's own keys counts once the person unbinds that
+  own key; until then it is a config problem naming the own key (docs/contracts/keynav.md).
 
 ## v1.0.0 (2026-11-15)
 

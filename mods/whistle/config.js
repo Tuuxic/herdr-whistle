@@ -30,7 +30,11 @@ export const ACTIONS = {
   pick: { kind: "pick", label: "Pick (in a terminal: type there)" },
   type: { kind: "type", label: "Back to TYPE" },
   cancel: { kind: "cancel", label: "Cancel a key sequence" },
-  back: { kind: "back", label: "Back one level in a sequence" },
+};
+
+// Own-key actions whistle no longer has: a layer that sets one is ignored and listed, with why.
+const GONE = {
+  back: "whistle has no back key any more; it's ignored (Escape ends a key sequence)",
 };
 
 // The own keys built into whistle's code, for when there are no defaults at all (mappings.json
@@ -39,7 +43,7 @@ export const SAFETY = {
   keys: {
     "field-left": ["ctrl-h"], "field-down": ["ctrl-j"], "field-up": ["ctrl-k"], "field-right": ["ctrl-l"],
     left: ["h", "left"], down: ["j", "down"], up: ["k", "up"], right: ["l", "right"],
-    pick: ["enter"], type: ["i"], cancel: ["escape"], back: ["backspace"],
+    pick: ["enter"], type: ["i"], cancel: ["escape"],
   },
   map: {},
 };
@@ -297,6 +301,7 @@ function mergeKeys(base, over, ctx) {
     if (!Object.hasOwn(over, now)) actions[now] = v;
   }
   for (const [action, v] of Object.entries(actions)) {
+    if (Object.hasOwn(GONE, action)) { ctx.problem(`keys › ${action}: ${GONE[action]}`); continue; }
     if (!ACTIONS[action]) { ctx.problem(`keys › ${action}: unknown action`); continue; }
     if (v === null) { delete out[action]; continue; }
     if (!Array.isArray(v)) { ctx.problem(`keys › ${action}: should be a list of keys`); continue; }

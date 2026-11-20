@@ -361,7 +361,7 @@ function ownKey(model, world, action) {
     if (!field || field.kind === TERMINAL) return { ...type(model, world), handled: true };
     return field.kind === STOCK && STOCK_FIELDS[field.stock].pick === "terminal" ? toTerminal(model, world) : done;
   }
-  if (own.kind !== "move") return done; // cancel, back: nothing pending
+  if (own.kind !== "move") return done; // cancel: nothing pending
   // A move acts inside the field; with none selected, the terminal stands in.
   const t = field ? null : terminal(world.layout, model.recent);
   if (field?.kind === TERMINAL) return paneMove(model, world, own.dir);
