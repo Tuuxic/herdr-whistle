@@ -409,6 +409,55 @@ straight away.
 }
 ```
 
+### 12. One anchor drives; a second stands aside
+
+A layout has one anchor. If it has more, the first in layout order runs whistle and every
+other anchor stands aside like a bar's copy: it acts on no command, key or tick. Each extra
+anchor is a config problem in settings, so the mistake shows but costs nothing. Copies are
+told apart only by their props, so an extra anchor with exactly the first one's props can't
+tell it isn't the first: remove it.
+
+```json example A second anchor stands aside and is listed as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true, "hints": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
+    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
+    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+  ]
+}
+```
+
+```json example The first anchor runs whistle and lists the second as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
+      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and stands aside; whistle-anchor runs whistle" }
+    ] } }
+  ]
+}
+```
+
 ## Stable and may change
 
 - Stable: `anchor`, `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
