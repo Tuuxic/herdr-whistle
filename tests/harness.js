@@ -43,7 +43,7 @@ export const TEST_DEFAULTS = {
   keys: {
     "field-left": ["ctrl-h"], "field-down": ["ctrl-j"], "field-up": ["ctrl-k"], "field-right": ["ctrl-l"],
     left: ["h", "left"], down: ["j", "down"], up: ["k", "up"], right: ["l", "right"],
-    open: ["enter"], type: ["i"],
+    pick: ["enter"], type: ["i"],
   },
   map: {},
 };

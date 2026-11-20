@@ -27,7 +27,7 @@ export const ACTIONS = {
   down: { kind: "move", dir: "down", label: "Move down in the field" },
   up: { kind: "move", dir: "up", label: "Move up in the field" },
   right: { kind: "move", dir: "right", label: "Move right in the field" },
-  open: { kind: "open", label: "Open (in a terminal: type there)" },
+  pick: { kind: "pick", label: "Pick (in a terminal: type there)" },
   type: { kind: "type", label: "Back to TYPE" },
   cancel: { kind: "cancel", label: "Cancel a key sequence" },
   back: { kind: "back", label: "Back one level in a sequence" },
@@ -39,7 +39,7 @@ export const SAFETY = {
   keys: {
     "field-left": ["ctrl-h"], "field-down": ["ctrl-j"], "field-up": ["ctrl-k"], "field-right": ["ctrl-l"],
     left: ["h", "left"], down: ["j", "down"], up: ["k", "up"], right: ["l", "right"],
-    open: ["enter"], type: ["i"], cancel: ["escape"], back: ["backspace"],
+    pick: ["enter"], type: ["i"], cancel: ["escape"], back: ["backspace"],
   },
   map: {},
 };
@@ -282,10 +282,21 @@ function badEntry(entry) {
   return null;
 }
 
+// Own-key actions renamed, old name -> new: a layer that sets the old name is honoured as the
+// new one (unless it sets the new one too, which wins) and listed as a config problem.
+const RENAMED = { open: "pick" };
+
 // A layer's own keys over the merged ones below: action by action.
 function mergeKeys(base, over, ctx) {
   const out = { ...base };
+  const actions = {};
   for (const [action, v] of Object.entries(over)) {
+    const now = RENAMED[action];
+    if (!now) { actions[action] = v; continue; }
+    ctx.problem(`keys › ${action} is now ${JSON.stringify(now)}: rename it`);
+    if (!Object.hasOwn(over, now)) actions[now] = v;
+  }
+  for (const [action, v] of Object.entries(actions)) {
     if (!ACTIONS[action]) { ctx.problem(`keys › ${action}: unknown action`); continue; }
     if (v === null) { delete out[action]; continue; }
     if (!Array.isArray(v)) { ctx.problem(`keys › ${action}: should be a list of keys`); continue; }

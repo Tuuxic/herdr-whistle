@@ -78,6 +78,30 @@ const SCENARIOS = [
     steps: [...IN, { key: "i", effects: [], handled: false, model: { mode: "whistle" } }],
   },
   {
+    name: "pick, Enter by default, goes back to TYPE on the terminal field",
+    world: world(),
+    steps: [...IN, { key: "enter", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "A layer that still sets \"open\" is honoured as pick, and listed as a config problem asking to rename it",
+    world: world({ user: { keys: { open: ["o"] } } }),
+    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle",
+      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
+      { key: "o", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "A layer that sets both \"pick\" and \"open\": pick wins, and open is still listed",
+    world: world({ user: { keys: { open: ["o"], pick: ["p"] } } }),
+    steps: [...IN, { key: "o", effects: [], handled: false, model: { mode: "whistle",
+      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
+      { key: "p", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "\"open\" set to null in a layer takes pick's keys away",
+    world: world({ props: { keys: { open: null } } }),
+    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle" } }],
+  },
+  {
     name: "Own keys are claimed from the layers too",
     world: { ...world({ user: { keys: { "field-left": ["alt-h"], "field-down": null, "field-up": null, "field-right": null } } }),
       platform: "linux", layoutName: "main",

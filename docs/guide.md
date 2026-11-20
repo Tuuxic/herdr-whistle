@@ -180,7 +180,7 @@ first.
 | `down` | `j` `down` | Move down in the field |
 | `up` | `k` `up` | Move up in the field |
 | `right` | `l` `right` | Move right in the field |
-| `open` | `enter` | Open; on the terminal, back to TYPE there |
+| `pick` | `enter` | Pick the item under the cursor (what that does is the field's); on the terminal, back to TYPE there |
 | `type` | `i` | Back to TYPE |
 | `cancel` | `escape` `ctrl-[` | End a key sequence (with none, nothing) |
 | `back` | `backspace` | Back one level in a key sequence |
@@ -200,14 +200,14 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
 - **Integration** makes them better fields: ask the agent that installed whistle to integrate
   it (RECIPE.md, Integrate). It clones Herdr's spaces, agents, tabs, files and changes as
   keynav mods (`spaces-whistle`, …) in a clone of your layout (`main-whistle`), so each gets a
-  cursor that moves without opening (`enter` opens) and stays in view in a long list, a glow
+  cursor that moves without picking (`enter` picks) and stays in view in a long list, a glow
   in the theme's `accent` while selected, and a few keys of its own (`n`, `r`, `x` on spaces
   and tabs); files and changes become fields too. The layout's pane header is copied as well
   (`pane-whistle`) and glows on the terminal whistle has selected while in WHISTLE, since the
   bar holds the keyboard and Herdr's focus border can't show it. Your own layout and mods are
   changed in place instead. Uninstall offers to undo it.
 
-| Block | Keys | Herdr command | Open (`enter`) |
+| Block | Keys | Herdr command | Pick (`enter`) |
 |---|---|---|---|
 | Spaces | `j` / `k` | `space.next` / `space.prev` | stays: the space is already shown |
 | Tabs | `l` / `h` | `tab.next` / `tab.prev` | stays: the tab is already shown |
@@ -250,14 +250,14 @@ After integration the `spaces` block holds the clone, which announces itself thr
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:spaces-whistle {}": { "v": 2, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
+    "shared": { "keynav.field:spaces-whistle {}": { "v": 3, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
-      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": "spaces-whistle {}" } }] },
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "spaces-whistle {}" } }] },
     { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
-    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-open", "args": {} }, { "focusBar": true }] },
+    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-pick", "args": {} }, { "focusBar": true }] },
     { "key": "r", "effects": [{ "run": "spaces-whistle.keynav-key-r", "args": {} }, { "focusBar": true }] }
   ]
 }
@@ -362,8 +362,9 @@ Each layer has two sections, kept apart:
   argument, as in `keys.json`. A mapping goes over an own key.
 - **`keys`**, whistle's own keys: an action to its list of keys. The actions: `field-left`,
   `field-down`, `field-up`, `field-right` (select the field that way), `left`, `down`, `up`,
-  `right` (move inside it), `open`, `type` (back to TYPE), `cancel` (end a key sequence) and
-  `back` (up one level in it).
+  `right` (move inside it), `pick`, `type` (back to TYPE), `cancel` (end a key sequence) and
+  `back` (up one level in it). `pick` was called `open` before 1.1.0: a layer that still sets
+  `open` is read as `pick` (unless it sets `pick` too) and listed in settings to rename.
 - A key set to `null` takes it away; groups merge key by key, so a layer can add to a group or
   take one key out of it. An action's list replaces the one below; `null` leaves the action
   with no keys.
