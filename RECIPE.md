@@ -211,6 +211,9 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - A `whistle.json` mapping `n` to `["Next tab", "tab.next"]` works in WHISTLE; breaking its
   JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
 - In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
+- In `scripts/sandbox.sh reset --whistle`, with an anchor (`anchor: true`, 0 px) added to the
+  layout and the bar hidden: `ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl+H selects
+  a field, and `i` goes back to TYPE.
 - In settings, switching a mod off that offers mappings writes `"mods": { "<mod>": false }`
   into `whistle.json` and its mappings stop working within a second.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and

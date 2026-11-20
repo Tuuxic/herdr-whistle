@@ -4,6 +4,24 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.2.0 (unreleased)
+
+### You
+
+- **New**: in a layout with an anchor, the bar is optional. Hide every bar and whistle works
+  the same: Ctrl+Space enters WHISTLE, mappings run, Ctrl+H/J/K/L select fields, jump keys
+  work, and the whistle state is still published. Hiding the bar in WHISTLE keeps the mode,
+  the selected field and the key sequence; a bar shown again shows the current state.
+  whistle.json's `bar` still picks which spot shows. Layouts without an anchor work as before:
+  hiding their bar rests whistle.
+
+### Layout authors
+
+- **New**: the whistle block prop `anchor: true` marks the anchor, the block whistle runs in;
+  size it 0 px and never hide it (docs/contracts/layout-block.md, The anchor). In a layout with
+  an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
+  spot's copy rests now holds only for layouts without an anchor.
+
 ## v1.1.0 (2026-11-20)
 
 ### Upgrading
