@@ -18,7 +18,8 @@
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it)
-//                                          // the views' models (`shared` checks them) and
+//                                          // the views' models, the bar's included
+//                                          // (`shared` checks them) and
 //                                          // the hints window (`hintsWindow` checks it)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
@@ -65,6 +66,8 @@ export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "obje
 // keys the views' models go in (step.js VIEWS): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
 const VIEW_KEYS = ["whistle.hints", "whistle.settings"];
+// The bar's model goes in a key per folder (step.js barKey).
+const isBarKey = (k) => typeof k === "string" && k.startsWith("whistle.bar:");
 
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
@@ -105,7 +108,7 @@ export function runScenario(sc, core) {
       try { out = core.step(model, next.input, world); }
       catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
-      const isView = (e) => VIEW_KEYS.includes(e?.setShared);
+      const isView = (e) => VIEW_KEYS.includes(e?.setShared) || isBarKey(e?.setShared);
       const isWindow = (e) => e?.openOverlay === "hints" || e?.closeOverlay === "hints";
       const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e));
       if ("hintsWindow" in s && show(out.effects.filter(isWindow)) !== show(s.hintsWindow))

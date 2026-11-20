@@ -156,9 +156,9 @@ const SCENARIOS = [
 
   // A hidden bar copy rests (ADR 0011): each spot is a copy of whistle, known by its props.
   {
-    name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views",
+    name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views, the bar's included",
     world: { ...spots({}), props: { bar: "Top" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined } }],
+    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined } }],
   },
   {
     name: "The shown bar copy runs: it claims its keys and publishes",
@@ -179,12 +179,12 @@ const SCENARIOS = [
     steps: [{ tick: 120, effects: [], model: { mode: "type" } }],
   },
   {
-    name: "A copy publishes its state again when shown after resting: the other spot's copy wrote it meanwhile",
+    name: "A copy publishes its state and its bar's model again when shown after resting: the other spot's copy wrote them meanwhile",
     world: { ...spots({}), props: { bar: "Bottom" } },
     steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
       { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-        shared: { "whistle.hints": null } }],
+        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", label: "Terminal", marker: null } } }],
   },
   {
     name: "A bar copy shown again stops resting",
