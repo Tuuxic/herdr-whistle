@@ -39,12 +39,12 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   The advanced setup may use the real terms.
 - **Ask only what is the person's choice**, one question at a time, and say what each answer
   means for them ("Yes: the spaces list gets a highlight and j/k move in it. No: whistle still
-  moves between the lists, but moving in one opens what you land on.").
+  moves between the lists, but moving in one shows what you land on.").
 - **Technical problems are yours to solve** by this recipe's rules: a name already taken, a
   layout that can't be edited, a check that fails. Don't ask the person how to fix them; fix
   them, and afterwards say in a sentence what you did.
 - **Describe Integrate by its result**: "the list you're in gets a highlight, and j/k move a
-  cursor in it without opening anything; Enter goes there and you type in it, Space shows it
+  cursor in it without picking or showing anything; Enter goes there and you type in it, Space shows it
   and you keep moving", not by how it is made.
 - **Ask as few questions as needed**: where this recipe gives a default, use it without asking.
 
@@ -218,7 +218,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - A fresh Install on Herdr's `main` layout asks before copying the layout, then shows the bar
   on `main-whistle`; the conversation uses the words the person sees.
 - After Install on Herdr's `main` layout, Integrate (simple path, Herdr's blocks) shows
-  `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without opening a space,
+  `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without showing a space,
   Space shows the space and the spaces field stays selected, and Enter goes to it and
   switches to TYPE; on the agents field, Enter puts you in TYPE in the agent's pane; a long
   spaces list scrolls to keep the cursor and one more space
@@ -273,9 +273,9 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
      show: say so, and that you can add it whenever they say yes, or they can add it
      themselves.
 8. Offer [Integrate](#integrate), by its result: "Right now whistle moves you between the
-   lists, but moving inside the spaces or agents list opens what you land on, and the files
+   lists, but moving inside the spaces or agents list shows what you land on, and the files
    and changes panel can't be reached. I can make copies of Herdr's sidebar lists where the
-   list you're in gets a highlight, j/k move in it without opening anything, Space shows the
+   list you're in gets a highlight, j/k move in it without picking or showing anything, Space shows the
    space or agent while you keep moving, and Enter goes there so you can type, and mark the
    terminal you've picked. Do that?" If the person says yes, follow Integrate; if
    not, say they can ask for it any time.
@@ -288,10 +288,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 ## Integrate
 
 **Integration** (ADR 0015) makes the blocks of the person's shown layout into keynav fields,
-with a look for the selected field and a cursor that moves without opening. It is
+with a look for the selected field and a cursor that moves without showing anything. It is
 instructions for you, not part of whistle: whistle's code doesn't change, whistle ships no
 clones and never reads the record, and a keynav mod works the same without whistle. Herdr's
-own blocks stay stock fields (no cursor, moving opens) for anyone who doesn't integrate.
+own blocks stay stock fields (no cursor, moving shows) for anyone who doesn't integrate.
 
 Offer it after Install's last step. Do it at any other time the person asks.
 
@@ -444,7 +444,7 @@ own mod):
    `cx.spawn(async (cx) => { for (;;) { this.keynav(await nextCommand(), cx); cx.notify(); } })`
    (pass `cx` on where the mod's own click handlers need it).
    `keynav(c)` does nothing unless `isActive(this.key)`. `move(c)`: `up`/`down` move the
-   cursor through a list (`left`/`right` through a row, such as tabs) without opening anything;
+   cursor through a list (`left`/`right` through a row, such as tabs) without picking or showing anything;
    `pick` does what a click on the cursor item does; in a tree, `left` closes the cursor's
    open folder, and a preview's back button is `left` too. `declared(c)` runs that key's
    action on the cursor item.
@@ -498,9 +498,9 @@ changes keep theirs.
 
 **Show** (`space`, declared as `{ space: "Show" }` along with the field's other keys): runs the
 same Herdr command on the cursor item, then `keepKeys(this.key)`, which writes
-`{ after: "hold" }`, for spaces and agents alike. Whistle takes the keyboard back and the field
-stays selected, so the person looks at the item without working in it and moves on with
-`j`/`k`. Show never writes `{ after: "terminal" }` (no `toTerminal`) and never runs
+`{ after: "hold" }`, for spaces and agents alike. Whistle stays in WHISTLE with the field
+selected: if the command moved the keyboard to a pane (`agent.focus` may), whistle takes it
+back, so the person looks at the item without working in it and moves on with `j`/`k`. Show never writes `{ after: "terminal" }` (no `toTerminal`) and never runs
 `whistle.type`.
 
 ### The selected terminal's header

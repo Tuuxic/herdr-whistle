@@ -55,7 +55,8 @@ _Avoid_: open, select, activate, confirm
 
 **Show**:
 Bringing up the item under a field's cursor while staying in WHISTLE with that field selected,
-so the keyboard doesn't go to the item's terminal: you look at it without working in it. A
+whistle keeping the keyboard (or taking it back from the item's terminal): you look at it
+without working in it. A
 field that offers it does so on Space; Pick is the one that goes in.
 _Avoid_: preview, peek
 
