@@ -76,7 +76,7 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
+import { blockProps, settings as blockSettings, spots, resting, viewing } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
@@ -542,6 +542,9 @@ function copiesTick(out, world, why) {
 }
 
 export function step(model, input, world) {
+  // A bar's copy in a layout with an anchor only draws (ADR 0018): Herdr hands it every command
+  // and claimed key the anchor gets, so it acts on none of them.
+  if (viewing(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
   if (why) return barSent(hintsClosed(stepped(model, input, world, why)), world);
   if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);

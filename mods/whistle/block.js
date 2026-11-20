@@ -1,7 +1,7 @@
 // The layout's whistle block (docs/contracts/layout-block.md), a public contract: the props a
 // layout gives whistle's blocks, read and checked. Pure: it reads only the layout it is given.
 //
-// Stable props: `mappings` and `keys` (the layout's config layer, checked by config.js),
+// Stable props: `anchor` (the block whistle runs in, ADR 0018), `mappings` and `keys` (the layout's config layer, checked by config.js),
 // `mods` (switching mods' mappings off, checked by config.js),
 // `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`,
 // which place the hints box. `part` is private (whistle's own overlay copies). A bad prop is skipped and listed as a config problem; the rest still count.
@@ -15,7 +15,7 @@ import { FOLDER } from "./version.js";
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
-const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part"];
+const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part", "anchor"];
 
 
 // Every block id in the layout.
@@ -65,7 +65,7 @@ export function blockProps(layout, folder = FOLDER) {
   for (const b of bars(layout, folder)) {
     for (const [k, v] of Object.entries(b.props)) {
       if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
-      if (k === "part" || v === undefined) continue;
+      if (k === "part" || k === "anchor" || v === undefined) continue;
       if (k === "bar") { if (typeof v !== "string") problem("bar should be the spot's name, a string"); continue; }
       if (k in props) continue;
       if (BOOLEANS.includes(k) && typeof v !== "boolean") problem(`${k} should be true or false`);
@@ -86,6 +86,14 @@ export function resting(layout, folder, props, hid = []) {
   const mine = fieldKey(folder, isObject(props) ? props : {});
   const blocks = bars(layout, folder).filter((b) => fieldKey(folder, b.props) === mine);
   return blocks.length > 0 && blocks.every((b) => b.hidden && !hid.includes(b.id));
+}
+
+// Whether this copy is a view (ADR 0018): the layout has an anchor (a block of this copy with
+// `anchor: true`) and this copy's props aren't an anchor's, so it is a bar's copy, which only
+// draws. Unknown props: it isn't.
+export function viewing(layout, folder, props) {
+  if (props === undefined || (isObject(props) && props.anchor === true)) return false;
+  return bars(layout, folder).some((b) => b.props.anchor === true);
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.

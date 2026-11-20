@@ -216,6 +216,72 @@ border.
 The box is 600 + 2 × 2 = 604 px wide and starts at 1000 − 200 − 604 = 196; the bar block is
 22 + 2 × 2 = 26 px high, so the box (50 px, one row) ends 6 px above it: 600 − 26 − 6 − 50 = 518.
 
+## The anchor
+
+The anchor is a whistle block with the prop `anchor: true`, sized 0 px, that draws nothing
+(ADR 0018). Whistle runs in it: it holds the keyboard in WHISTLE, takes whistle's commands,
+jump keys and claimed keys, publishes the whistle state, and shows the picked bar spot. Bars
+are then only views: hiding or showing one changes what you see, never what whistle does.
+Herdr doesn't run a hidden block's copy, so never hide the anchor.
+
+```json
+{ "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": { "anchor": true } } }
+```
+
+A layout without an anchor works as before: a bar stands in for it, and a hidden bar's copy
+rests (rule 6).
+
+### 8. With every bar hidden, whistle runs in the anchor
+
+The switch key enters WHISTLE and whistle takes the keyboard (through the anchor), mappings
+run, and the field keys select fields. The whistle state is published as with a bar.
+
+```json example Anchored with every bar hidden, the switch key enters WHISTLE
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [] },
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+  ]
+}
+```
+
+### 9. In a layout with an anchor, a bar's copy only draws
+
+Herdr hands every whistle command and claimed key to every shown copy of whistle, so a bar's
+copy in a layout with an anchor acts on none of them, nor on its ticks: it draws the bar the
+anchor sets, so a key press is never handled twice.
+
+```json example A bar's copy in an anchored layout returns no effects for a command or a key
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "bar": "Bottom" },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
+    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
+    { "command": "key-ctrl-h", "effects": [], "published": null, "handled": false },
+    { "command": "focus:main", "effects": [], "published": null, "handled": false },
+    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+  ]
+}
+```
+
 ## Stable and may change
 
 - Stable: `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
