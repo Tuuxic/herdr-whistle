@@ -1,7 +1,8 @@
 // The layout's whistle block (docs/contracts/layout-block.md), a public contract: the props a
 // layout gives whistle's blocks, read and checked. Pure: it reads only the layout it is given.
 //
-// Stable props: `anchor` (the block whistle runs in, ADR 0018), `mappings` and `keys` (the layout's config layer, checked by config.js),
+// Stable props: `anchor` (the block whistle runs in, ADR 0018, which holds the layout's config
+// layer), `mappings` and `keys` (the layout's config layer, checked by config.js),
 // `mods` (switching mods' mappings off, checked by config.js),
 // `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`,
 // which place the hints box. `part` is private (whistle's own overlay copies). A bad prop is skipped and listed as a config problem; the rest still count.
@@ -15,6 +16,7 @@ import { FOLDER } from "./version.js";
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
+const BEHAVIOUR = ["mappings", "keys", "mods", "enabled", "hints", "nav"];
 const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part", "anchor"];
 
 
@@ -56,17 +58,27 @@ function readNav(nav, known, problem) {
 
 // The props of this copy's blocks, checked: { props, problems: [detail] }. Each prop comes from
 // the first block that has it (a second bar needn't repeat the mappings); `bar` is each
-// block's own, so it is only checked here.
+// block's own, so it is only checked here. In a layout with an anchor (ADR 0018), the
+// behaviour props (BEHAVIOUR) come from the first anchor alone and the place props (NUMBERS)
+// from the bars alone; either on the other kind of block is skipped and listed (a further
+// anchor's behaviour props are skipped unlisted: that anchor is the problem).
 export function blockProps(layout, folder = FOLDER) {
   const problems = [];
   const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
   const known = ids(layout);
   const props = {};
-  for (const b of bars(layout, folder)) {
+  const blocks = bars(layout, folder);
+  const anchor = blocks.find((b) => b.props.anchor === true);
+  for (const b of blocks) {
     for (const [k, v] of Object.entries(b.props)) {
       if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
       if (k === "part" || k === "anchor" || v === undefined) continue;
       if (k === "bar") { if (typeof v !== "string") problem("bar should be the spot's name, a string"); continue; }
+      if (anchor && BEHAVIOUR.includes(k) && b !== anchor) {
+        if (b.props.anchor !== true) problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`);
+        continue;
+      }
+      if (b.props.anchor === true && NUMBERS.includes(k)) { problem(`${k}: the anchor's is skipped; put it on the bar it places`); continue; }
       if (k in props) continue;
       if (BOOLEANS.includes(k) && typeof v !== "boolean") problem(`${k} should be true or false`);
       else if (NUMBERS.includes(k) && !Number.isFinite(v)) problem(`${k} should be a number (px)`);

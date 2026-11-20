@@ -1,15 +1,19 @@
 # The layout's whistle block
 
 For layout authors: how a layout places whistle's bar and tunes whistle for its own mods. A
-layout shows whistle by having a block of the whistle mod; that block's props are this
-contract.
+layout runs whistle in an anchor and shows it in bars, each a block of the whistle mod; those
+blocks' props are this contract.
 
 ```json
-{ "id": "bar", "type": "block", "content": { "mod": "whistle", "props": {
-  "mappings": { "g": ["Git", "mod.open:git"] },
-  "nav": { "sidebar": { "right": "main" } },
-  "hints": true
-} } }
+[
+  { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": {
+    "anchor": true,
+    "mappings": { "g": ["Git", "mod.open:git"] },
+    "nav": { "sidebar": { "right": "main" } },
+    "hints": true
+  } } },
+  { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
+]
 ```
 
 ## Props
@@ -34,8 +38,13 @@ in from the window's right edge, or draws a border around it, tells whistle by h
 box is then as wide as the bar block, border included, ends where the block ends, and sits
 `hintsGap` above the block's top edge, border included (rule 7).
 
-A layout may have several whistle blocks (bar spots). Each prop but `bar` comes from the first
-block, in layout order, that has it, so a second spot needn't repeat the mappings.
+`mappings`, `keys`, `mods`, `enabled`, `hints` and `nav` are the layout's config layer and go
+on the anchor (rule 12). `bar` and the three `hints*` props describe a bar's own spot and go on
+each bar. In a layout without an anchor, a bar holds them all.
+
+A layout may have several whistle blocks (bar spots). Without an anchor, each prop but `bar`
+comes from the first block, in layout order, that has it, so a second spot needn't repeat the
+mappings.
 
 whistle.json's own `enabled`, `hints` and `bar` go over the layout's: the person has the last
 word.
@@ -405,6 +414,88 @@ straight away.
       { "run": "layout.show", "args": { "id": "top-bar" } },
       { "run": "layout.hide", "args": { "id": "bottom-bar" } }
     ] }
+  ]
+}
+```
+
+### 12. The layout's props come from the anchor; place props from the bar
+
+In a layout with an anchor, the anchor holds the layout's config layer: `mappings`, `keys`,
+`mods`, `enabled`, `hints` and `nav` are read from it alone.
+
+```json example Anchored, the mappings come from the anchor
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom",
+        "mappings": { "z": ["Zoom", "pane.zoom"] }, "keys": { "type": ["x"] } } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
+        "mappings": { "z": ["Split", "pane.split"] }, "keys": { "type": ["q"] } } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "z",
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "run": "pane.split", "args": {} }, { "focusBar": true }] },
+    { "key": "q", "model": { "mode": "type" } }
+  ]
+}
+```
+
+Without an anchor, the bar standing in for it holds them, as in rules 1 to 4.
+
+One of these props on a bar in a layout with an anchor is skipped and listed as a config
+problem (source `layout`), so a bar spot never changes what whistle does. Move it to the anchor.
+
+```json example Anchored, enabled on a bar is skipped and listed
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom", "enabled": false } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }],
+      "model": { "mode": "whistle", "problems": [{ "source": "layout", "detail": "enabled: a bar's is skipped in a layout with an anchor; put it on the anchor" }] },
+      "bar": { "badge": "WHISTLE", "marker": "⚠ 1" } }
+  ]
+}
+```
+
+The hints' place props (`hintsAlignRight`, `hintsAlignBorder`, `hintsGap`) describe where a
+bar sits, so they stay on the bar the box lines up with. On the anchor, which sits nowhere,
+they are skipped and listed.
+
+```json example Anchored, the hints box lines up by the bar's place props, not the anchor's
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom",
+        "hintsAlignRight": 200, "hintsAlignBorder": 2 } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
+        "hintsAlignRight": 50,
+        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
+      } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "viewport": { "width": 1000, "height": 600 },
+    "barSize": { "width": 600, "height": 22 }
+  },
+  "steps": [
+    { "command": "whistle",
+      "model": { "problems": [{ "source": "layout", "detail": "hintsAlignRight: the anchor's is skipped; put it on the bar it places" }] } },
+    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
+      "mod": "whistle", "kind": "window", "frame": "none", "width": 604, "height": 50,
+      "at": { "x": 196, "y": 518 }, "props": { "part": "hints", "width": 604 } } }] }
   ]
 }
 ```
