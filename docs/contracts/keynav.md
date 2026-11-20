@@ -186,11 +186,13 @@ again to change the keys at any time.
 
 ### 5. Own keys beat declared keys
 
-The driver's own keys (whistle's: selecting fields, moves, open, back to TYPE) always stay
-its own. A declared key that is one of them is ignored and listed in whistle's settings as a
-config problem; so is a declared chord.
+The driver's own keys (whistle's: selecting fields, moves, open, back to TYPE) stay its own
+while they're bound. A declared key that is one of them doesn't reach the field, and whistle's
+settings list it as a config problem naming the own key, so it never fails silently. It counts
+once the person unbinds that own key (in whistle.json), and the problem goes: then it is the
+field's like any declared key. A declared chord is always a config problem.
 
-```json example An own key beats a declared key, and the config problem is listed
+```json example An own key beats a declared key, and the config problem says how to free it
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -207,7 +209,7 @@ config problem; so is a declared chord.
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }],
-      "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, one of whistle's own keys; it's ignored" }] } }
+      "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, down's own key; it counts once you unbind down" }] } }
   ]
 }
 ```

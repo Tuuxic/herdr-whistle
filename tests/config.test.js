@@ -4,6 +4,7 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { IN_TERMINAL, withProps } from "./worlds.js";
+import { ACTIONS } from "./config.js";
 
 const json = (v) => JSON.stringify(v);
 // A world in a terminal: defaults with map added, a layout block with props, whistle.json.
@@ -18,6 +19,13 @@ const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }]
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 
 const SCENARIOS = [
+  {
+    name: "Every own key can be unbound in whistle.json, and the switch key still leaves WHISTLE",
+    world: world({ user: { keys: Object.fromEntries(Object.keys(ACTIONS).map((a) => [a, null])) } }),
+    steps: [...IN,
+      ...["enter", "i", "j", "ctrl-l", "escape", "backspace"].map((key) => ({ key, handled: false, effects: [], model: { mode: "whistle", problems: [] } })),
+      { command: "whistle", effects: TO_TYPE, model: { mode: "type" } }],
+  },
   {
     name: "A mapping in the defaults runs its command",
     world: world({ map: { n: ["Next tab", "tab.next"] } }),
