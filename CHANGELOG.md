@@ -16,6 +16,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
    `whistle-integration.md` whose `keynav.js` has `V = 2`, offer to adapt it to keynav v3
    (RECIPE.md, Integrate: replace its `keynav.js`, and its `open` move becomes `pick`). For a
    third-party mod with its own `keynav.js`, tell the person its author can update it.
+3. **Pick and Show**: for the spaces and agents clones in `whistle-integration.md`, offer to
+   make Enter go there and switch to TYPE, and Space show the item while staying in WHISTLE
+   (RECIPE.md, Integrate, Pick and Show). Record them in the mod rows' declared keys.
 
 ### You
 
@@ -36,6 +39,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   declares `enter` gets Enter (docs/guide.md, Unbinding an own key).
 - A field that declares one of whistle's own keys is still a config problem, which now names
   the own key and says the field's key counts once you unbind it.
+- **New**: integrated spaces and agents lists (RECIPE.md, Integrate) pick into TYPE: Enter
+  goes to the space or agent and you type there. Space shows the item while you stay in
+  WHISTLE with the list selected.
 
 ### Layout authors
 
