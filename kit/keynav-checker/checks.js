@@ -114,8 +114,8 @@ const RULES = [
       if (got !== want) fail(`declared(${json(command)}) gave ${json(got)}, want ${json(want)}`);
     }
   }],
-  ["terminal request", (h, s, fail) => request(h.toTerminal, "toTerminal", s, fail, "terminal")],
-  ["hold request", (h, s, fail) => request(h.keepKeys, "keepKeys", s, fail, "hold")],
+  ["terminal request", (h, s, fail) => request(h.toTerminal, "toTerminal", s, fail, { after: "terminal" }, '{ after: "terminal", at }')],
+  ["hold request", (h, s, fail) => request(h.keepKeys, "keepKeys", s, fail, { after: "hold" }, '{ after: "hold", at }')],
   // entered(self, key) is true once each time the driver selects the field, on the next render.
   ["entered", (h, s, fail) => {
     const key = fieldOf(fresh());
@@ -135,16 +135,16 @@ const RULES = [
 // How far a request's `at` may be from now (ms): it's Date.now() when the field asked.
 const AT_SLACK = 60000;
 
-// A request goes in the field's own slot as { after, at }, nothing else (v2's `to` and `hold` are
-// gone), with `at` the time it was made, in ms.
-function request(send, name, s, fail, after) {
+// A request goes in the field's own slot as `want` plus `at`, nothing else (v2's `to` and `hold`
+// are gone), with `at` the time it was made, in ms. `shape` says so in the failure.
+function request(send, name, s, fail, want, shape) {
   const key = fieldOf(fresh());
   const slot = `keynav.request:${key}`;
   const from = Date.now();
   send(key);
   const r = s.shared(slot);
-  const shaped = r && typeof r === "object" && r.after === after && Object.keys(r).every((k) => k === "after" || k === "at");
-  if (!shaped) { fail(`${name}(key) wrote ${json(r)} to "${slot}", want { after: ${json(after)}, at }`); return; }
+  const { at: _at, ...rest } = r && typeof r === "object" ? r : {};
+  if (!r || typeof r !== "object" || !same(rest, want)) { fail(`${name}(key) wrote ${json(r)} to "${slot}", want ${shape}`); return; }
   if (typeof r.at !== "number" || r.at < from - AT_SLACK || r.at > Date.now() + AT_SLACK) {
     fail(`${name}(key) wrote at ${json(r.at)}, want the time in ms (Date.now(), about ${from})`);
   }

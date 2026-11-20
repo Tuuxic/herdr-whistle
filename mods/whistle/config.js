@@ -32,11 +32,6 @@ export const ACTIONS = {
   cancel: { kind: "cancel", label: "Cancel a key sequence" },
 };
 
-// Own-key actions whistle no longer has: a layer that sets one is ignored and listed, with why.
-const GONE = {
-  back: "whistle has no back key any more; it's ignored (Escape ends a key sequence)",
-};
-
 // The own keys built into whistle's code, for when there are no defaults at all (mappings.json
 // missing or broken, with no last good version): WHISTLE never traps the keyboard.
 export const SAFETY = {
@@ -285,6 +280,11 @@ function badEntry(entry) {
   if (!isObject(entry.map)) return "its entry's map should be an object";
   return null;
 }
+
+// Own-key actions whistle no longer has: a layer that sets one is ignored and listed, with why.
+const GONE = {
+  back: "whistle has no back key any more; it's ignored (Escape ends a key sequence)",
+};
 
 // Own-key actions renamed, old name -> new: a layer that sets the old name is honoured as the
 // new one (unless it sets the new one too, which wins) and listed as a config problem.

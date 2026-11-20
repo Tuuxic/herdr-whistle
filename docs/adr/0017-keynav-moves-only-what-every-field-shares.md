@@ -1,7 +1,7 @@
 # Keynav moves carry only what every field shares
 
-Making Enter on a spaces or agents field land in TYPE, Space show an item without leaving
-WHISTLE, and Shift+Enter put an agent aside raised the question of where such behaviour goes.
+Making Enter on a spaces or agents field land in TYPE, and Space show an item without leaving
+WHISTLE, raised the question of where such behaviour goes.
 The first proposal added to keynav: a `{ to: "type" }` request and a `show` move. But TYPE is
 whistle's mode, not keynav's, which knows no modes, and every such feature would wait on a
 spec change. We decided to draw the line in three:
@@ -23,8 +23,7 @@ undoes rebinding.
 ## Consequences
 
 - Whistle's code doesn't change for this; RECIPE tells integrating agents how a clone picks
-  into TYPE and shows, and uses those names (GLOSSARY: Pick, Show). Putting an agent aside in
-  a split is not whistle's concern, and RECIPE doesn't offer it.
+  into TYPE and shows, and uses those names (GLOSSARY: Pick, Show).
 - Stock fields keep their behaviour: Pick on Herdr's own lists stays in WHISTLE.
 - Keynav v3 renames the move open to pick (`<mod>.keynav-pick`) and gives requests one shape,
   `{ after: "terminal" | "hold", at }`, in place of `{ to: "terminal" }` and `{ hold: true }`;

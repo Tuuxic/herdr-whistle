@@ -245,10 +245,12 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
   keynav mods (`spaces-whistle`, …) in a clone of your layout (`main-whistle`), so each gets a
   cursor that moves without picking (`enter` picks) and stays in view in a long list, a glow
   in the theme's `accent` while selected, and a few keys of its own (`n`, `r`, `x` on spaces
-  and tabs); files and changes become fields too. The layout's pane header is copied as well
-  (`pane-whistle`) and glows on the terminal whistle has selected while in WHISTLE, since the
-  bar holds the keyboard and Herdr's focus border can't show it. Your own layout and mods are
-  changed in place instead. Uninstall offers to undo it.
+  and tabs); files and changes become fields too. On the spaces and agents clones, Pick
+  (`enter`) lands you in TYPE in what you picked, and `space` is Show: it brings up the space
+  or agent while you stay in WHISTLE and keep moving (RECIPE.md, Pick and Show). The layout's
+  pane header is copied as well (`pane-whistle`) and glows on the terminal whistle has
+  selected while in WHISTLE, since the bar holds the keyboard and Herdr's focus border can't
+  show it. Your own layout and mods are changed in place instead. Uninstall offers to undo it.
 
 | Block | Keys | Herdr command | Pick (`enter`) |
 |---|---|---|---|
@@ -309,7 +311,7 @@ After integration the `spaces` block holds the clone, which announces itself thr
 ## Key names
 
 Whistle names keys the way Herdr's `keys.json` does: the key, with any modifiers in front,
-joined by `-` (`ctrl-h`, `alt-shift-x`, `super-k`, `shift-tab`, `f2`, `space`). Any spelling
+joined by `-` (`ctrl-h`, `alt-shift-x`, `super-k`, `shift-tab`, `f2`, `space`, `shift-space`). Any spelling
 Herdr accepts works, and comes down to one name:
 
 | You write | Whistle reads | Why |
@@ -320,6 +322,7 @@ Herdr accepts works, and comes down to one name:
 | `Ctrl-x`, `Enter`, `F2` | `ctrl-x`, `enter`, `f2` | modifiers and named keys in any case |
 | `ctrl-X` | `ctrl-shift-x` | an uppercase letter in a chord means Shift, as in Herdr |
 | `X`, `shift-x` | `X` | a key on its own is the character it types |
+| `shift-space` | `shift-space` | Shift+Space is its own key, not `space`, so you can map it |
 
 Write shifted punctuation as the character it types: `ctrl-?`, not `ctrl-shift-/`, since which
 key gives `?` depends on the keyboard layout. `option` and `fn` aren't modifiers (on macOS
