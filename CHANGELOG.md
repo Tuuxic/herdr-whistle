@@ -6,8 +6,20 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ## v1.1.0 (unreleased)
 
+### Upgrading
+
+1. **whistle.json**: if its `keys` section sets `"back"`, tell the person whistle has no back
+   key any more (the setting is ignored and listed as a config problem), and offer to remove
+   the line. Make no other change.
+
 ### You
 
+- **Removed**: the own key `back`. A key sequence has no step back any more: Escape ends it and
+  you start again. A config layer that still sets `"back"` is ignored and listed as a config
+  problem in whistle's settings.
+- **Changed**: Backspace is an ordinary key. Map it in `whistle.json`, and a keynav field may
+  declare it (a tree's "up a folder"); while such a field is selected, its key goes over your
+  mapping, as for any declared key.
 - **New**: unbinding an own key frees it. Set any own key to `null` or `[]` in whistle.json
   (the switch key still leaves WHISTLE); the freed key then belongs to a selected keynav field
   that declares it, or to your mapping where none does. With `open` unbound, a field that
@@ -17,6 +29,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ### Keynav authors
 
+- **Changed**: a field may declare Backspace. It is no longer one of whistle's own keys, so
+  declaring it is no longer a config problem.
 - Rule 5: a declared key that is one of whistle's own keys counts once the person unbinds that
   own key; until then it is a config problem naming the own key (docs/contracts/keynav.md).
 

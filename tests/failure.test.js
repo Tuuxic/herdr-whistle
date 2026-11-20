@@ -106,7 +106,7 @@ const SCENARIOS = [
         1: ["Space 1", "space.select:1"],
         m: ["A mod's", "picker.open"],
       },
-      keys: { fly: ["f"], type: ["q", "ctrl-"], back: "backspace" },
+      keys: { fly: ["f"], type: ["q", "ctrl-"], cancel: "escape" },
     }), commands: COMMANDS },
     steps: [...IN,
       { key: "p", effects: ran("tab.prev"), model: { problems: [
@@ -118,7 +118,7 @@ const SCENARIOS = [
         { source: "whistle.json", detail: "map › g: a group should be { name, map }" },
         { source: "whistle.json", detail: "keys › fly: unknown action" },
         { source: "whistle.json", detail: "keys › type: \"ctrl-\" isn't a key name" },
-        { source: "whistle.json", detail: "keys › back: should be a list of keys" },
+        { source: "whistle.json", detail: "keys › cancel: should be a list of keys" },
       ] } },
       { key: "x", effects: [], handled: false },
       { key: "w" }, { key: "q", effects: [{ run: "pane.focus", args: { pane: "p1" } }, ...ran("pane.close")] },

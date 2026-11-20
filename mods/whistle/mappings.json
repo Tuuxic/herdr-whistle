@@ -13,8 +13,7 @@
     "right": ["l", "right"],
     "open": ["enter"],
     "type": ["i"],
-    "cancel": ["escape", "ctrl-["],
-    "back": ["backspace"]
+    "cancel": ["escape", "ctrl-["]
   },
   "map": {
     "/": ["Go to tab or space", "mod.open:picker"],

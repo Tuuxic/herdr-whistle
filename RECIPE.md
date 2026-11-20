@@ -362,8 +362,8 @@ Then, without asking more:
    (Herdr asks for the name, and asks before closing a space). For other mods, declare keys
    for the mod's clear actions on one item (what its buttons or its menu do to an item),
    never a chord and never one of whistle's own keys (the `keys` in `mods/whistle/mappings.json`
-   and the person's `whistle.json`: `h`/`j`/`k`/`l`, the arrows, `enter`, `i`, `escape`,
-   `backspace` by default).
+   and the person's `whistle.json`: `h`/`j`/`k`/`l`, the arrows, `enter`, `i`, `escape`
+   by default).
 5. **The selected terminal's header**, as in
    [The selected terminal's header](#the-selected-terminals-header), with whistle's suggested
    look. On the simple path it counts among Herdr's blocks: do it with either answer.
