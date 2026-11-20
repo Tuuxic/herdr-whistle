@@ -34,7 +34,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
   spot's copy rests now holds only for layouts without an anchor.
 - **New**: a layout with more than one anchor keeps working: the first in layout order runs
-  whistle, and each other anchor stands aside and is listed as a config problem in settings.
+  whistle, and each other anchor is left out and listed as a config problem in settings.
+  Anchors with the same props can't tell which comes first, so all of them are left out, a
+  bar stands in, and settings list them; keep one.
 - **Changed**: in a layout with an anchor, the layout's config layer (`mappings`, `keys`,
   `mods`, `enabled`, `hints`, `nav`) is read from the anchor alone; on a bar these props are
   skipped and listed as a config problem. Bars keep `bar` and the hints' place props

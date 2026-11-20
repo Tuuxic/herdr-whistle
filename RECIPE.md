@@ -132,7 +132,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   `layout.hide` (only bars that were showing), and show them again once they run.
 - **Anchor and bar spots** (ADR 0018): each whistle block in a layout is a copy, told apart by
   its props (`props()`). In a layout with an anchor (`anchor: true`, 0 px), the first anchor
-  runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
+  (of those whose props no other anchor shares) runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
   Without an anchor, a bar stands in for it, and a copy whose block is hidden rests: TYPE, no
   claims, no state, no spot moves; only the shown spot's copy runs
   (docs/contracts/layout-block.md, rule 6).

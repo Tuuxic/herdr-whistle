@@ -91,7 +91,7 @@ export default suite("integrate", (t) => {
   t.check("the anchor is sized 0 px", anchor?.size, { px: 0 });
   t.check("the blocks are whistle's", bars(layout, "whistle").map((b) => b.id), added.map((b) => b.id));
   t.check("the blocks have no config problem", blockProps(layout, "whistle").problems, []);
-  t.check("the anchor drives, the bar only draws",
+  t.check("the anchor runs whistle, the bar only draws",
     [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
   const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
   t.check("with the bar hidden, the hints box docks at its spot", dock(hidden, "whistle", null), { place: {} });

@@ -419,15 +419,13 @@ straight away.
 }
 ```
 
-### 12. One anchor drives; a second stands aside
+### 12. One anchor runs whistle; any other is left out
 
 A layout has one anchor. If it has more, the first in layout order runs whistle and every
-other anchor stands aside like a bar's copy: it acts on no command, key or tick. Each extra
-anchor is a config problem in settings, so the mistake shows but costs nothing. Copies are
-told apart only by their props, so an extra anchor with exactly the first one's props can't
-tell it isn't the first: remove it.
+other anchor is left out like a bar's copy: it acts on no command, key or tick. Each extra
+anchor is a config problem in settings, so the mistake shows but costs nothing.
 
-```json example A second anchor stands aside and is listed as a config problem
+```json example A second anchor is left out and is listed as a config problem
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -462,7 +460,51 @@ tell it isn't the first: remove it.
   },
   "steps": [
     { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
-      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and stands aside; whistle-anchor runs whistle" }
+      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and is left out; whistle-anchor runs whistle" }
+    ] } }
+  ]
+}
+```
+
+Copies are told apart only by their props, so anchors with the same props can't tell which of
+them comes first. All of them are left out, so no key is ever handled twice, and the layout runs
+as if it had no anchor: a bar stands in for it (rule 6) and settings list the anchors. Keep one.
+
+```json example Anchors with the same props are all left out
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "twin-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
+    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } }
+  ]
+}
+```
+
+```json example With anchors that share their props, the bar stands in and lists them
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "twin-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "bar": "Bottom" },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
+      { "source": "layout", "detail": "anchor: whistle-anchor and twin-anchor have the same props, so they can't tell which comes first and all are left out; keep one" }
     ] } }
   ]
 }
@@ -527,19 +569,6 @@ A layout with no bar spot at all, only the anchor, docks the box at the window's
   ]
 }
 ```
-
-## Stable and may change
-
-- Stable: `anchor`, `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
-  `hintsAlignBorder`, `hintsGap`, and the rules above.
-- Private: `part`, which whistle sets on its own overlay copies. Don't write it.
-
-## History
-
-- whistle 1.0.0: first version. `nav` directions are `left`/`down`/`up`/`right` (they were
-  `h`/`j`/`k`/`l`); a bad prop is now listed instead of ignored. `hintsAlignRight` measures to
-  the bar block's outer edge, border included (it was to the bar's inside), and `hintsGap`
-  counts from the block's top border.
 
 ### 14. The layout's props come from the anchor; place props from the bar
 

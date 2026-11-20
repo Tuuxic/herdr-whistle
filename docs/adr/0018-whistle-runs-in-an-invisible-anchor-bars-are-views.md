@@ -19,8 +19,9 @@ takes focus, and gets plain keys and its `mod:whistle` keys.
 
 - A layout marks its anchor with the prop `anchor: true` (sized 0 px); a whistle block without
   it is a bar, so old layouts read unchanged.
-- One anchor drives a layout: the first in layout order; any others stand aside and are a
-  config problem.
+- One anchor runs whistle in a layout: the first in layout order; any others are left out and
+  are a config problem. Copies are told apart only by their props, so anchors with the same
+  props can't tell which comes first: all of them are left out and a bar stands in.
 - The layout's whistle props (`mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`) live on
   the anchor. Bars keep their spot name (`bar`) and the hints' place props (`hintsAlignRight`,
   `hintsAlignBorder`, `hintsGap`), which describe that bar's own position, plus their look.

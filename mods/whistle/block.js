@@ -60,26 +60,24 @@ function readNav(nav, known, problem) {
 
 // The props of this copy's blocks, checked: { props, problems: [detail] }. Each prop comes from
 // the first block that has it (a second bar needn't repeat the mappings); `bar` is each
-// block's own, so it is only checked here. In a layout with an anchor (ADR 0018), the
-// behaviour props (BEHAVIOUR) come from the first anchor alone and the place props (NUMBERS)
-// from the bars alone; either on the other kind of block is skipped and listed (a further
-// anchor's behaviour props are skipped unlisted: that anchor is the problem).
+// block's own, so it is only checked here. In a layout whose anchor runs whistle (ADR 0018,
+// anchors() below), the behaviour props (BEHAVIOUR) come from that anchor alone and the place
+// props (NUMBERS) from the bars alone; either on the other kind of block is skipped and listed.
+// An anchor that is left out counts for nothing, unlisted but for being one.
 export function blockProps(layout, folder = FOLDER) {
   const problems = [];
   const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
   const known = ids(layout);
   const props = {};
   const blocks = bars(layout, folder);
-  const anchor = blocks.find((b) => isAnchor(b.props)); // one of blocks: compared by identity below
+  const { runs, extra, twins } = anchors(blocks, folder); // of blocks: compared by identity below
   for (const b of blocks) {
+    const leftOut = isAnchor(b.props) && b !== runs;
     for (const [k, v] of Object.entries(b.props)) {
       if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
-      if (k === "part" || k === "anchor" || v === undefined) continue;
+      if (leftOut || k === "part" || k === "anchor" || v === undefined) continue;
       if (k === "bar") { if (typeof v !== "string") problem("bar should be the spot's name, a string"); continue; }
-      if (anchor && BEHAVIOUR.includes(k) && b !== anchor) {
-        if (!isAnchor(b.props)) problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`);
-        continue;
-      }
+      if (runs && BEHAVIOUR.includes(k) && b !== runs) { problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`); continue; }
       if (isAnchor(b.props) && NUMBERS.includes(k)) { problem(`${k}: the anchor's is skipped; put it on the bar it places`); continue; }
       if (k in props) continue;
       if (BOOLEANS.includes(k) && typeof v !== "boolean") problem(`${k} should be true or false`);
@@ -88,10 +86,12 @@ export function blockProps(layout, folder = FOLDER) {
       else props[k] = v;
     }
   }
-  const [first, ...extra] = anchors(layout, folder);
-  for (const b of extra) problem(`anchor: ${b.id} is a second anchor and stands aside; ${first.id} runs whistle`);
+  for (const b of extra) problem(`anchor: ${b.id} is a second anchor and is left out; ${runs.id} runs whistle`);
+  for (const group of twins) problem(`anchor: ${names(group.map((b) => b.id))} have the same props, so they can't tell which comes first and all are left out; keep one`);
   return { props, problems };
 }
+
+const names = (all) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all[0] ?? "");
 
 // Whether this copy rests (ADR 0011): every block of the layout with this copy's props (props(),
 // which tell the copies of a layout's spots apart) is hidden. Unknown props: it doesn't rest.
@@ -104,16 +104,32 @@ export function resting(layout, folder, props, hid = []) {
   return blocks.length > 0 && blocks.every((b) => b.hidden && !hid.includes(b.id));
 }
 
-// This copy's anchors (blocks with `anchor: true`), in layout order: the first drives (ADR 0018).
-const anchors = (layout, folder) => bars(layout, folder).filter((b) => isAnchor(b.props));
+// The anchors among this copy's blocks (bars(): those with `anchor: true`, ADR 0018), which copies tell apart only by
+// their props: { runs: the anchor that runs whistle, the first in layout order whose props no
+// other anchor shares | undefined, extra: the other anchors with props of their own, twins:
+// groups of anchors that share their props [[block]] }. Every anchor but `runs` is left out.
+function anchors(blocks, folder) {
+  const all = blocks.filter((b) => isAnchor(b.props));
+  const byKey = new Map();
+  for (const b of all) {
+    const k = fieldKey(folder, b.props);
+    byKey.set(k, [...(byKey.get(k) ?? []), b]);
+  }
+  const twins = [...byKey.values()].filter((g) => g.length > 1);
+  const runs = all.find((b) => byKey.get(fieldKey(folder, b.props)).length === 1);
+  return { runs, extra: all.filter((b) => b !== runs && byKey.get(fieldKey(folder, b.props)).length === 1), twins };
+}
 
-// Whether this copy is a view (ADR 0018): the layout has an anchor (a block of this copy with
-// `anchor: true`) and this copy's props aren't the first anchor's, so it is a bar's copy, which
-// only draws, or a further anchor, which stands aside the same way. Unknown props: it isn't.
+// Whether this copy is a view (ADR 0018), acting on nothing: the layout's anchor runs whistle
+// and this copy's props aren't that anchor's, so it is a bar's copy, which only draws, or another
+// anchor, left out the same way. With no anchor that runs, a copy with the props of anchors that
+// share them is left out too, and the bars stand in. Unknown props: it isn't.
 export function viewing(layout, folder, props) {
   if (props === undefined) return false;
-  const [first] = anchors(layout, folder);
-  return first !== undefined && fieldKey(folder, first.props) !== fieldKey(folder, isObject(props) ? props : {});
+  const mine = fieldKey(folder, isObject(props) ? props : {});
+  const { runs, twins } = anchors(bars(layout, folder), folder);
+  if (runs) return fieldKey(folder, runs.props) !== mine;
+  return twins.some((g) => fieldKey(folder, g[0].props) === mine);
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.
