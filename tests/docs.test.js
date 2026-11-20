@@ -4,7 +4,7 @@
 //     aren't followed;
 //   - docs/authors.md routes to the five contracts, the two helpers and the checker;
 //   - README names the keys outside WHISTLE, links the other docs, and drops what 1.0 dropped;
-//   - CHANGELOG's newest entry is VERSION's, dated, with its parts by audience;
+//   - CHANGELOG's newest released entry is VERSION's, dated, with its parts by audience;
 //   - CONTRIBUTING has the tests, the sandbox and the release checklist;
 //   - every workflow checks out with actions/checkout@v7 (Node 24).
 // The release script (scripts/release.sh) is checked by tests/run.sh itself: it's bash.
@@ -97,14 +97,22 @@ export default suite("docs", (t) => {
   for (const gone of ["Ctrl+[", "docks itself", "keynav.fields"])
     t.check(`README no longer says ${gone}`, readme.includes(gone), false);
 
-  // CHANGELOG.md: the newest entry is this version's, dated, grouped by audience (#16) with
-  // the installing agent's Upgrading note first.
+  // CHANGELOG.md: the newest released entry is this version's, dated, grouped by audience (#16)
+  // with the installing agent's Upgrading note first. Above it may sit one entry for the next
+  // version, "(unreleased)" until it is released, with the audiences it has so far, in order.
   const changelog = unfenced(texts["CHANGELOG.md"] ?? "");
-  const entries = [...changelog.matchAll(/^## (.*)$/gm)].map((m) => m[1]);
-  t.check("CHANGELOG's newest entry is this version's, dated", /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/.exec(entries[0] ?? "")?.[1], VERSION);
-  const newest = changelog.split(/^## /m)[1] ?? "";
-  t.check("the newest entry's parts", [...newest.matchAll(/^### (.*)$/gm)].map((m) => m[1]),
-    ["Upgrading", "You", "Layout authors", "Mod authors", "Keynav authors"]);
+  const parts = (entry) => [...entry.matchAll(/^### (.*)$/gm)].map((m) => m[1]);
+  const AUDIENCES = ["Upgrading", "You", "Layout authors", "Mod authors", "Keynav authors"];
+  let entries = changelog.split(/^## /m).slice(1);
+  const heading = (entry) => (entry ?? "").split("\n")[0];
+  const unreleased = (entry) => /^v\S+ \(unreleased\)$/.test(heading(entry));
+  if (unreleased(entries[0])) {
+    t.check("the unreleased entry's parts are audiences, in order", parts(entries[0]), AUDIENCES.filter((a) => parts(entries[0]).includes(a)));
+    t.check("there is one unreleased entry", entries.slice(1).some(unreleased), false);
+    entries = entries.slice(1);
+  }
+  t.check("CHANGELOG's newest released entry is this version's, dated", /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/.exec(heading(entries[0]))?.[1], VERSION);
+  t.check("the newest released entry's parts", parts(entries[0] ?? ""), AUDIENCES);
 
   // CONTRIBUTING.md has the release checklist (issue #30, item 3).
   const contributing = texts["CONTRIBUTING.md"] ?? "";

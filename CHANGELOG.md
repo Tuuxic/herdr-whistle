@@ -4,6 +4,28 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.1.0 (unreleased)
+
+### Upgrading
+
+1. **whistle.json**: if its `keys` section sets `"back"`, tell the person whistle has no back
+   key any more (the setting is ignored and listed as a config problem), and offer to remove
+   the line. Make no other change.
+
+### You
+
+- **Removed**: the own key `back`. A key sequence has no step back any more: Escape ends it and
+  you start again. A config layer that still sets `"back"` is ignored and listed as a config
+  problem in whistle's settings.
+- **Changed**: Backspace is an ordinary key. Map it in `whistle.json`, and a keynav field may
+  declare it (a tree's "up a folder"); while such a field is selected, its key goes over your
+  mapping, as for any declared key.
+
+### Keynav authors
+
+- **Changed**: a field may declare Backspace. It is no longer one of whistle's own keys, so
+  declaring it is no longer a config problem.
+
 ## v1.0.0 (2026-11-15)
 
 ### Upgrading
