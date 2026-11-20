@@ -48,6 +48,21 @@ the block's field, focus the block (show it, then select its field), or toggle i
 it). A mapping or a jump key can run one.
 _Avoid_: in-map verb, block command, action
 
+**Pick**:
+Acting on the item under a field's cursor; what that does is the field's to decide, such as
+going to a space, going to an agent and typing there, or flipping a setting. Enter by default.
+_Avoid_: open, select, activate, confirm
+
+**Show**:
+Bringing up the item under a field's cursor while keeping WHISTLE, to look at it without
+working in it; a field that offers it does so on Space.
+_Avoid_: preview, peek
+
+**Aside**:
+In a pane split off to the right of the tab, beside what you were working in, so a
+field can pick or show an agent there without leaving the tab.
+_Avoid_: split, side view, peek
+
 **Jump key**:
 A regular Herdr key that runs a verb from either mode and goes to WHISTLE, unless its verb says
 to keep the mode; not a switch key, since it never leaves WHISTLE, and not an own key.
