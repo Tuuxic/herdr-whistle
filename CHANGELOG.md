@@ -23,6 +23,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   size it 0 px and never hide it (docs/contracts/layout-block.md, The anchor). In a layout with
   an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
   spot's copy rests now holds only for layouts without an anchor.
+- **New**: a layout with more than one anchor keeps working: the first in layout order runs
+  whistle, and each other anchor stands aside and is listed as a config problem in settings.
 
 ## v1.1.0 (2026-11-20)
 

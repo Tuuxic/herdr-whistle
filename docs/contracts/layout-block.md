@@ -33,7 +33,7 @@ layout puts the bar, only the bar's own size inside any border, so a layout that
 in from the window's right edge, or draws a border around it, tells whistle by how much: the
 box is then as wide as the bar block, border included, ends where the block ends, and sits
 `hintsGap` above the block's top edge, border included (rule 7). With every bar hidden, the
-box docks where the picked spot would sit, by that spot's own `hints*` props (rule 12).
+box docks where the picked spot would sit, by that spot's own `hints*` props (rule 13).
 
 A layout may have several whistle blocks (bar spots). Each prop but `bar` comes from the first
 block, in layout order, that has it, so a second spot needn't repeat the mappings.
@@ -410,7 +410,56 @@ straight away.
 }
 ```
 
-### 12. With no bar shown, the hints box docks where the picked spot would sit
+### 12. One anchor drives; a second stands aside
+
+A layout has one anchor. If it has more, the first in layout order runs whistle and every
+other anchor stands aside like a bar's copy: it acts on no command, key or tick. Each extra
+anchor is a config problem in settings, so the mistake shows but costs nothing. Copies are
+told apart only by their props, so an extra anchor with exactly the first one's props can't
+tell it isn't the first: remove it.
+
+```json example A second anchor stands aside and is listed as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true, "hints": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
+    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
+    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+  ]
+}
+```
+
+```json example The first anchor runs whistle and lists the second as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
+      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and stands aside; whistle-anchor runs whistle" }
+    ] } }
+  ]
+}
+```
+
+### 13. With no bar shown, the hints box docks where the picked spot would sit
 
 Inside a group the hints box opens whether or not a bar shows. While a bar shows, it docks on
 that bar (rule 7). With every bar hidden, it docks where the picked spot (whistle.json's `bar`,
@@ -427,13 +476,12 @@ the window's bottom, 22 px high inside its border.
       { "id": "side-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": {
         "bar": "Side", "hintsAlignRight": 700, "hintsAlignBorder": 1, "hintsGap": 4 } } },
       { "id": "bottom-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
-        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
-      } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
     ] },
     "props": { "anchor": true },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 }
+    "viewport": { "width": 1000, "height": 600 },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
   },
   "steps": [
     { "command": "whistle" },
@@ -455,13 +503,12 @@ A layout with no bar spot at all, only the anchor, docks the box at the window's
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
-        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
-      } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
     ] },
     "props": { "anchor": true },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 }
+    "viewport": { "width": 1000, "height": 600 },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
   },
   "steps": [
     { "command": "whistle" },
