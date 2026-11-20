@@ -213,7 +213,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
 - In `scripts/sandbox.sh reset --whistle`, with an anchor (`anchor: true`, 0 px) added to the
   layout and the bar hidden: `ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl+H selects
-  a field, and `i` goes back to TYPE.
+  a field, and `i` goes back to TYPE. With the bar still hidden, `w` opens the hints box docked
+  where the bar would sit.
 - In settings, switching a mod off that offers mappings writes `"mods": { "<mod>": false }`
   into `whistle.json` and its mappings stop working within a second.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and

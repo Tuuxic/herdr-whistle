@@ -14,6 +14,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   the selected field and the key sequence; a bar shown again shows the current state.
   whistle.json's `bar` still picks which spot shows. Layouts without an anchor work as before:
   hiding their bar rests whistle.
+- **New**: with every bar hidden, the hints box still opens inside a group, docked where the
+  picked bar spot would sit, or at the window's bottom right in a layout with no bar spot.
 
 ### Layout authors
 
