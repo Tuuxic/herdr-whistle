@@ -6,8 +6,18 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ## v1.2.0 (unreleased)
 
+### Upgrading
+
+1. **The anchor**: for each of the person's layouts that has whistle's bar but no whistle
+   block with `anchor: true`, offer to add the anchor (RECIPE.md, Install step 7), by its
+   result: "the bar becomes optional: you can hide it and whistle keeps working". Yes: add it
+   just before the bar, as Integrate does. Herdr's own layouts are never edited.
+
 ### You
 
+- **New**: Install and Integrate put an anchor into your layout next to the bar: an invisible
+  block whistle runs in, so the bar is only an aid and can be hidden. Uninstall takes the
+  anchor out again.
 - **New**: in a layout with an anchor, the bar is optional. Hide every bar and whistle works
   the same: Ctrl+Space enters WHISTLE, mappings run, Ctrl+H/J/K/L select fields, jump keys
   work, and the whistle state is still published. Hiding the bar in WHISTLE keeps the mode,

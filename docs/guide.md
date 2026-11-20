@@ -610,7 +610,17 @@ the reason goes.
 
 ## The bar
 
-Whistle's bar is a thin strip the layout places (a block of the `whistle` mod). From the left:
+Whistle's bar is a thin strip the layout places (a block of the `whistle` mod). It is an aid
+that shows the mode and what has the keyboard; whistle itself runs in the layout's **anchor**,
+an invisible whistle block (`anchor: true`, 0 px; the layout-block contract's
+[The anchor](contracts/layout-block.md#the-anchor)). Install puts both in your layout. So the
+bar is optional: hide it (a jump key such as `"alt-b": "whistle.toggle-keep-mode:whistle"`, or
+`herdr-app do layout.hide '{"id":"whistle"}'`) and the switch key, mappings, field keys, jump
+keys and the hints box work the same; only the badge, the label and flashes go unseen until
+you show it again. In a layout without an anchor, the bar stands in for it, and hiding it
+switches whistle off there until it shows again.
+
+From the left:
 
 - **The mode badge**: `TYPE` or `WHISTLE`.
 - **What has the keyboard**: `Terminal`, in WHISTLE with the selected pane's title
