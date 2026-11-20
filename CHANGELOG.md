@@ -4,6 +4,22 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.1.0 (unreleased)
+
+### You
+
+- **New**: unbinding an own key frees it. Set any own key to `null` or `[]` in whistle.json
+  (the switch key still leaves WHISTLE); the freed key then belongs to a selected keynav field
+  that declares it, or to your mapping where none does. With `open` unbound, a field that
+  declares `enter` gets Enter (docs/guide.md, Unbinding an own key).
+- A field that declares one of whistle's own keys is still a config problem, which now names
+  the own key and says the field's key counts once you unbind it.
+
+### Keynav authors
+
+- Rule 5: a declared key that is one of whistle's own keys counts once the person unbinds that
+  own key; until then it is a config problem naming the own key (docs/contracts/keynav.md).
+
 ## v1.0.0 (2026-11-15)
 
 ### Upgrading

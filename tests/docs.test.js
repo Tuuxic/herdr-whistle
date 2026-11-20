@@ -4,7 +4,8 @@
 //     aren't followed;
 //   - docs/authors.md routes to the five contracts, the two helpers and the checker;
 //   - README names the keys outside WHISTLE, links the other docs, and drops what 1.0 dropped;
-//   - CHANGELOG's newest entry is VERSION's, dated, with its parts by audience;
+//   - CHANGELOG's newest released entry is VERSION's, dated, with its parts by audience; at
+//     most one "(unreleased)" entry for the next version sits above it;
 //   - CONTRIBUTING has the tests, the sandbox and the release checklist;
 //   - every workflow checks out with actions/checkout@v7 (Node 24).
 // The release script (scripts/release.sh) is checked by tests/run.sh itself: it's bash.
@@ -101,8 +102,11 @@ export default suite("docs", (t) => {
   // the installing agent's Upgrading note first.
   const changelog = unfenced(texts["CHANGELOG.md"] ?? "");
   const entries = [...changelog.matchAll(/^## (.*)$/gm)].map((m) => m[1]);
-  t.check("CHANGELOG's newest entry is this version's, dated", /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/.exec(entries[0] ?? "")?.[1], VERSION);
-  const newest = changelog.split(/^## /m)[1] ?? "";
+  // Work since the release gathers in one "## v<next> (unreleased)" entry on top.
+  const pending = / \(unreleased\)$/.test(entries[0] ?? "") ? 1 : 0;
+  t.check("CHANGELOG has at most one unreleased entry, on top", entries.slice(pending).filter((e) => / \(unreleased\)$/.test(e)), []);
+  t.check("CHANGELOG's newest released entry is this version's, dated", /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/.exec(entries[pending] ?? "")?.[1], VERSION);
+  const newest = changelog.split(/^## /m)[1 + pending] ?? "";
   t.check("the newest entry's parts", [...newest.matchAll(/^### (.*)$/gm)].map((m) => m[1]),
     ["Upgrading", "You", "Layout authors", "Mod authors", "Keynav authors"]);
 

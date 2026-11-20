@@ -19,7 +19,9 @@ const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: 
 const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
-const ACTIVE = { setShared: "keynav", value: { v: 2, active: KEY } };
+// The test defaults with whistle.json setting own keys (null: unbound) and, optionally, mappings.
+const unbound = (keys, map) => ({ configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: JSON.stringify({ keys, ...(map ? { map } : {}) }) } });
+const ACTIVE ={ setShared: "keynav", value: { v: 2, active: KEY } };
 
 const SCENARIOS = [
   // A field appearing.
@@ -91,9 +93,63 @@ const SCENARIOS = [
     world: { ...WORLD, shared: entry({ j: "Jump", x: "Cut" }) },
     steps: [...IN, { key: "ctrl-l" },
       { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }],
-        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, one of whistle's own keys; it's ignored" }] } },
+        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, down's own key; it counts once you unbind down" }] } },
       { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusBar: true }] },
       { tick: 120, bar: { marker: "⚠ 1" } }],
+  },
+  // Own keys the person unbinds (issue #44): a freed key is an ordinary key.
+  {
+    name: "With open unbound, Enter on a field that declares it is the field's key, listed in the hints, with no config problem",
+    world: { ...WORLD, ...unbound({ open: null }), shared: entry({ enter: "Go in" }) },
+    steps: [...IN,
+      { key: "ctrl-l", hints: { title: "Files", items: [{ key: "Enter", label: "Go in", group: false }] } },
+      { key: "enter", handled: true, effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "Open left without keys ([]) frees Enter the same way",
+    world: { ...WORLD, ...unbound({ open: [] }), shared: entry({ enter: "Go in" }) },
+    steps: [...IN, { key: "ctrl-l" },
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "With open unbound, Enter on a field that doesn't declare it reaches no field",
+    world: { ...WORLD, ...unbound({ open: null }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "enter", handled: false, effects: [] }],
+  },
+  {
+    name: "With open unbound, a whistle.json mapping on Enter runs where no selected field declares it",
+    world: { ...WORLD, ...unbound({ open: null }, { enter: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "enter", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+  },
+  {
+    name: "With down unbound, j on a field that declares it is the field's key, with no config problem",
+    world: { ...WORLD, ...unbound({ down: ["down"] }), shared: entry({ j: "Jump" }) },
+    steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "j", label: "Jump", group: false }] } },
+      { key: "j", effects: [{ run: "files.keynav-key-j", args: {} }, { focusBar: true }] },
+      { key: "down", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] },
+      { tick: 120, bar: { marker: null } }],
+  },
+  {
+    name: "With down unbound, j reaches no field that doesn't declare it, and a mapping on j runs instead",
+    world: { ...WORLD, ...unbound({ down: null }, { j: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
+    steps: [...IN, { key: "ctrl-l" }, { key: "j", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+  },
+  {
+    name: "With open bound, a field declaring Enter is a config problem naming open and how to free it; Enter still opens and the hints leave it out",
+    world: { ...WORLD, shared: entry({ enter: "Go in", d: "Delete" }) },
+    steps: [...IN,
+      { key: "ctrl-l", hints: { items: [{ key: "d", label: "Delete", group: false }] } },
+      { key: "enter", effects: [{ run: "files.keynav-open", args: {} }, { focusBar: true }],
+        model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares enter, open's own key; it counts once you unbind open" }] } }],
+  },
+  {
+    name: "Unbinding the own key a field declares takes its config problem away",
+    world: { ...WORLD, shared: entry({ enter: "Go in" }) },
+    steps: [...IN, { key: "ctrl-l" }, { tick: 120, bar: { marker: "⚠ 1" } },
+      { world: unbound({ open: null }), tick: 120, bar: { marker: null } },
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] }],
   },
   {
     name: "A key the field doesn't declare never reaches it",

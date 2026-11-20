@@ -185,6 +185,49 @@ first.
 | `cancel` | `escape` `ctrl-[` | End a key sequence (with none, nothing) |
 | `back` | `backspace` | Back one level in a key sequence |
 
+#### Unbinding an own key
+
+You can unbind any own key in your whistle.json ([Your config](#your-config)): `null` removes
+the action, `[]` leaves it with no keys. You can't get trapped: the switch key always leaves
+WHISTLE, even with every own key unbound.
+
+A key freed that way is an ordinary key. A selected keynav field that declares it gets it, and
+the hints list it with the field's label: with `open` unbound, a field that declares `enter`
+gets Enter. A field that doesn't declare it gets nothing, and a mapping may use the key
+wherever no selected field declares it. While the key is still an own key, a field declaring
+it is listed in settings as a config problem that names the own key, such as "Files (files)
+declares enter, open's own key; it counts once you unbind open".
+
+What else unbinding means is your choice: with `open` unbound, Enter on the terminal no longer
+goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists get no open.
+
+```json example With open unbound, Enter is the field's that declares it
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "top", "type": "row", "children": [
+        { "id": "main", "type": "block", "content": { "pane": {} } },
+        { "id": "files", "type": "block", "content": { "mod": "files" } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": {
+      "defaults": "{ \"keys\": { \"field-right\": [\"ctrl-l\"], \"open\": [\"enter\"], \"type\": [\"i\"] }, \"map\": {} }",
+      "user": "{ \"keys\": { \"open\": null } }"
+    },
+    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": { "enter": "Go in" } } }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-l",
+      "hints": { "title": "Files", "items": [{ "key": "Enter", "label": "Go in", "group": false }] } },
+    { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusBar": true }] },
+    { "tick": 120, "bar": { "marker": null } }
+  ]
+}
+```
+
 ## Fields
 
 A **field** is a part of the window whistle can select in WHISTLE. `ctrl-h/j/k/l` select the
