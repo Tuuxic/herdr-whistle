@@ -71,7 +71,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
+import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
@@ -449,11 +449,12 @@ function stillThere(model, world) {
 function requests(model, world) {
   if (model.mode !== "whistle" || !world.shared) return model;
   const f = fieldAt(world.layout, model.field, model.recent, world.shared);
-  const r = f?.kind === KEYNAV ? world.shared?.[requestKey(f.key)] : null;
-  const asks = f?.kind === KEYNAV ? requestOf(f, r) : null;
+  if (f?.kind !== KEYNAV) return model;
+  const r = world.shared[requestKey(f.key)];
+  const asks = requestOf(f, r);
   if (!asks || !(r.at > (model.requestAt ?? 0))) return model;
   const m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
-  return asks === TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;
+  return asks === AFTER_TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;
 }
 
 // whistle.focus waiting for the block it showed: selected once it shows, given up at the deadline.

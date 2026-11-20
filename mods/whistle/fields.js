@@ -27,19 +27,28 @@ export const STOCK_FIELDS = {
   agents: { label: "Agents", down: "agent.next", up: "agent.prev", pick: "terminal" },
 };
 
-// keynav's newest version (the driver's entry announces it), the versions whistle drives, and
-// the shared keys of a field's entry and request slot.
+// keynav's newest version (the driver's entry announces it), and what a request asks:
+// "terminal" (whistle selects the terminal on the pane the field focused) or "hold" (whistle
+// takes the keyboard back).
 export const KEYNAV_V = 3;
-export const KEYNAV_VERSIONS = [2, 3];
-// A move as a keynav field of its version reads it: pick was open before v3.
-export const moveFor = (field, move) => (move === "pick" && field.v === 2 ? "open" : move);
-// What a keynav field's request asks, read as its version writes it: "terminal" | "hold" | null
-// (not a request). v3: { after: "terminal" | "hold", at }; v2: { to: "terminal", at } |
-// { hold: true, at }.
+export const AFTER_TERMINAL = "terminal";
+export const AFTER_HOLD = "hold";
+// What differs between the keynav versions whistle drives, one row each, so dropping a version
+// is deleting its row. pick: the name the version gives the pick move (open before v3). asks:
+// what one of its requests asks, AFTER_TERMINAL | AFTER_HOLD | null (not a request).
+const VERSIONS = {
+  // v2: { to: "terminal", at } | { hold: true, at }.
+  2: { pick: "open", asks: (r) => (r.to === "terminal" ? AFTER_TERMINAL : r.hold === true ? AFTER_HOLD : null) },
+  // v3: { after: "terminal" | "hold", at }.
+  3: { pick: "pick", asks: (r) => (r.after === AFTER_TERMINAL || r.after === AFTER_HOLD ? r.after : null) },
+};
+export const KEYNAV_VERSIONS = Object.keys(VERSIONS).map(Number);
+// A move as a keynav field of its version reads it.
+export const moveFor = (field, move) => (move === "pick" ? VERSIONS[field.v]?.pick ?? move : move);
+// What a keynav field's request asks, read as its version writes it.
 export function requestOf(field, r) {
   if (!r || typeof r !== "object" || typeof r.at !== "number") return null;
-  if (field.v === 2) return r.to === "terminal" ? "terminal" : r.hold === true ? "hold" : null;
-  return r.after === "terminal" || r.after === "hold" ? r.after : null;
+  return VERSIONS[field.v]?.asks(r) ?? null;
 }
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
