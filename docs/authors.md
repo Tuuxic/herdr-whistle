@@ -30,7 +30,7 @@ import from another's). The contracts are the wire formats, not the helpers' fun
 
 ## Checking your field
 
-The [keynav checker](../kit/keynav-checker) checks your copy of `keynav.js` against keynav v2
+The [keynav checker](../kit/keynav-checker) checks your copy of `keynav.js` against keynav v3
 with `herdr-app check`:
 
 ```sh

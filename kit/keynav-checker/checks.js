@@ -1,5 +1,5 @@
 // The keynav checker's rules (docs/contracts/keynav.md): it plays the driver against a mod's
-// copy of keynav.js and names every rule of keynav v2 the copy breaks. The expected values are
+// copy of keynav.js and names every rule of keynav v3 the copy breaks. The expected values are
 // the contract's, written out here, never computed with the helper under check.
 //
 // checkKeynav(helper, store) -> [{ rule, why }], empty when the copy passes.
@@ -50,7 +50,7 @@ const RULES = [
     const got = h.announce(MOD, props, "Check", { d: "Delete" });
     if (got !== want) fail(`announce returned ${json(got)}, want the field key ${json(want)}`);
     const entry = s.shared(`keynav.field:${want}`);
-    const wanted = { v: 2, label: "Check", keys: { d: "Delete" } };
+    const wanted = { v: 3, label: "Check", keys: { d: "Delete" } };
     if (!same(entry, wanted)) fail(`announce wrote ${json(entry)} to "keynav.field:${want}", want ${json(wanted)}`);
   }],
   ["announce again", (h, s, fail) => {
@@ -74,8 +74,8 @@ const RULES = [
     h.toTerminal(key);
     h.keepKeys(key);
     const after = [s.shared("keynav.fields"), s.shared("keynav.request")];
-    if (!same(before[0], after[0])) fail("announce wrote v1's \"keynav.fields\"; v2 writes only the field's own entry");
-    if (!same(before[1], after[1])) fail("a request went to v1's \"keynav.request\"; v2 writes the field's own slot");
+    if (!same(before[0], after[0])) fail("announce wrote v1's \"keynav.fields\"; v3 writes only the field's own entry");
+    if (!same(before[1], after[1])) fail("a request went to v1's \"keynav.request\"; v3 writes the field's own slot");
   }],
   ["active", (h, s, fail) => {
     const key = fieldOf(fresh());
@@ -83,9 +83,9 @@ const RULES = [
     const was = s.shared("keynav");
     try {
       for (const [driver, field, want] of [
-        [{ v: 2, active: key }, key, true],
-        [{ v: 2, active: key }, other, false],
-        [{ v: 2, active: null }, key, false],
+        [{ v: 3, active: key }, key, true],
+        [{ v: 3, active: key }, other, false],
+        [{ v: 3, active: null }, key, false],
       ]) {
         s.setShared("keynav", driver);
         const got = h.isActive(field);
@@ -96,8 +96,8 @@ const RULES = [
   // The driver runs <mod>.keynav-<move>; the mod gets the command without its name.
   ["moves", (h, _s, fail) => {
     const cases = [
-      ["keynav-up", "up"], ["keynav-down", "down"], ["keynav-left", "left"], ["keynav-right", "right"], ["keynav-open", "open"],
-      ["keynav-key-d", null], ["keynav-key-j", null], ["keynav-", null], ["keynav-close", null], ["settings", null], [null, null],
+      ["keynav-up", "up"], ["keynav-down", "down"], ["keynav-left", "left"], ["keynav-right", "right"], ["keynav-pick", "pick"],
+      ["keynav-open", null], ["keynav-key-d", null], ["keynav-key-j", null], ["keynav-", null], ["keynav-close", null], ["settings", null], [null, null],
     ];
     for (const [command, want] of cases) {
       const got = h.move(command);
@@ -114,10 +114,8 @@ const RULES = [
       if (got !== want) fail(`declared(${json(command)}) gave ${json(got)}, want ${json(want)}`);
     }
   }],
-  ["terminal request", (h, s, fail) => request(h.toTerminal, "toTerminal", s, fail, (r) => r?.to === "terminal" && !("hold" in r),
-    '{ to: "terminal", at }')],
-  ["hold request", (h, s, fail) => request(h.keepKeys, "keepKeys", s, fail, (r) => r?.hold === true && !("to" in r),
-    "{ hold: true, at }")],
+  ["terminal request", (h, s, fail) => request(h.toTerminal, "toTerminal", s, fail, "terminal")],
+  ["hold request", (h, s, fail) => request(h.keepKeys, "keepKeys", s, fail, "hold")],
   // entered(self, key) is true once each time the driver selects the field, on the next render.
   ["entered", (h, s, fail) => {
     const key = fieldOf(fresh());
@@ -125,7 +123,7 @@ const RULES = [
     const was = s.shared("keynav");
     const renders = [[null, false], [key, true], [key, false], [null, false], [key, true]];
     try {
-      const got = renders.map(([active]) => { s.setShared("keynav", { v: 2, active }); return !!h.entered(self, key); });
+      const got = renders.map(([active]) => { s.setShared("keynav", { v: 3, active }); return !!h.entered(self, key); });
       const want = renders.map(([, w]) => w);
       if (!same(got, want)) {
         fail(`entered(self, key) over renders with active ${renders.map(([a]) => (a ? "key" : "null")).join(", ")} gave ${json(got)}, want ${json(want)}`);
@@ -137,14 +135,16 @@ const RULES = [
 // How far a request's `at` may be from now (ms): it's Date.now() when the field asked.
 const AT_SLACK = 60000;
 
-// A request goes in the field's own slot with `at` the time it was made, in ms.
-function request(send, name, s, fail, shaped, shape) {
+// A request goes in the field's own slot as { after, at }, nothing else (v2's `to` and `hold` are
+// gone), with `at` the time it was made, in ms.
+function request(send, name, s, fail, after) {
   const key = fieldOf(fresh());
   const slot = `keynav.request:${key}`;
   const from = Date.now();
   send(key);
   const r = s.shared(slot);
-  if (!r || !shaped(r)) { fail(`${name}(key) wrote ${json(r)} to "${slot}", want ${shape}`); return; }
+  const shaped = r && typeof r === "object" && r.after === after && Object.keys(r).every((k) => k === "after" || k === "at");
+  if (!shaped) { fail(`${name}(key) wrote ${json(r)} to "${slot}", want { after: ${json(after)}, at }`); return; }
   if (typeof r.at !== "number" || r.at < from - AT_SLACK || r.at > Date.now() + AT_SLACK) {
     fail(`${name}(key) wrote at ${json(r.at)}, want the time in ms (Date.now(), about ${from})`);
   }

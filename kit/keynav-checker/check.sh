@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks a field mod's keynav.js against keynav v2 (docs/contracts/keynav.md):
+# Checks a field mod's keynav.js against keynav v3 (docs/contracts/keynav.md):
 #
 #   bash kit/keynav-checker/check.sh path/to/your-mod
 #
@@ -23,6 +23,6 @@ cp "$target/keynav.js" "$dir/"
 
 out="$("$app" check "$dir" 2>&1)"
 status=$?
-if [ $status -eq 0 ]; then echo "PASS: $target/keynav.js speaks keynav v2"
+if [ $status -eq 0 ]; then echo "PASS: $target/keynav.js speaks keynav v3"
 else printf '%s\n' "$out"; echo "FAIL: $target/keynav.js ($app check exit $status)"; fi
 exit $status

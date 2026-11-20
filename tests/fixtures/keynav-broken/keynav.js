@@ -3,20 +3,20 @@
 //
 // keynav.js: make your mod a field that keyboard drivers (whistle is one) can select and drive.
 // Copy this file into your mod's folder (a mod can't import from another's). The contract is
-// the wire format in whistle's docs/contracts/keynav.md (keynav v2), not these functions,
+// the wire format in whistle's docs/contracts/keynav.md (keynav v3), not these functions,
 // which may change between releases.
 //
-// shared("keynav.field:<fieldKey>"):   { v: 2, label, keys: { <key>: <label> } }  this field's entry
-// shared("keynav.request:<fieldKey>"): { to: "terminal", at } | { hold: true, at } its request slot
-// shared("keynav"):                    { v: 2, active: fieldKey | null }           the driver's
-// commands to the mod: keynav-up, -down, -left, -right, -open, and keynav-key-<key> for a
+// shared("keynav.field:<fieldKey>"):   { v: 3, label, keys: { <key>: <label> } }  this field's entry
+// shared("keynav.request:<fieldKey>"): { after: "terminal" | "hold", at }          its request slot
+// shared("keynav"):                    { v: 3, active: fieldKey | null }           the driver's
+// commands to the mod: keynav-up, -down, -left, -right, -pick, and keynav-key-<key> for a
 // declared key (as the field wrote it).
 //
 // Without a driver nothing is ever active, and the mod works as it always does.
 
 import { shared, setShared } from "herdr";
 
-export const V = 2;
+export const V = 3;
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
 
@@ -32,7 +32,7 @@ export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
 
 // A field's entry: its label for the bar and its declared keys ({ d: "Delete" }), keys without
 // Ctrl, Alt or Super.
-export const entry = (label, keys = {}) => ({ v: 1, label, keys }); // BROKEN on purpose: v2 entries say v: 2
+export const entry = (label, keys = {}) => ({ v: 1, label, keys }); // BROKEN on purpose: v3 entries say v: 3
 
 // Announces this copy as a field, or changes its label or declared keys. Call it from render:
 // it writes only when the entry differs. Returns the field's key.
@@ -46,8 +46,8 @@ export function announce(mod, props, label, keys = {}) {
 // Whether the driver has this field selected now.
 export const isActive = (key) => shared("keynav")?.active === key;
 
-// The move a command asks for: "up", "down", "left", "right", "open"; null for any other.
-const MOVES = ["up", "down", "left", "right", "open"];
+// The move a command asks for: "up", "down", "left", "right", "pick"; null for any other.
+const MOVES = ["up", "down", "left", "right", "pick"];
 export const move = (c) => (typeof c === "string" && c.startsWith("keynav-") && MOVES.includes(c.slice(7)) ? c.slice(7) : null);
 
 // The declared key a command brings, as the field wrote it ("d"); null for any other.
@@ -62,6 +62,6 @@ export function entered(self, key) {
 }
 
 // After the field focused a terminal pane (an agent, say): the driver selects the terminal.
-export const toTerminal = (key) => setShared(requestKey(key), { to: "terminal", at: Date.now() });
+export const toTerminal = (key) => setShared(requestKey(key), { after: "terminal", at: Date.now() });
 // After the field moved the keyboard elsewhere (selected another space): the driver keeps it.
-export const keepKeys = (key) => setShared(requestKey(key), { hold: true, at: Date.now() });
+export const keepKeys = (key) => setShared(requestKey(key), { after: "hold", at: Date.now() });

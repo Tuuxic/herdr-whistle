@@ -11,7 +11,7 @@
     "down": ["j", "down"],
     "up": ["k", "up"],
     "right": ["l", "right"],
-    "open": ["enter"],
+    "pick": ["enter"],
     "type": ["i"],
     "cancel": ["escape", "ctrl-["]
   },
