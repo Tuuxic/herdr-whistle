@@ -19,6 +19,10 @@
 // own. A view draws on each render, which Herdr reruns when shared state changes. Settings change things by
 // writing whistle.json through config.js; the bar picks the change up on its next read
 // (ADR 0011).
+//
+// The anchor (ADR 0018), a whistle block with the prop `anchor: true` sized 0 px, draws nothing:
+// it runs the core and holds the keyboard in WHISTLE. In a layout with an anchor, a bar's copy
+// only draws; its core returns no effects (step.js), as Herdr hands it the anchor's commands too.
 
 import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec, props } from "herdr";
@@ -27,7 +31,7 @@ import * as herdr from "herdr";
 import { start, step, VIEWS, barKey } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
-import { renderBar } from "./bar.js";
+import { renderBar, renderAnchor } from "./bar.js";
 import { renderHints } from "./hints.js";
 import { renderSettings } from "./settings.js";
 import { HOME } from "./version.js";
@@ -190,13 +194,15 @@ export default class Whistle extends View {
     if (this.part === "settings") return renderSettings(shared(VIEWS.settings) ?? null, theme(), this.act, this.note);
     // Measured while drawing, where it is sure to be legal: the window's size, for the hints.
     this.viewport = call(() => globalThis.window?.viewport_size?.()) ?? this.viewport;
-    // Until the core first sets it (its first step), the bar draws empty.
-    const vm = shared(barKey(FOLDER)) ?? { badge: null, label: "", marker: null };
-    return renderBar(vm, theme(), this.handle, (e, cx) => {
+    const onKey = (e, cx) => {
       if (this.model.mode !== "whistle") return;
       const out = this.feed({ key: keyName(e) });
       if (out.handled) cx.stop_propagation();
       cx.notify();
-    }, (size) => { this.barSize = { width: size.width, height: size.height }; });
+    };
+    if (call(() => props()?.anchor) === true) return renderAnchor(this.handle, onKey);
+    // Until the core first sets it (its first step), the bar draws empty.
+    const vm = shared(barKey(FOLDER)) ?? { badge: null, label: "", marker: null };
+    return renderBar(vm, theme(), this.handle, onKey, (size) => { this.barSize = { width: size.width, height: size.height }; });
   }
 }
