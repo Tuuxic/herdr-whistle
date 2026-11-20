@@ -378,11 +378,12 @@ A claimed key acts as if pressed on the bar:
 Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
-2. **The layout's whistle block**: its `mappings` and `keys` props, for keys that suit that
-   layout's mods. The block's other props (`mods`, `enabled`, `hints`, `nav`, `bar`, and
-   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with the
+2. **The layout's anchor**: its `mappings` and `keys` props, for keys that suit that layout's
+   mods. Its other props (`mods`, `enabled`, `hints`, `nav`) and each bar's own (`bar`, and
+   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with that
    bar: `hintsAlignRight` is the px from the window's right edge to the bar block's outer edge,
-   its border included) are in [The layout's whistle block](contracts/layout-block.md).
+   its border included) are in [The layout's whistle block](contracts/layout-block.md). A
+   layout without an anchor keeps these props on its bar, which stands in for the anchor.
 3. **Yours**: `whistle.json` in Herdr's home (`~/.config/herdr-app/whistle.json`). Nothing
    replaces it.
 
@@ -454,7 +455,7 @@ layout. Your whistle.json and the layout can map over any of them, or set a key 
   bar flashes once when it first appears ("alpha's mappings have a problem, see settings"),
   but its marker doesn't count it: it's the mod's to fix, not your config's.
 - **Switching a mod off**: a `mods` section takes a mod's mappings out whole, in whistle.json
-  or the layout's whistle block (whistle.json's goes over the layout's):
+  or the layout's anchor (whistle.json's goes over the layout's):
 
 ```json
 { "mods": { "alpha": false } }
@@ -512,7 +513,7 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
 
 ## Switching whistle off
 
-`"enabled": false` in whistle.json (or in a layout's whistle block; yours wins) switches WHISTLE
+`"enabled": false` in whistle.json (or in a layout's anchor; yours wins) switches WHISTLE
 off: the switch key types into the terminal as if whistle weren't there, and the bar shows
 "Whistle off". `whistle.off` and `whistle.on` (bind them in keys.json, or map them) write that
 setting for you; `whistle.settings` opens the settings. Every command whistle answers to is in
@@ -651,10 +652,10 @@ it: the sequence so far and the group's name on top, with the key that cancels t
 name with a `+`. The box follows the sequence into nested groups and goes away when it ends,
 whether a mapping runs, the cancel key ends it or a key isn't mapped. Outside a sequence, while
 a [field](#fields) that declares keys of its own is selected, the box lists those keys instead,
-under the field's name. `"hints": false` in your whistle.json (or the layout's whistle block;
-yours wins) turns the box off. In a layout with an anchor, the box opens with every bar hidden
-too, docked where the bar spot whistle.json's `bar` picks would sit (the layout's first spot
-without one), or at the window's bottom right in a layout with no bar spot.
+under the field's name. `"hints": false` in your whistle.json (or the layout's anchor; yours
+wins) turns the box off. In a layout with an anchor, the box opens with every bar hidden too,
+docked where the bar spot whistle.json's `bar` picks would sit (the layout's first spot without
+one), or at the window's bottom right in a layout with no bar spot.
 
 ```json example Hints list the keys that can follow a group
 {
