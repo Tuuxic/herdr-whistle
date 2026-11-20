@@ -36,8 +36,10 @@ function modNodes(layout) {
 }
 const modsIn = (layout) => new Set(modNodes(layout).map((b) => b.content.mod));
 
-// The ids of this copy's blocks that show (not hidden themselves).
-export const ownBars = (world) => modNodes(world.layout).filter((b) => b.content.mod === world.folder && !b.hidden).map((b) => b.id);
+// The ids of this copy's bars that show (not hidden themselves): its blocks but its anchor,
+// which Herdr wouldn't run hidden (ADR 0018).
+export const ownBars = (world) => modNodes(world.layout)
+  .filter((b) => b.content.mod === world.folder && !b.hidden && b.content.props?.anchor !== true).map((b) => b.id);
 
 // The folder of the copy that runs: of this one and the announced copies in the layout,
 // mods/whistle/, else the first by name.

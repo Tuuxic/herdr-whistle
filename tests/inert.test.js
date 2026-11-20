@@ -18,7 +18,9 @@ const TWO = {
   copies: { "whistle": "1.0.0", "whistle-2": "1.0.0" },
 };
 // Herdr hands the copy in mods/whistle-2/ only the lines named after its folder.
-const RENAMED = { ...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
+// mods/whistle-2/'s anchor (ADR 0018).
+const ANCHOR2 = { id: "anchor2", type: "block", content: { mod: "whistle-2", props: { anchor: true } } };
+const RENAMED = {...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
 
 const SCENARIOS = [
   {
@@ -122,6 +124,17 @@ const SCENARIOS = [
         tick: 120, effects: [] },
       { world: { layout: { id: "root", type: "column", children: [term("main"), { ...bar2, hidden: true }] } },
         tick: 120, effects: [{ run: "layout.show", args: { id: "bar2" } }], bar: { badge: "TYPE" } },
+    ],
+  },
+  {
+    // ADR 0018: Herdr doesn't run a hidden block's copy, so a hidden anchor could never come back.
+    name: "An anchor standing aside hides its bars but never itself, and shows them again once it runs",
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION }, props: { anchor: true },
+      layout: { id: "root", type: "column", children: [term("main"), bar, bar2, ANCHOR2] } },
+    steps: [
+      { tick: 120, effects: [{ run: "layout.hide", args: { id: "bar2" } }] },
+      { world: { layout: { id: "root", type: "column", children: [term("main"), { ...bar2, hidden: true }, ANCHOR2] } },
+        tick: 120, effects: [{ run: "layout.show", args: { id: "bar2" } }] },
     ],
   },
   {
