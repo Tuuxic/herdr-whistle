@@ -14,8 +14,9 @@
 // Two more copies of this mod, known by their "part" prop, draw the views and run no core: the
 // hints window (part "hints") and the settings dialog (part "settings"). The core hands them
 // their view models (views.js) in private shared keys (ADR 0010) and opens and docks the hints
-// window, all as effects; the shell measures the window and the bar for it. A part copy draws
-// on each render, which Herdr reruns when shared state changes. Settings change things by
+// window, all as effects; the shell measures the window and the bar for it. The bar draws the
+// same way: from the model the core sets in this folder's bar key (step.js barKey), never its
+// own. A view draws on each render, which Herdr reruns when shared state changes. Settings change things by
 // writing whistle.json through config.js; the bar picks the change up on its next read
 // (ADR 0011).
 
@@ -23,7 +24,7 @@ import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec, props } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
-import { start, step, bar, VIEWS } from "./step.js";
+import { start, step, VIEWS, barKey } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
 import { renderBar } from "./bar.js";
@@ -189,7 +190,9 @@ export default class Whistle extends View {
     if (this.part === "settings") return renderSettings(shared(VIEWS.settings) ?? null, theme(), this.act, this.note);
     // Measured while drawing, where it is sure to be legal: the window's size, for the hints.
     this.viewport = call(() => globalThis.window?.viewport_size?.()) ?? this.viewport;
-    return renderBar(bar(this.model, this.world()), theme(), this.handle, (e, cx) => {
+    // Until the core first sets it (its first step), the bar draws empty.
+    const vm = shared(barKey(FOLDER)) ?? { badge: null, label: "", marker: null };
+    return renderBar(vm, theme(), this.handle, (e, cx) => {
       if (this.model.mode !== "whistle") return;
       const out = this.feed({ key: keyName(e) });
       if (out.handled) cx.stop_propagation();

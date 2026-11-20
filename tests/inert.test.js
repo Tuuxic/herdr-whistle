@@ -31,6 +31,21 @@ const SCENARIOS = [
     ],
   },
   {
+    // The bar draws only what its copy sets in its folder's key (#47), so an inert copy sets it too.
+    name: "An inert copy sets its bar's model, saying why, in its own folder's key, once",
+    world: OLD,
+    steps: [
+      { tick: 120, shared: { "whistle.bar:whistle": { badge: null, label: "", marker: null, problem: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } } },
+      { tick: 120, shared: { "whistle.bar:whistle": undefined } },
+    ],
+  },
+  {
+    name: "A copy standing aside for another sets its own folder's bar key, never the running copy's",
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION } },
+    steps: [{ tick: 120, shared: { "whistle.bar:whistle": undefined,
+      "whistle.bar:whistle-2": { badge: null, label: "", marker: null, problem: "Another whistle runs, from mods/whistle/" } } }],
+  },
+  {
     name: "On a Herdr older than the minimum, keys and a click on the bar don't enter WHISTLE",
     world: OLD,
     steps: [

@@ -91,7 +91,7 @@ const SCENARIOS = [
     steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW)] }],
   },
   {
-    name: "An inert copy closes its hints window and sets no views' models",
+    name: "An inert copy closes its hints window and sets no hints' or settings' models",
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { world: { herdr: "0.0.1" }, tick: 120,
       effects: [{ run: "pane.focus", args: { pane: "p1" } }], hintsWindow: [{ closeOverlay: "hints" }],
@@ -105,6 +105,16 @@ const SCENARIOS = [
       { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
       { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
+    ],
+  },
+  {
+    // The bar draws this key and computes nothing (#47); each folder's copy has its own key.
+    name: "The bar's model goes in its private shared key when it changes, and only then",
+    world: world(),
+    steps: [
+      { tick: 120, shared: { "whistle.bar:whistle": { badge: "TYPE", label: "Terminal", marker: null } } },
+      { tick: 120, shared: { "whistle.bar:whistle": undefined } },
+      { command: "whistle", shared: { "whistle.bar:whistle": { badge: "WHISTLE", label: "Terminal · zsh", marker: null } } },
     ],
   },
   {

@@ -25,7 +25,7 @@
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null,
 //          sent: the views' models last set in their shared keys and the hints window last
-//          opened, as JSON ({ hints, settings, box }; null: none yet / not open), and leftOpen:
+//          opened, as JSON ({ bar, hints, settings, box }; null: none yet / not open), and leftOpen:
 //          a hints window an earlier copy may have left open (Herdr makes a new copy when the
 //          layout changes), true when a copy starts, so its first step closes it }
 //
@@ -84,7 +84,7 @@ import { problems, hints, settings, hintsBox } from "./views.js";
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
-  enabled: true, published: null, sent: { hints: null, settings: null, box: null, leftOpen: true },
+  enabled: true, published: null, sent: { bar: null, hints: null, settings: null, box: null, leftOpen: true },
 });
 
 // This copy's folder (world.folder), its blocks' mod name.
@@ -543,7 +543,7 @@ function copiesTick(out, world, why) {
 
 export function step(model, input, world) {
   const why = inert(world);
-  if (why) return hintsClosed(stepped(model, input, world, why));
+  if (why) return barSent(hintsClosed(stepped(model, input, world, why)), world);
   if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);
   return publish(viewsSent(stepped(model, input, world, why), world), world);
 }
@@ -570,15 +570,18 @@ function stepped(model, input, world, why) {
 }
 
 // The private shared keys the views' models go in (ADR 0010): the hints window and the
-// settings dialog, whistle's own overlay copies, draw them.
+// settings dialog, whistle's own overlay copies, draw them. The bar draws its folder's key
+// (barKey): an inert copy sets its own, so it never overwrites the running copy's.
 export const VIEWS = { hints: "whistle.hints", settings: "whistle.settings" };
+export const barKey = (folder) => `whistle.bar:${folder}`;
 // The hints window's overlay name.
 const HINTS_OVERLAY = "hints";
 
 // After a step: the views' models set in their shared keys when they change, and the hints
 // window opened, moved or closed to match the hints (docked on the bar: views.js hintsBox).
 function viewsSent(out, world) {
-  const m = out.model, sent = m.sent ?? start().sent, effects = [...out.effects];
+  const barred = barSent(out, world);
+  const m = barred.model, sent = m.sent, effects = [...barred.effects];
   const h = hints(m, world), s = settings(m, world), hs = JSON.stringify(h), ss = JSON.stringify(s);
   if (hs !== sent.hints) effects.push({ setShared: VIEWS.hints, value: h });
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
@@ -590,11 +593,19 @@ function viewsSent(out, world) {
     box = JSON.stringify(spec);
     if (box !== sent.box) effects.push({ openOverlay: HINTS_OVERLAY, spec });
   } else if (sent.box || sent.leftOpen) effects.push({ closeOverlay: HINTS_OVERLAY });
-  if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return out;
-  return { ...out, model: { ...m, sent: { hints: hs, settings: ss, box, leftOpen: false } }, effects };
+  if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return barred;
+  return { ...barred, model: { ...m, sent: { ...sent, hints: hs, settings: ss, box, leftOpen: false } }, effects };
 }
 
-// An inert copy sets no shared keys; it only closes its hints window, if open.
+// After a step: the bar's model (bar()) set in this folder's bar key when it changes.
+function barSent(out, world) {
+  const sent = out.model.sent ?? start().sent;
+  const b = bar(out.model, world), bs = JSON.stringify(b);
+  if (bs === sent.bar) return out.model.sent ? out : { ...out, model: { ...out.model, sent } };
+  return { ...out, model: { ...out.model, sent: { ...sent, bar: bs } }, effects: [...out.effects, { setShared: barKey(folderOf(world)), value: b }] };
+}
+
+// An inert copy sets no shared keys but its bar's model (barSent); it closes its hints window, if open.
 function hintsClosed(out) {
   const sent = out.model.sent;
   if (!sent?.box && !sent?.leftOpen) return out;
