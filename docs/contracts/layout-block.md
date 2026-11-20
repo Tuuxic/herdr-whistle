@@ -39,7 +39,7 @@ box is then as wide as the bar block, border included, ends where the block ends
 `hintsGap` above the block's top edge, border included (rule 7).
 
 `mappings`, `keys`, `mods`, `enabled`, `hints` and `nav` are the layout's config layer and go
-on the anchor (rule 12). `bar` and the three `hints*` props describe a bar's own spot and go on
+on the anchor (rule 13). `bar` and the three `hints*` props describe a bar's own spot and go on
 each bar. In a layout without an anchor, a bar holds them all.
 
 A layout may have several whistle blocks (bar spots). Without an anchor, each prop but `bar`
@@ -418,7 +418,56 @@ straight away.
 }
 ```
 
-### 12. The layout's props come from the anchor; place props from the bar
+### 12. One anchor drives; a second stands aside
+
+A layout has one anchor. If it has more, the first in layout order runs whistle and every
+other anchor stands aside like a bar's copy: it acts on no command, key or tick. Each extra
+anchor is a config problem in settings, so the mistake shows but costs nothing. Copies are
+told apart only by their props, so an extra anchor with exactly the first one's props can't
+tell it isn't the first: remove it.
+
+```json example A second anchor stands aside and is listed as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true, "hints": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
+    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
+    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+  ]
+}
+```
+
+```json example The first anchor runs whistle and lists the second as a config problem
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
+      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" }
+  },
+  "steps": [
+    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
+      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and stands aside; whistle-anchor runs whistle" }
+    ] } }
+  ]
+}
+```
+
+### 13. The layout's props come from the anchor; place props from the bar
 
 In a layout with an anchor, the anchor holds the layout's config layer: `mappings`, `keys`,
 `mods`, `enabled`, `hints` and `nav` are read from it alone.
@@ -433,7 +482,7 @@ In a layout with an anchor, the anchor holds the layout's config layer: `mapping
       { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
         "mappings": { "z": ["Split", "pane.split"] }, "keys": { "type": ["q"] } } } }
     ] },
-    "props": { "anchor": true },
+    "props": { "anchor": true, "mappings": { "z": ["Split", "pane.split"] }, "keys": { "type": ["q"] } },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
@@ -485,7 +534,8 @@ they are skipped and listed.
         "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
       } } }
     ] },
-    "props": { "anchor": true },
+    "props": { "anchor": true, "hintsAlignRight": 50,
+      "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } } },
     "focused": { "pane": "p1", "terminal": "t1" },
     "viewport": { "width": 1000, "height": 600 },
     "barSize": { "width": 600, "height": 22 }

@@ -21,12 +21,14 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   size it 0 px and never hide it (docs/contracts/layout-block.md, The anchor). In a layout with
   an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
   spot's copy rests now holds only for layouts without an anchor.
+- **New**: a layout with more than one anchor keeps working: the first in layout order runs
+  whistle, and each other anchor stands aside and is listed as a config problem in settings.
 - **Changed**: in a layout with an anchor, the layout's config layer (`mappings`, `keys`,
   `mods`, `enabled`, `hints`, `nav`) is read from the anchor alone; on a bar these props are
   skipped and listed as a config problem. Bars keep `bar` and the hints' place props
   (`hintsAlignRight`, `hintsAlignBorder`, `hintsGap`), which on the anchor are skipped and
   listed. Layouts without an anchor read them all from the bar, as before
-  (docs/contracts/layout-block.md, rule 12).
+  (docs/contracts/layout-block.md, rule 13).
 
 ## v1.1.0 (2026-11-20)
 
