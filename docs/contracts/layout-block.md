@@ -317,7 +317,9 @@ The anchor is no field: the field keys pass it by.
 
 Herdr hands every whistle command and claimed key to every shown copy of whistle, so a bar's
 copy in a layout with an anchor acts on none of them, nor on its ticks: it draws the bar the
-anchor sets, so a key press is never handled twice.
+anchor sets, so a key press is never handled twice. The one thing it sets is its own measured
+size, in a private shared key of its spot (`whistle.barsize:<folder>:<bar>`), when it changes:
+the anchor docks the hints box by it (rules 7 and 13).
 
 ```json example A bar's copy in an anchored layout returns no effects for a command or a key
 {
@@ -337,6 +339,26 @@ anchor sets, so a key press is never handled twice.
     { "command": "key-ctrl-h", "effects": [], "published": null, "handled": false },
     { "command": "focus:main", "effects": [], "published": null, "handled": false },
     { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+  ]
+}
+```
+
+```json example A bar's copy in an anchored layout publishes its measured size when it changes
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "bar": "Bottom" },
+    "barSize": { "width": 600, "height": 22 }
+  },
+  "steps": [
+    { "tick": 120, "published": null, "effects": [{ "setShared": "whistle.barsize:whistle:Bottom", "value": { "width": 600, "height": 22 } }] },
+    { "tick": 120, "effects": [] },
+    { "world": { "barSize": { "width": 640, "height": 22 } }, "tick": 120,
+      "effects": [{ "setShared": "whistle.barsize:whistle:Bottom", "value": { "width": 640, "height": 22 } }] }
   ]
 }
 ```
@@ -516,8 +538,9 @@ Inside a group the hints box opens whether or not a bar shows. While a bar shows
 that bar (rule 7). With every bar hidden, it docks where the picked spot (whistle.json's `bar`,
 else the layout's first whistle block that isn't the anchor) would sit, lined up by that
 spot's own `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`. Whistle can't measure a hidden
-block, so it takes the spot as reaching from the window's left edge to `hintsAlignRight`, along
-the window's bottom, 22 px high inside its border.
+block, so it takes the size that spot's bar last published (rule 9); for a spot that hasn't
+shown yet, it takes the spot as reaching from the window's left edge to `hintsAlignRight`,
+along the window's bottom, 22 px high inside its border.
 
 ```json example Anchored with every bar hidden, the hints box docks on the first spot's place
 {
@@ -545,6 +568,37 @@ the window's bottom, 22 px high inside its border.
 
 The spot's block is 1000 − 700 = 300 px wide, border included, and 22 + 2 × 1 = 24 px high, so
 the box (50 px, one row) ends 4 px above it: 600 − 24 − 4 − 50 = 522.
+
+
+A spot's bar publishes its measured size whenever it shows (rule 9), so a spot that has shown
+before docks the box by the size it had then:
+
+```json example Anchored with every bar hidden, the hints box docks by the size the picked spot last had
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "side-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": {
+        "bar": "Side", "hintsAlignRight": 200, "hintsAlignBorder": 1, "hintsGap": 4 } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "viewport": { "width": 1000, "height": 600 },
+    "barSizes": { "Side": { "width": 400, "height": 30 } },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
+      "mod": "whistle", "kind": "window", "frame": "none", "width": 402, "height": 50,
+      "at": { "x": 398, "y": 514 }, "props": { "part": "hints", "width": 402 } } }] }
+  ]
+}
+```
+
+The box is 400 + 2 × 1 = 402 px wide and starts at 1000 − 200 − 402 = 398; the block is
+30 + 2 × 1 = 32 px high, so the box ends 4 px above it: 600 − 32 − 4 − 50 = 514.
 
 A layout with no bar spot at all, only the anchor, docks the box at the window's bottom right:
 480 px wide (the window's width, if narrower), 6 px in from the bottom and right edges.
@@ -641,7 +695,7 @@ they are skipped and listed.
       "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } } },
     "focused": { "pane": "p1", "terminal": "t1" },
     "viewport": { "width": 1000, "height": 600 },
-    "barSize": { "width": 600, "height": 22 }
+    "barSizes": { "Bottom": { "width": 600, "height": 22 } }
   },
   "steps": [
     { "command": "whistle",

@@ -135,19 +135,26 @@ export function viewing(layout, folder, props) {
 // The bar spots: this copy's blocks named by a `bar` prop.
 export const spots = (layout, folder) => bars(layout, folder).filter((b) => typeof b.props.bar === "string");
 
-// Where the hints box docks (ADR 0018): { shown: true } while one of this copy's bars (its
-// blocks but the anchor) shows; with every bar hidden, { place } of the spot that would show
-// (pick: whistle.json's `bar`, else the first bar in layout order), its own placement props;
-// with no bar at all, { none: true }.
+// Where the hints box docks (ADR 0018): { spot: the bar block it lines up with | null, shown }.
+// The first of this copy's bars (its blocks but the anchor) that shows; with every bar hidden,
+// the spot that would show (pick: whistle.json's `bar`, else the first bar in layout order),
+// not shown; with no bar at all, no spot.
 export function dock(layout, folder, pick) {
   const all = bars(layout, folder).filter((b) => !isAnchor(b.props));
-  if (all.some((b) => !b.hidden)) return { shown: true };
-  const spot = all.find((b) => pick != null && b.props.bar === pick) ?? all[0];
-  if (!spot) return { none: true };
-  const place = {};
-  for (const k of NUMBERS) if (Number.isFinite(spot.props[k])) place[k] = spot.props[k];
-  return { place };
+  const shown = all.find((b) => !b.hidden);
+  if (shown) return { spot: shown, shown: true };
+  return { spot: all.find((b) => pick != null && b.props.bar === pick) ?? all[0] ?? null, shown: false };
 }
+
+// A block's place props (NUMBERS) as it writes them, the bad ones left out.
+export function placeOf(props) {
+  const place = {};
+  for (const k of NUMBERS) if (Number.isFinite(props?.[k])) place[k] = props[k];
+  return place;
+}
+
+// The spot a bar's props name (its `bar`), "" for a bar that names none.
+export const spotName = (props) => (typeof props?.bar === "string" ? props.bar : "");
 
 // whistle.json's `enabled`, `hints` and `bar` over the layout's props: { settings, problems }.
 // settings: { enabled, hints, nav, bar: the spot whistle.json picks | null, place: the hints'

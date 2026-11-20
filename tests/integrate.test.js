@@ -94,7 +94,7 @@ export default suite("integrate", (t) => {
   t.check("the anchor runs whistle, the bar only draws",
     [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
   const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
-  t.check("with the bar hidden, the hints box docks at its spot", dock(hidden, "whistle", null), { place: {} });
+  t.check("with the bar hidden, the hints box docks at its spot", [dock(hidden, "whistle", null).spot?.id, dock(hidden, "whistle", null).shown], [bar?.id, false]);
   t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
   t.check("Uninstall removes the anchor", /`anchor: true`/.test(recipeSection("Uninstall")), true);
   t.check("Done when: the hand check with the bar hidden",

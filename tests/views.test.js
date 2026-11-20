@@ -110,9 +110,16 @@ const SCENARIOS = [
   },
   {
     name: "Anchored with a bar shown, the hints window docks on that bar as without an anchor",
-    world: { ...anchored({ side: false, top: true }), viewport: { width: 1000, height: 600 }, barSize: { width: 296, height: 22 },
+    // The anchor draws no bar, so it docks by the size the shown bar's copy published.
+    world: { ...anchored({ side: false, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Side: { width: 296, height: 22 } },
       configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
     steps: [...IN, { key: "w", hintsWindow: [HINTS(298, ONE_ROW, { x: 1000 - 700 - 298, y: 600 - 24 - 4 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with every bar hidden, the hints window docks by the size the picked spot's bar last published",
+    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Top: { width: 500, height: 30 } },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(500, ONE_ROW, { x: 1000 - 100 - 500, y: 600 - 30 - 2 - ONE_ROW })] }],
   },
   {
     name: "Anchored with no bar spot, the hints window docks at the window's bottom right, no wider than the window",

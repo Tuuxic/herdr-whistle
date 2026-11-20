@@ -54,7 +54,10 @@
 //          props: this copy's block props (props()), which tell the bar spots' copies apart
 //                 | undefined (unknown),
 //          viewport: the window's drawable size { width, height } | null (not measured),
-//          barSize: the bar's drawn size { width, height } | null (not measured),
+//          barSize: this copy's bar's drawn size { width, height } | null (not measured, or
+//                   no bar: the anchor draws none),
+//          barSizes: the size each of this copy's bars last published, by its spot (spotName:
+//                    its `bar`, "" for none): { "<spot>": { width, height } | null },
 //          home: Herdr's home folder (appHome()) | undefined (unknown) }
 //
 // effects, a closed set of data:
@@ -76,7 +79,7 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots, resting, viewing, dock } from "./block.js";
+import { blockProps, settings as blockSettings, spots, resting, viewing, dock, placeOf, spotName, isAnchor } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
@@ -84,7 +87,7 @@ import { problems, hints, settings, hintsBox } from "./views.js";
 export const start = () => ({
   mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
-  enabled: true, published: null, sent: { bar: null, hints: null, settings: null, box: null, leftOpen: true },
+  enabled: true, published: null, sent: { bar: null, hints: null, settings: null, box: null, size: null, leftOpen: true },
 });
 
 // This copy's folder (world.folder), its blocks' mod name.
@@ -542,6 +545,10 @@ function copiesTick(out, world, why) {
 }
 
 export function step(model, input, world) {
+  return sizeSent(routed(model, input, world), world);
+}
+
+function routed(model, input, world) {
   // A bar's copy in a layout with an anchor only draws (ADR 0018): Herdr hands it every command
   // and claimed key the anchor gets, so it acts on none of them.
   if (viewing(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
@@ -559,7 +566,7 @@ function rest(closed, input, world) {
   const out = "wrote" in input ? wrote(closed.model, world, input) : { model: closed.model, effects: [] };
   const m = out.model;
   const quiet = m.mode === "type" && m.published === null && m.sent.hints === null && m.sent.settings === null;
-  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, leftOpen: false } };
+  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, size: m.sent.size, leftOpen: false } };
   return { model, effects: [...closed.effects, ...out.effects], handled: false };
 }
 
@@ -577,6 +584,9 @@ function stepped(model, input, world, why) {
 // (barKey): an inert copy sets its own, so it never overwrites the running copy's.
 export const VIEWS = { hints: "whistle.hints", settings: "whistle.settings" };
 export const barKey = (folder) => `whistle.bar:${folder}`;
+// The private shared key a bar's copy publishes its drawn size in, by its spot (block.js
+// spotName), for the copy that docks the hints box on it (the anchor's).
+export const barSizeKey = (folder, props) => `whistle.barsize:${folder}:${spotName(props)}`;
 // The hints window's overlay name.
 const HINTS_OVERLAY = "hints";
 
@@ -590,7 +600,8 @@ function viewsSent(out, world) {
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;
   if (h) {
-    const b = hintsBox(h.items, m.config?.place ?? {}, world, dock(world.layout, folderOf(world), m.config?.bar));
+    const d = dock(world.layout, folderOf(world), m.config?.bar);
+    const b = hintsBox(h.items, world, d.spot && { place: d.shown ? m.config?.place ?? {} : placeOf(d.spot.props), size: sizeOf(d.spot, world) });
     const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
@@ -598,6 +609,20 @@ function viewsSent(out, world) {
   } else if (sent.box || sent.leftOpen) effects.push({ closeOverlay: HINTS_OVERLAY });
   if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return barred;
   return { ...barred, model: { ...m, sent: { ...sent, hints: hs, settings: ss, box, leftOpen: false } }, effects };
+}
+
+// A bar's drawn size: this copy's own, measured, unless it is the anchor (which draws no bar),
+// else the size the spot's copy last published.
+const sizeOf = (spot, world) => (!isAnchor(world.props) && world.barSize) || world.barSizes?.[spotName(spot.props)] || null;
+
+// After every step of a bar's copy (whatever it does: running, resting, inert or only
+// drawing): its measured size published in its spot's key when it changes.
+function sizeSent(out, world) {
+  if (!world.barSize || isAnchor(world.props)) return out;
+  const sent = out.model.sent ?? start().sent, size = JSON.stringify(world.barSize);
+  if (size === sent.size) return out;
+  return { ...out, model: { ...out.model, sent: { ...sent, size } },
+    effects: [...out.effects, { setShared: barSizeKey(folderOf(world), world.props), value: world.barSize }] };
 }
 
 // After a step: the bar's model (bar()) set in this folder's bar key when it changes.

@@ -140,7 +140,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
   two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
   and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
-  sizes the shell measures) and closes the hints window, as effects. Settings
+  sizes the shell measures) and closes the hints window, as effects. Each bar's copy
+  publishes its drawn size in `whistle.barsize:<folder>:<bar>`, so the anchor, which draws no
+  bar, docks the box on the bar that shows, or on the picked spot's last size with every bar
+  hidden. Settings
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.
