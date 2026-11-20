@@ -4,7 +4,9 @@
 //     aren't followed;
 //   - docs/authors.md routes to the five contracts, the two helpers and the checker;
 //   - README names the keys outside WHISTLE, links the other docs, and drops what 1.0 dropped;
-//   - CHANGELOG's newest entry is VERSION's, dated, with its parts by audience;
+//   - CHANGELOG's entry for VERSION is the newest released one, dated, or (once VERSION is
+//     bumped) the unreleased one on top; it has its parts by audience; at
+//     most one "(unreleased)" entry, on top;
 //   - CONTRIBUTING has the tests, the sandbox and the release checklist;
 //   - every workflow checks out with actions/checkout@v7 (Node 24).
 // The release script (scripts/release.sh) is checked by tests/run.sh itself: it's bash.
@@ -97,12 +99,19 @@ export default suite("docs", (t) => {
   for (const gone of ["Ctrl+[", "docks itself", "keynav.fields"])
     t.check(`README no longer says ${gone}`, readme.includes(gone), false);
 
-  // CHANGELOG.md: the newest entry is this version's, dated, grouped by audience (#16) with
+  // CHANGELOG.md: this version's entry, grouped by audience (#16) with
   // the installing agent's Upgrading note first.
   const changelog = unfenced(texts["CHANGELOG.md"] ?? "");
   const entries = [...changelog.matchAll(/^## (.*)$/gm)].map((m) => m[1]);
-  t.check("CHANGELOG's newest entry is this version's, dated", /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/.exec(entries[0] ?? "")?.[1], VERSION);
-  const newest = changelog.split(/^## /m)[1] ?? "";
+  // Work since the release gathers in one "## v<next> (unreleased)" entry on top. Once
+  // VERSION is bumped to <next>, that entry is this version's, dated at the release.
+  const pending = / \(unreleased\)$/.test(entries[0] ?? "") ? 1 : 0;
+  t.check("CHANGELOG has at most one unreleased entry, on top", entries.slice(pending).filter((e) => / \(unreleased\)$/.test(e)), []);
+  const bumped = pending && entries[0] === `v${VERSION} (unreleased)`;
+  const own = bumped ? 0 : pending;
+  t.check("CHANGELOG's newest entry for this version is it, dated or unreleased on top",
+    (bumped ? /^v(\S+) \(unreleased\)$/ : /^v(\S+) \(\d{4}-\d{2}-\d{2}\)$/).exec(entries[own] ?? "")?.[1], VERSION);
+  const newest = changelog.split(/^## /m)[1 + own] ?? "";
   t.check("the newest entry's parts", [...newest.matchAll(/^### (.*)$/gm)].map((m) => m[1]),
     ["Upgrading", "You", "Layout authors", "Mod authors", "Keynav authors"]);
 

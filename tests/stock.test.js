@@ -28,7 +28,7 @@ const stays = (field, key) => ({
   steps: [{ key, handled: true, effects: [], model: { mode: "whistle", field } }],
 });
 
-// Open (and l) on the agents field: WHISTLE goes on to the terminal field, at the pane the
+// Pick (and l) on the agents field: WHISTLE goes on to the terminal field, at the pane the
 // agent shows.
 const toTerminal = (key) => ({
   name: `${key} on the stock agents field goes on to the terminal, at the agent's pane`,

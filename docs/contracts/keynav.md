@@ -2,7 +2,7 @@
 
 For mod authors who want their mod to be a **field**: a part of the window a keyboard driver
 (whistle is one) can select, move around in and send keys to, without the mod knowing the
-driver or the driver knowing the mod. Current version: **`v: 2`**.
+driver or the driver knowing the mod. Current version: **`v: 3`**.
 
 Use `keynav.js`: copy `mods/whistle/keynav.js` into your mod's folder. Call
 `announce(mod, props, label, keys)` when you draw, read `move(command)` and
@@ -18,11 +18,26 @@ if (entered(this, key)) this.cursor = 0;
 const showCursor = isActive(key);
 
 // a command:
-const m = move(command);      // "up" | "down" | "left" | "right" | "open" | null
+const m = move(command);      // "up" | "down" | "left" | "right" | "pick" | null
 const k = declared(command);  // "d" | "r" | null
 ```
 
 Whistle needs nothing from your mod beyond this, and your mod works the same without whistle.
+
+## What goes where
+
+Keynav carries only what every kind of field shares ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)):
+
+- **Moves**: up, down, left, right and **pick** (act on the item under the cursor: what that
+  does is your field's to decide). The terminal and stock fields have them too.
+- **Declared keys**: everything your field does on its own, such as Space to show an item or
+  `d` to delete one.
+- **The driver's public commands and state**: anything driver-specific. A field whose pick
+  should land in whistle's TYPE runs `whistle.type` after picking (docs/contracts/commands.md);
+  in TYPE it does nothing, so the field needs no check of the mode.
+
+Keynav never grows a request or a move for one driver's behaviour, and a request never names
+another field: moving between fields is the driver's job.
 
 ## Shapes
 
@@ -34,7 +49,7 @@ order), and no spaces (`files {}`, `tree {"root":"~"}`, `tree {"roots":[{"at":"~
 
 | Field | Type | Meaning |
 |---|---|---|
-| `v` | `2` | The contract's version. |
+| `v` | `3` | The contract's version. |
 | `label` | string | The field's name, shown in the driver's bar while it's selected. |
 | `keys` | `{ <key>: <label> }` | The field's **declared keys** and their labels for the hints. Keys are named as in whistle's guide (Key names), with no Ctrl, Alt or Super. `{}` declares none. |
 
@@ -42,35 +57,36 @@ order), and no spaces (`files {}`, `tree {"root":"~"}`, `tree {"roots":[{"at":"~
 
 | Value | Meaning |
 |---|---|
-| `{ to: "terminal", at }` | The field focused a terminal pane (an agent, say): the driver should select the terminal, on that pane. |
-| `{ hold: true, at }` | The field moved the keyboard somewhere (another space): the driver should keep it. |
+| `{ after: "terminal", at }` | The field focused a terminal pane (an agent, say): the driver should select the terminal, on that pane. |
+| `{ after: "hold", at }` | The field moved the keyboard somewhere (another space): the driver should keep it. |
 
-`at` is the time of the request in ms (`Date.now()`); a driver acts on each request once.
+`at` is the time of the request in ms (`Date.now()`); a driver acts on each request once. A
+later kind of request would be a new value of `after`, not a new shape.
 
 `shared("keynav")`, the driver's entry, written by the driver:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `v` | `2` | The contract's version. |
+| `v` | `3` | The newest version the driver speaks. |
 | `active` | string \| `null` | The selected field's key while the driver holds the keyboard, else `null`. |
 
 Commands the driver runs on the field's mod: `<mod>.keynav-up`, `-down`, `-left`, `-right`,
-`-open`, and `<mod>.keynav-key-<key>` for a declared key, with `<key>` as the field wrote it.
+`-pick`, and `<mod>.keynav-key-<key>` for a declared key, with `<key>` as the field wrote it.
 
-Fields added later under `v: 2` are optional; both sides ignore fields they don't know.
+Fields added later under `v: 3` are optional; both sides ignore fields they don't know.
 
 ## Rules
 
 The examples below run as tests: each is a scenario through whistle's core. `shared` in the
 world holds the shared state as whistle reads it, by key.
 
-### 1. A mod's block is a field once its entry says `v: 2`
+### 1. A mod's block is a field once its entry says `v: 3`
 
 The driver finds fields from the blocks in the layout and looks up each one's entry. A block
 whose mod hasn't announced (or announced another `v`) isn't a field. Entries for blocks no
 longer in the layout are ignored, so a field never has to clean up after itself.
 
-```json example A field appearing: its block is a field once its entry says v 2
+```json example A field appearing: its block is a field once its entry says v 3
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -85,8 +101,8 @@ longer in the layout are ignored, so a field never has to clean up after itself.
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
-    { "world": { "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
-      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": "files {}" } }],
+    { "world": { "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
       "model": { "field": "files" }, "bar": { "label": "Files" } }
   ]
 }
@@ -112,22 +128,23 @@ whether the terminal is selected, read `onTerminal` in whistle state (docs/contr
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
-      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": "files {}" } }] },
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }] },
     { "command": "whistle",
-      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "setShared": "keynav", "value": { "v": 2, "active": null } }] }
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "setShared": "keynav", "value": { "v": 3, "active": null } }] }
   ]
 }
 ```
 
 ### 3. Moves arrive as `<mod>.keynav-<move>`
 
-Up, down, left, right and open. At its edge a field decides what to do; nothing spills into
-the next field. Leaving a field is always the driver's job.
+Up, down, left, right and pick. At its edge a field decides what to do; nothing spills into
+the next field. Leaving a field is always the driver's job. What pick does is the field's:
+go to a space, go to an agent and type there, flip a setting.
 
 ```json example A move arrives as the mod's keynav command
 {
@@ -140,13 +157,13 @@ the next field. Leaving a field is always the driver's job.
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }] },
-    { "key": "enter", "effects": [{ "run": "files.keynav-open", "args": {} }, { "focusBar": true }] }
+    { "key": "enter", "effects": [{ "run": "files.keynav-pick", "args": {} }, { "focusBar": true }] }
   ]
 }
 ```
@@ -173,7 +190,7 @@ again to change the keys at any time.
       "defaults": "{ \"keys\": { \"field-left\": [\"ctrl-h\"], \"field-right\": [\"ctrl-l\"], \"down\": [\"j\"], \"type\": [\"i\"] }, \"map\": { \"d\": [\"Next tab\", \"tab.next\"] } }",
       "user": null
     },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": { "d": "Delete" } } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
     { "command": "whistle" },
@@ -186,11 +203,13 @@ again to change the keys at any time.
 
 ### 5. Own keys beat declared keys
 
-The driver's own keys (whistle's: selecting fields, moves, open, back to TYPE) always stay
-its own. A declared key that is one of them is ignored and listed in whistle's settings as a
-config problem; so is a declared chord.
+The driver's own keys (whistle's: selecting fields, moves, pick, back to TYPE) stay its own
+while they're bound. A declared key that is one of them doesn't reach the field, and whistle's
+settings list it as a config problem naming the own key, so it never fails silently. It counts
+once the person unbinds that own key (in whistle.json), and the problem goes: then it is the
+field's like any declared key. A declared chord is always a config problem.
 
-```json example An own key beats a declared key, and the config problem is listed
+```json example An own key beats a declared key, and the config problem says how to free it
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -201,13 +220,13 @@ config problem; so is a declared chord.
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": { "j": "Jump" } } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "j": "Jump" } } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }],
-      "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, one of whistle's own keys; it's ignored" }] } }
+      "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, down's own key; it counts once you unbind down" }] } }
   ]
 }
 ```
@@ -225,7 +244,7 @@ config problem; so is a declared chord.
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": { "d": "Delete" } } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
     { "command": "whistle" },
@@ -237,8 +256,8 @@ config problem; so is a declared chord.
 
 ### 7. Requests go in the field's own slot
 
-After a move or key made the field focus a terminal pane, write `{ to: "terminal", at }`;
-after it moved the keyboard elsewhere, `{ hold: true, at }`. The driver reads only the
+After a move or key made the field focus a terminal pane, write `{ after: "terminal", at }`;
+after it moved the keyboard elsewhere, `{ after: "hold", at }`. The driver reads only the
 selected field's slot, acts on each request once, and ignores requests made before the field
 was selected.
 
@@ -253,16 +272,16 @@ was selected.
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
-        "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} },
-        "keynav.request:files {}": { "to": "terminal", "at": 50 } } },
+        "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} },
+        "keynav.request:files {}": { "after": "terminal", "at": 50 } } },
       "tick": 120,
-      "effects": [{ "focusBar": true }, { "setShared": "keynav", "value": { "v": 2, "active": null } }],
+      "effects": [{ "focusBar": true }, { "setShared": "keynav", "value": { "v": 3, "active": null } }],
       "model": { "mode": "whistle", "field": "main", "pane": "p2" } }
   ]
 }
@@ -284,7 +303,7 @@ the driver selects the terminal and names no field.
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
     { "command": "whistle" },
@@ -294,7 +313,7 @@ the driver selects the terminal and names no field.
         { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
       ] } },
       "tick": 120,
-      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": null } }],
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": null } }],
       "model": { "field": "main" }, "bar": { "label": "Terminal" } }
   ]
 }
@@ -303,8 +322,42 @@ the driver selects the terminal and names no field.
 ### 9. `v` goes up only on a breaking change
 
 New optional fields come under the same `v`. A driver skips an entry whose `v` it doesn't
-speak: a copy still announcing keynav v1 (`shared("keynav.fields")`) isn't a field, and
-whistle's settings say to update its `keynav.js`.
+speak. Whistle still drives a field on keynav v2 as v2 says (see History): it sends pick as
+`<mod>.keynav-open` and reads `{ to: "terminal", at }` and `{ hold: true, at }`, and its
+settings ask the field to update its `keynav.js`. The driver's entry says `v: 3`; a v2 copy
+reads only its `active`, so it still sees itself selected.
+
+```json example A field on keynav v2 is still driven, and settings say to update it
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "top", "type": "row", "children": [
+        { "id": "main", "type": "block", "content": { "pane": {} } },
+        { "id": "files", "type": "block", "content": { "mod": "files" } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-l",
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
+      "model": { "field": "files", "fieldProblems": [{ "source": "keynav", "detail": "files speaks keynav v2: whistle still drives it, but update its keynav.js to v3" }] } },
+    { "key": "enter", "effects": [{ "run": "files.keynav-open", "args": {} }, { "focusBar": true }] },
+    { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
+        "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} },
+        "keynav.request:files {}": { "to": "terminal", "at": 50 } } },
+      "tick": 120,
+      "effects": [{ "focusBar": true }, { "setShared": "keynav", "value": { "v": 3, "active": null } }],
+      "model": { "mode": "whistle", "field": "main", "pane": "p2" } }
+  ]
+}
+```
+
+A copy still announcing keynav v1 (`shared("keynav.fields")`) isn't a field, and whistle's
+settings say to update its `keynav.js`.
 
 ```json example A copy on keynav v1 isn't a field, and settings say to update it
 {
@@ -339,26 +392,26 @@ bash kit/keynav-checker/check.sh path/to/your-mod
 It builds a throwaway mod from the kit and your mod's `keynav.js` and loads it with
 `herdr-app check`. The kit plays the driver through Herdr's own shared state: it announces a
 field with your copy, sets `shared("keynav")`, hands it the commands a driver sends and reads
-what it writes back. `PASS` means your copy speaks keynav v2. Otherwise the check fails and
+what it writes back. `PASS` means your copy speaks keynav v3. Otherwise the check fails and
 lists each rule your copy breaks, with what it got and what it should be:
 
 ```
-keynav.js breaks 1 rule of keynav v2:
-  entry: announce wrote {"v":1,"label":"Check","keys":{"d":"Delete"}} to "keynav.field:keynav-check {"check":1}", want {"v":2,"label":"Check","keys":{"d":"Delete"}}
+keynav.js breaks 1 rule of keynav v3:
+  entry: announce wrote {"v":2,"label":"Check","keys":{"d":"Delete"}} to "keynav.field:keynav-check {"check":1}", want {"v":3,"label":"Check","keys":{"d":"Delete"}}
 ```
 
 | Rule | What it checks |
 |---|---|
 | `functions` | Your copy has `fieldKey`, `announce`, `isActive`, `move`, `declared`, `entered`, `toTerminal` and `keepKeys`. A missing one fails here alone; copy whistle's current `keynav.js`. |
 | `field key` | The field key's form: folder, a space, props as JSON with object keys sorted at every depth (objects inside arrays too) and no spaces. |
-| `entry` | `announce` writes `{ v: 2, label, keys }` to the field's entry and returns its field key. |
+| `entry` | `announce` writes `{ v: 3, label, keys }` to the field's entry and returns its field key. |
 | `announce again` | Announcing again changes the label and the declared keys. |
 | `no v1` | Nothing goes to v1's `keynav.fields` or `keynav.request`. |
 | `active` | `isActive` follows `shared("keynav").active`, for this field only. |
-| `moves` | `keynav-up`, `-down`, `-left`, `-right` and `-open` read as moves, nothing else does. |
+| `moves` | `keynav-up`, `-down`, `-left`, `-right` and `-pick` read as moves, nothing else does (v2's `-open` included). |
 | `declared keys` | `keynav-key-<key>` reads as the key, spelled as written. |
-| `terminal request` | `toTerminal` writes `{ to: "terminal", at }` to the field's request slot, `at` in ms. |
-| `hold request` | `keepKeys` writes `{ hold: true, at }` to the field's request slot. |
+| `terminal request` | `toTerminal` writes `{ after: "terminal", at }` to the field's request slot, `at` in ms, and nothing else (not v2's `to`). |
+| `hold request` | `keepKeys` writes `{ after: "hold", at }` to the field's request slot (not v2's `hold`). |
 | `entered` | `entered` is true once each time the field becomes active. |
 
 `HERDR_APP=<path>` picks the `herdr-app` to run, such as the minimum Herdr your mod supports.
@@ -379,6 +432,10 @@ running.
 
 ## History
 
+- `v: 3` (whistle 1.1.0): the move open became **pick** (`<mod>.keynav-pick`), and requests
+  took one shape, `{ after: "terminal" | "hold", at }`, in place of `{ to: "terminal", at }`
+  and `{ hold: true, at }` ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)).
+  Whistle still drives v2 fields as v2 says, and its settings ask them to update.
 - `v: 2` (whistle 1.0.0): an entry and a request slot per field, declared keys; `pane` left
   the driver's entry (it's in whistle's state now). Breaks v1: `keynav.fields`,
   `keynav.request` and `keynav-key-<char>` for every character are gone.

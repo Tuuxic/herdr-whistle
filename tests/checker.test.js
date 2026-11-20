@@ -29,6 +29,11 @@ export default suite("keynav checker", (t) => {
     : JSON.stringify(v ?? null));
   t.check("a field key that leaves objects inside arrays unsorted breaks \"field key\"",
     rules({ ...helper, fieldKey: (mod, props) => `${mod} ${unsortedInArrays(props ?? {})}` }), ["field key"]);
+  t.check("an entry that still says v 2 breaks \"entry\"", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
+    const key = helper.fieldKey(mod, props);
+    setShared(`keynav.field:${key}`, { v: 2, label, keys });
+    return key;
+  } }), ["entry"]);
   t.check("an entry that says v 1 breaks \"entry\"", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
     const key = helper.fieldKey(mod, props);
     setShared(`keynav.field:${key}`, { v: 1, label, keys });
@@ -36,12 +41,12 @@ export default suite("keynav checker", (t) => {
   } }), ["entry"]);
   t.check("an announce that never rewrites its entry breaks \"announce again\"", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
     const key = helper.fieldKey(mod, props);
-    if (!shared(`keynav.field:${key}`)) setShared(`keynav.field:${key}`, { v: 2, label, keys });
+    if (!shared(`keynav.field:${key}`)) setShared(`keynav.field:${key}`, { v: 3, label, keys });
     return key;
   } }), ["announce again"]);
   t.check("an entry with its fields in another order still passes", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
     const key = helper.fieldKey(mod, props);
-    setShared(`keynav.field:${key}`, { keys, label, v: 2 });
+    setShared(`keynav.field:${key}`, { keys, label, v: 3 });
     return key;
   } }), []);
   t.check("a copy that also announces in v1's keynav.fields breaks \"no v1\"", rules({ ...helper, announce: (mod, props, label, keys = {}) => {
@@ -51,14 +56,19 @@ export default suite("keynav checker", (t) => {
   } }), ["no v1"]);
   t.check("a copy that reads v1's active field breaks \"active\"", rules({ ...helper, isActive: (key) => shared("keynav")?.field === key }), ["active"]);
   t.check("a copy active for any field breaks \"active\"", rules({ ...helper, isActive: (_key) => shared("keynav")?.active != null }), ["active"]);
-  t.check("a copy without open breaks \"moves\"", rules({ ...helper, move: (c) => (["up", "down", "left", "right"].includes(c?.slice(7)) ? c.slice(7) : null) }), ["moves"]);
+  t.check("a copy without pick breaks \"moves\"", rules({ ...helper, move: (c) => (["up", "down", "left", "right"].includes(c?.slice(7)) ? c.slice(7) : null) }), ["moves"]);
+  t.check("a copy that still reads open breaks \"moves\"", rules({ ...helper, move: (c) => (["up", "down", "left", "right", "open"].includes(c?.slice(7)) ? c.slice(7) : null) }), ["moves"]);
+  t.check("a copy that reads open as well as pick breaks \"moves\"", rules({ ...helper, move: (c) => (c === "keynav-open" ? "pick" : helper.move(c)) }), ["moves"]);
   t.check("a copy that reads a declared key as a move breaks \"moves\"", rules({ ...helper, move: (c) => (typeof c === "string" && c.startsWith("keynav-") ? c.slice(7) : null) }), ["moves"]);
   t.check("a copy that lowercases declared keys breaks \"declared keys\"", rules({ ...helper, declared: (c) => helper.declared(c)?.toLowerCase() ?? null }), ["declared keys"]);
   t.check("a copy on v1's key-<char> commands breaks \"declared keys\"", rules({ ...helper, declared: (c) => (typeof c === "string" && c.startsWith("key-") ? c.slice(4) : null) }), ["declared keys"]);
-  t.check("a terminal request in seconds breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { to: "terminal", at: Math.floor(Date.now() / 1000) }) }), ["terminal request"]);
-  t.check("a terminal request naming the pane breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { to: "p1", at: Date.now() }) }), ["terminal request"]);
-  t.check("a hold request in the terminal's shape breaks \"hold request\"", rules({ ...helper, keepKeys: (key) => setShared(`keynav.request:${key}`, { to: "terminal", hold: true, at: Date.now() }) }), ["hold request"]);
-  t.check("a hold request with no time breaks \"hold request\"", rules({ ...helper, keepKeys: (key) => setShared(`keynav.request:${key}`, { hold: true }) }), ["hold request"]);
+  t.check("a terminal request in seconds breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { after: "terminal", at: Math.floor(Date.now() / 1000) }) }), ["terminal request"]);
+  t.check("a terminal request naming the pane breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { after: "p1", at: Date.now() }) }), ["terminal request"]);
+  t.check("a terminal request in v2's shape breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { to: "terminal", at: Date.now() }) }), ["terminal request"]);
+  t.check("a terminal request with v2's field as well breaks \"terminal request\"", rules({ ...helper, toTerminal: (key) => setShared(`keynav.request:${key}`, { after: "terminal", to: "terminal", at: Date.now() }) }), ["terminal request"]);
+  t.check("a hold request in v2's shape breaks \"hold request\"", rules({ ...helper, keepKeys: (key) => setShared(`keynav.request:${key}`, { hold: true, at: Date.now() }) }), ["hold request"]);
+  t.check("a hold request in the terminal's shape breaks \"hold request\"", rules({ ...helper, keepKeys: (key) => setShared(`keynav.request:${key}`, { after: "terminal", at: Date.now() }) }), ["hold request"]);
+  t.check("a hold request with no time breaks \"hold request\"", rules({ ...helper, keepKeys: (key) => setShared(`keynav.request:${key}`, { after: "hold" }) }), ["hold request"]);
   t.check("a copy entered on every render breaks \"entered\"", rules({ ...helper, entered: (_self, key) => helper.isActive(key) }), ["entered"]);
   t.check("a copy never entered breaks \"entered\"", rules({ ...helper, entered: () => false }), ["entered"]);
   t.check("a copy without keepKeys breaks \"functions\" alone", rules({ ...helper, keepKeys: undefined }), ["functions"]);

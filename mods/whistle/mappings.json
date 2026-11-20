@@ -11,10 +11,9 @@
     "down": ["j", "down"],
     "up": ["k", "up"],
     "right": ["l", "right"],
-    "open": ["enter"],
+    "pick": ["enter"],
     "type": ["i"],
-    "cancel": ["escape", "ctrl-["],
-    "back": ["backspace"]
+    "cancel": ["escape", "ctrl-["]
   },
   "map": {
     "/": ["Go to tab or space", "mod.open:picker"],

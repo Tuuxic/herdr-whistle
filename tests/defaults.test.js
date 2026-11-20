@@ -42,6 +42,14 @@ const SCENARIOS = [
   press("tab shows the next tab", ["tab"], [{ run: "tab.next", args: {} }, HOLD]),
   press("s x closes the space", ["s", "x"], [{ run: "space.close", args: {} }, HOLD]),
   press("/ opens the picker, which takes the keyboard", ["/"], [{ run: "mod.open:picker", args: {} }]),
+  {
+    name: "A key sequence has no step back: Backspace in one isn't mapped, and Escape still ends one",
+    world,
+    steps: [...IN,
+      { key: "w", model: { sequence: ["w"] }, hints: { keys: "w", exit: "Esc cancels" } },
+      { key: "backspace", handled: true, effects: [], model: { sequence: null }, bar: { label: "w ⌫ is not mapped" } },
+      { key: "w" }, { key: "escape", handled: true, effects: [], model: { sequence: null }, hints: null }],
+  },
 ];
 
 // Commands that make a terminal: a mapping running one ends in TYPE.

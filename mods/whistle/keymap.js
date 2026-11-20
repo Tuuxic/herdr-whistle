@@ -11,18 +11,15 @@
 //      goes on)
 //
 // Outside a sequence a declared key goes over a mapping, which goes over an own key; inside
-// one, the own keys cancel and back end or shorten it, and any other key is the group's or
-// isn't mapped.
+// one, the own key cancel ends it, and any other key is the group's or isn't mapped (there is no
+// step back).
 
 import { isGroup, groupAt } from "./config.js";
 import { keyLabel } from "./keynames.js";
 
 export function resolve(config, sequence, name, declared = null) {
   const own = config.own[name] ?? null;
-  if (sequence) {
-    if (own === "cancel") return { sequence: null, act: { show: true } };
-    if (own === "back") return { sequence: sequence.length > 1 ? sequence.slice(0, -1) : null, act: { show: true } };
-  }
+  if (sequence && own === "cancel") return { sequence: null, act: { show: true } };
   if (!sequence && declared?.[name] !== undefined) return { sequence: null, act: { declared: declared[name] } };
   const v = (groupAt(config.map, sequence)?.map ?? {})[name];
   if (isGroup(v)) return { sequence: [...(sequence ?? []), name], act: { show: true } };

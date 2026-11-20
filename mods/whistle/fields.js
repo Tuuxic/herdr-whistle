@@ -1,12 +1,13 @@
 // Fields: the parts of the window whistle can select in WHISTLE, found in the layout, and the
 // field in a direction. Pure: it reads only the layout it is given (world.layout).
 //
-// A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys }
+// A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys, v }
 // for a keynav field. Kinds:
 //   - the terminal: each block that shows a pane;
 //   - stock fields: a block of one of Herdr's own spaces, tabs or agents mods (ADR 0006);
 //   - keynav (docs/contracts/keynav.md): any other mod's block whose entry
-//     shared("keynav.field:<fieldKey>") says v 2. `shared` is the shared state the shell read
+//     shared("keynav.field:<fieldKey>") says v 3, or v 2 (still driven); the field's `v` is
+//     its entry's, and decides how whistle speaks to it. `shared` is the shared state the shell read
 //     ({ "<shared key>": value }); stale entries for blocks not in the layout never count.
 
 import { canonicalKey, isChord } from "./keynames.js";
@@ -17,17 +18,38 @@ export const KEYNAV = "keynav";
 
 // The stock fields: Herdr's own mods, each to the Herdr commands its moves run (ADR 0006).
 // This is the one place whistle names a mod, and only Herdr's own; no config adds to it. A
-// direction left out does nothing. `open: "terminal"`: open (and the move into the item's
-// content, `right`) goes on to the terminal field; otherwise open stays (the item is already
+// direction left out does nothing. `pick: "terminal"`: pick (and the move into the item's
+// content, `right`) goes on to the terminal field; otherwise pick stays (the item is already
 // shown). The files block is not a field: Herdr gives it no commands.
 export const STOCK_FIELDS = {
   spaces: { label: "Spaces", down: "space.next", up: "space.prev" },
   tabs: { label: "Tabs", right: "tab.next", left: "tab.prev" },
-  agents: { label: "Agents", down: "agent.next", up: "agent.prev", open: "terminal" },
+  agents: { label: "Agents", down: "agent.next", up: "agent.prev", pick: "terminal" },
 };
 
-// keynav's version, and the shared keys of a field's entry and request slot.
-export const KEYNAV_V = 2;
+// keynav's newest version (the driver's entry announces it), and what a request asks:
+// "terminal" (whistle selects the terminal on the pane the field focused) or "hold" (whistle
+// takes the keyboard back).
+export const KEYNAV_V = 3;
+export const AFTER_TERMINAL = "terminal";
+export const AFTER_HOLD = "hold";
+// What differs between the keynav versions whistle drives, one row each, so dropping a version
+// is deleting its row. pick: the name the version gives the pick move (open before v3). asks:
+// what one of its requests asks, AFTER_TERMINAL | AFTER_HOLD | null (not a request).
+const VERSIONS = {
+  // v2: { to: "terminal", at } | { hold: true, at }.
+  2: { pick: "open", asks: (r) => (r.to === "terminal" ? AFTER_TERMINAL : r.hold === true ? AFTER_HOLD : null) },
+  // v3: { after: "terminal" | "hold", at }.
+  3: { pick: "pick", asks: (r) => (r.after === AFTER_TERMINAL || r.after === AFTER_HOLD ? r.after : null) },
+};
+export const KEYNAV_VERSIONS = Object.keys(VERSIONS).map(Number);
+// A move as a keynav field of its version reads it.
+export const moveFor = (field, move) => (move === "pick" ? VERSIONS[field.v]?.pick ?? move : move);
+// What a keynav field's request asks, read as its version writes it.
+export function requestOf(field, r) {
+  if (!r || typeof r !== "object" || typeof r.at !== "number") return null;
+  return VERSIONS[field.v]?.asks(r) ?? null;
+}
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
 
@@ -41,10 +63,10 @@ const stable = (v) => {
 };
 export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
 
-// A keynav field's entry, if it is one this driver speaks: { label, keys }.
+// A keynav field's entry, if it is in a version this driver speaks: { v, label, keys }.
 export function entryOf(shared, key) {
   const e = shared?.[entryKey(key)];
-  return e && typeof e === "object" && e.v === KEYNAV_V ? e : null;
+  return e && typeof e === "object" && KEYNAV_VERSIONS.includes(e.v) ? e : null;
 }
 
 // Every node of a layout tree, depth first in layout order: visit(node, parent | null, hidden:
@@ -97,7 +119,7 @@ function list(idx, shared) {
     else if (c.mod) {
       const key = fieldKey(c.mod, c.props);
       const e = entryOf(shared, key);
-      if (e) out.push({ block: id, kind: KEYNAV, label: typeof e.label === "string" ? e.label : c.mod, mod: c.mod, key, keys: e.keys });
+      if (e) out.push({ block: id, kind: KEYNAV, label: typeof e.label === "string" ? e.label : c.mod, mod: c.mod, key, keys: e.keys, v: e.v });
     }
   }
   return out;
@@ -126,7 +148,7 @@ export function declaredKeys(field, own, platform) {
     const k = canonicalKey(written, platform);
     if (!k) problems.push(`${who} declares ${written}, which isn't a key`);
     else if (isChord(k)) problems.push(`${who} declares ${written}, a chord; fields declare only keys without Ctrl, Alt or Super`);
-    else if (own?.[k]) problems.push(`${who} declares ${written}, one of whistle's own keys; it's ignored`);
+    else if (own?.[k]) problems.push(`${who} declares ${written}, ${own[k]}'s own key; it counts once you unbind ${own[k]}`);
     else keys[k] = written;
   }
   return { keys, problems };
@@ -134,7 +156,7 @@ export function declaredKeys(field, own, platform) {
 
 // Of several fields, the one used last (recent: block ids, the last first), else a terminal,
 // else the first.
-function pick(all, recent) {
+function preferred(all, recent) {
   for (const b of recent ?? []) { const f = all.find((x) => x.block === b); if (f) return f; }
   return all.find((f) => f.kind === TERMINAL) ?? all[0] ?? null;
 }
@@ -147,11 +169,11 @@ export function fieldAt(layout, block, recent, shared) {
   const all = list(idx, shared);
   const node = idx.nodes.get(block);
   return all.find((f) => f.block === block)
-    ?? (node ? pick(all.filter((f) => inside(idx, node, f.block)), recent) : null);
+    ?? (node ? preferred(all.filter((f) => inside(idx, node, f.block)), recent) : null);
 }
 
 // The terminal to fall back on: the one used last, else the first.
-export const terminal = (layout, recent) => pick(fields(layout, null).filter((f) => f.kind === TERMINAL), recent);
+export const terminal = (layout, recent) => preferred(fields(layout, null).filter((f) => f.kind === TERMINAL), recent);
 
 // The field in a direction ("left", "down", "up", "right") from the block `from`: the
 // layout's rows and columns, entering a group at the field used last. nav (the whistle block's
@@ -172,7 +194,7 @@ export function neighbour(layout, from, dir, recent, shared, nav = {}) {
     const row = kids(p);
     for (let i = row.indexOf(n) + d; i >= 0 && i < row.length; i += d) {
       const there = all.filter((f) => inside(idx, row[i], f.block));
-      if (there.length) return pick(there, recent);
+      if (there.length) return preferred(there, recent);
     }
   }
   return null;
@@ -213,4 +235,4 @@ export function within(layout, outer, id) {
 // The terminal to fall back on outside the block `away` (about to go): the one used last, else
 // the first.
 export const terminalOutside = (layout, away, recent) =>
-  pick(fields(layout, null).filter((f) => f.kind === TERMINAL && !within(layout, away, f.block)), recent);
+  preferred(fields(layout, null).filter((f) => f.kind === TERMINAL && !within(layout, away, f.block)), recent);

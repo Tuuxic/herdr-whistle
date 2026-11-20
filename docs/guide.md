@@ -166,8 +166,9 @@ palette, settings, a rename), which takes it, and one that ends in TYPE.
 ### Own keys
 
 Whistle's own actions in WHISTLE. They aren't mappings and don't show in the hints. A mapping
-on the same key goes over one, except inside a key sequence, where `cancel` and `back` act
-first.
+on the same key goes over one, except inside a key sequence, where `cancel` acts first. A key
+sequence has no step back: `cancel` ends it and you start again. Backspace is not an own key:
+map it, or let a [field](#fields) declare it.
 
 <!-- table keys -->
 | Action | Keys | Does |
@@ -180,10 +181,52 @@ first.
 | `down` | `j` `down` | Move down in the field |
 | `up` | `k` `up` | Move up in the field |
 | `right` | `l` `right` | Move right in the field |
-| `open` | `enter` | Open; on the terminal, back to TYPE there |
+| `pick` | `enter` | Pick the item under the cursor (what that does is the field's); on the terminal, back to TYPE there |
 | `type` | `i` | Back to TYPE |
 | `cancel` | `escape` `ctrl-[` | End a key sequence (with none, nothing) |
-| `back` | `backspace` | Back one level in a key sequence |
+
+#### Unbinding an own key
+
+You can unbind any own key in your whistle.json ([Your config](#your-config)): `null` removes
+the action, `[]` leaves it with no keys. You can't get trapped: the switch key always leaves
+WHISTLE, even with every own key unbound.
+
+A key freed that way is an ordinary key. A selected keynav field that declares it gets it, and
+the hints list it with the field's label: with `pick` unbound, a field that declares `enter`
+gets Enter. A field that doesn't declare it gets nothing, and a mapping may use the key
+wherever no selected field declares it. While the key is still an own key, a field declaring
+it is listed in settings as a config problem that names the own key, such as "Files (files)
+declares enter, pick's own key; it counts once you unbind pick".
+
+What else unbinding means is your choice: with `pick` unbound, Enter on the terminal no longer
+goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists get no pick.
+
+```json example With pick unbound, Enter is the field's that declares it
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "top", "type": "row", "children": [
+        { "id": "main", "type": "block", "content": { "pane": {} } },
+        { "id": "files", "type": "block", "content": { "mod": "files" } }
+      ] },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" },
+    "configFiles": {
+      "defaults": "{ \"keys\": { \"field-right\": [\"ctrl-l\"], \"pick\": [\"enter\"], \"type\": [\"i\"] }, \"map\": {} }",
+      "user": "{ \"keys\": { \"pick\": null } }"
+    },
+    "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "enter": "Go in" } } }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "ctrl-l",
+      "hints": { "title": "Files", "items": [{ "key": "Enter", "label": "Go in", "group": false }] } },
+    { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusBar": true }] },
+    { "tick": 120, "bar": { "marker": null } }
+  ]
+}
+```
 
 ## Fields
 
@@ -200,14 +243,16 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
 - **Integration** makes them better fields: ask the agent that installed whistle to integrate
   it (RECIPE.md, Integrate). It clones Herdr's spaces, agents, tabs, files and changes as
   keynav mods (`spaces-whistle`, …) in a clone of your layout (`main-whistle`), so each gets a
-  cursor that moves without opening (`enter` opens) and stays in view in a long list, a glow
+  cursor that moves without picking (`enter` picks) and stays in view in a long list, a glow
   in the theme's `accent` while selected, and a few keys of its own (`n`, `r`, `x` on spaces
-  and tabs); files and changes become fields too. The layout's pane header is copied as well
-  (`pane-whistle`) and glows on the terminal whistle has selected while in WHISTLE, since the
-  bar holds the keyboard and Herdr's focus border can't show it. Your own layout and mods are
-  changed in place instead. Uninstall offers to undo it.
+  and tabs); files and changes become fields too. On the spaces and agents clones, Pick
+  (`enter`) lands you in TYPE in what you picked, and `space` is Show: it brings up the space
+  or agent while you stay in WHISTLE and keep moving (RECIPE.md, Pick and Show). The layout's
+  pane header is copied as well (`pane-whistle`) and glows on the terminal whistle has
+  selected while in WHISTLE, since the bar holds the keyboard and Herdr's focus border can't
+  show it. Your own layout and mods are changed in place instead. Uninstall offers to undo it.
 
-| Block | Keys | Herdr command | Open (`enter`) |
+| Block | Keys | Herdr command | Pick (`enter`) |
 |---|---|---|---|
 | Spaces | `j` / `k` | `space.next` / `space.prev` | stays: the space is already shown |
 | Tabs | `l` / `h` | `tab.next` / `tab.prev` | stays: the tab is already shown |
@@ -250,14 +295,14 @@ After integration the `spaces` block holds the clone, which announces itself thr
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:spaces-whistle {}": { "v": 2, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
+    "shared": { "keynav.field:spaces-whistle {}": { "v": 3, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
   },
   "steps": [
     { "command": "whistle" },
     { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
-      "effects": [{ "setShared": "keynav", "value": { "v": 2, "active": "spaces-whistle {}" } }] },
+      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "spaces-whistle {}" } }] },
     { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
-    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-open", "args": {} }, { "focusBar": true }] },
+    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-pick", "args": {} }, { "focusBar": true }] },
     { "key": "r", "effects": [{ "run": "spaces-whistle.keynav-key-r", "args": {} }, { "focusBar": true }] }
   ]
 }
@@ -266,7 +311,7 @@ After integration the `spaces` block holds the clone, which announces itself thr
 ## Key names
 
 Whistle names keys the way Herdr's `keys.json` does: the key, with any modifiers in front,
-joined by `-` (`ctrl-h`, `alt-shift-x`, `super-k`, `shift-tab`, `f2`, `space`). Any spelling
+joined by `-` (`ctrl-h`, `alt-shift-x`, `super-k`, `shift-tab`, `f2`, `space`, `shift-space`). Any spelling
 Herdr accepts works, and comes down to one name:
 
 | You write | Whistle reads | Why |
@@ -277,6 +322,7 @@ Herdr accepts works, and comes down to one name:
 | `Ctrl-x`, `Enter`, `F2` | `ctrl-x`, `enter`, `f2` | modifiers and named keys in any case |
 | `ctrl-X` | `ctrl-shift-x` | an uppercase letter in a chord means Shift, as in Herdr |
 | `X`, `shift-x` | `X` | a key on its own is the character it types |
+| `shift-space` | `shift-space` | Shift+Space is its own key, not `space`, so you can map it |
 
 Write shifted punctuation as the character it types: `ctrl-?`, not `ctrl-shift-/`, since which
 key gives `?` depends on the keyboard layout. `option` and `fn` aren't modifiers (on macOS
@@ -352,7 +398,7 @@ Each layer has two sections, kept apart:
       "q": null
     } }
   },
-  "keys": { "type": ["i", "q"], "back": null }
+  "keys": { "type": ["i", "q"], "cancel": ["escape"] }
 }
 ```
 
@@ -362,8 +408,10 @@ Each layer has two sections, kept apart:
   argument, as in `keys.json`. A mapping goes over an own key.
 - **`keys`**, whistle's own keys: an action to its list of keys. The actions: `field-left`,
   `field-down`, `field-up`, `field-right` (select the field that way), `left`, `down`, `up`,
-  `right` (move inside it), `open`, `type` (back to TYPE), `cancel` (end a key sequence) and
-  `back` (up one level in it).
+  `right` (move inside it), `pick`, `type` (back to TYPE) and `cancel` (end a key sequence).
+  `back` is gone: a layer that still sets it is ignored and listed as a config problem. `pick`
+  was called `open` before 1.1.0: a layer that still sets `open` is read as `pick` (unless it
+  sets `pick` too) and listed in settings to rename.
 - A key set to `null` takes it away; groups merge key by key, so a layer can add to a group or
   take one key out of it. An action's list replaces the one below; `null` leaves the action
   with no keys.
@@ -424,7 +472,7 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
 - **A file that doesn't parse** runs on its last version that did, from this session. With
   none, whistle leaves `whistle.json` out; with no `mappings.json` at all (missing, or broken
   from the start) it runs on a few safety own keys built into it, so WHISTLE never traps the
-  keyboard (`ctrl-h/j/k/l`, `h/j/k/l` and the arrows, `enter`, `i`, `escape`, `backspace`),
+  keyboard (`ctrl-h/j/k/l`, `h/j/k/l` and the arrows, `enter`, `i`, `escape`),
   and calls it a broken install.
 - **An entry that makes no sense** (an unknown command, a key name whistle can't read, an
   unknown action, an entry of the wrong form) is skipped and listed; the rest of its file

@@ -71,7 +71,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
+import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
@@ -336,7 +336,7 @@ function command(model, world, c) {
 // A move on a stock field: Herdr's command for that way, if it has one, then the bar holds the
 // keyboard (the command shows another space, tab or agent).
 function stockMove(model, world, field, dir) {
-  if (dir === "right" && STOCK_FIELDS[field.stock].open === "terminal") return toTerminal(model, world);
+  if (dir === "right" && STOCK_FIELDS[field.stock].pick === "terminal") return toTerminal(model, world);
   const command = STOCK_FIELDS[field.stock][dir];
   if (!command) return { model, effects: [], handled: true };
   return held(model, world, [{ run: command, args: {} }]);
@@ -356,12 +356,12 @@ function ownKey(model, world, action) {
     return { ...done, model: (next && select(model, world, next.block)) || model };
   }
   const field = fieldAt(world.layout, model.field, model.recent, world.shared);
-  if (field?.kind === KEYNAV && (own.kind === "open" || own.kind === "move")) return toField(model, world, field, own.dir ?? "open");
-  if (own.kind === "open") {
+  if (field?.kind === KEYNAV && (own.kind === "pick" || own.kind === "move")) return toField(model, world, field, moveFor(field, own.dir ?? "pick"));
+  if (own.kind === "pick") {
     if (!field || field.kind === TERMINAL) return { ...type(model, world), handled: true };
-    return field.kind === STOCK && STOCK_FIELDS[field.stock].open === "terminal" ? toTerminal(model, world) : done;
+    return field.kind === STOCK && STOCK_FIELDS[field.stock].pick === "terminal" ? toTerminal(model, world) : done;
   }
-  if (own.kind !== "move") return done; // cancel, back: nothing pending
+  if (own.kind !== "move") return done; // cancel: nothing pending
   // A move acts inside the field; with none selected, the terminal stands in.
   const t = field ? null : terminal(world.layout, model.recent);
   if (field?.kind === TERMINAL) return paneMove(model, world, own.dir);
@@ -371,18 +371,23 @@ function ownKey(model, world, action) {
 }
 
 // The model with its keynav problems (model.fieldProblems) brought in line with the fields
-// that show: declared keys whistle ignores, and copies still on keynav v1. Unchanged when they
+// that show: declared keys whistle ignores, copies still on keynav v2 (driven, but asked to
+// update) and copies still on keynav v1 (not driven). Unchanged when they
 // are the same.
 function fieldsChecked(model, world) {
   if (!world.shared && !model.fieldProblems?.length) return model; // no keynav state: nothing to check
   const out = [];
   const all = fields(world.layout, world.shared);
+  const seen = new Set();
   for (const f of all) {
     if (f.kind !== KEYNAV) continue;
     for (const detail of declaredKeys(f, model.config?.own, world.platform).problems) out.push({ source: "keynav", detail });
+    if (f.v !== KEYNAV_V && !seen.has(f.key)) {
+      seen.add(f.key);
+      out.push({ source: "keynav", detail: `${f.mod} speaks keynav v${f.v}: whistle still drives it, but update its keynav.js to v${KEYNAV_V}` });
+    }
   }
   const v1 = world.shared?.["keynav.fields"] ?? {};
-  const seen = new Set();
   for (const b of modBlocks(world.layout)) {
     if (seen.has(b.key) || v1[b.key]?.v !== 1 || all.some((f) => f.key === b.key)) continue;
     seen.add(b.key);
@@ -437,16 +442,19 @@ function stillThere(model, world) {
 }
 
 // The selected keynav field's request slot, shared("keynav.request:<fieldKey>"), once per
-// request made since it was selected: { to: "terminal" } (it focused one: whistle selects the
-// terminal on that pane) or { hold: true } (it moved the keyboard: whistle takes it back).
-// Either way the bar holds the keyboard for HOLD_MS; modeTick takes it back.
+// request made since it was selected (fields.js requestOf reads either version's shape):
+// "terminal" (it focused one: whistle selects the terminal on that pane) or "hold" (it moved
+// the keyboard: whistle takes it back). Either way the bar holds the keyboard for HOLD_MS;
+// modeTick takes it back.
 function requests(model, world) {
   if (model.mode !== "whistle" || !world.shared) return model;
   const f = fieldAt(world.layout, model.field, model.recent, world.shared);
-  const r = f?.kind === KEYNAV ? world.shared?.[requestKey(f.key)] : null;
-  if (!r || typeof r.at !== "number" || !(r.at > (model.requestAt ?? 0))) return model;
+  if (f?.kind !== KEYNAV) return model;
+  const r = world.shared[requestKey(f.key)];
+  const asks = requestOf(f, r);
+  if (!asks || !(r.at > (model.requestAt ?? 0))) return model;
   const m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
-  return r.to === TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;
+  return asks === AFTER_TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;
 }
 
 // whistle.focus waiting for the block it showed: selected once it shows, given up at the deadline.
@@ -626,7 +634,7 @@ function active(model, input, world) {
   return publishKeynav(running(model, input, world), world);
 }
 
-// shared("keynav") = { v: 2, active }: the selected keynav field's key while in WHISTLE, else
+// shared("keynav") = { v: 3, active }: the selected keynav field's key while in WHISTLE, else
 // null. Written only when it changes (model.keynavActive: what whistle last wrote; before its
 // first write, what the world says).
 function publishKeynav(out, world) {

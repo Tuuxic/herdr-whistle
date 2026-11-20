@@ -4,6 +4,7 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { IN_TERMINAL, withProps } from "./worlds.js";
+import { ACTIONS } from "./config.js";
 
 const json = (v) => JSON.stringify(v);
 // A world in a terminal: defaults with map added, a layout block with props, whistle.json.
@@ -18,6 +19,13 @@ const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }]
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 
 const SCENARIOS = [
+  {
+    name: "Every own key can be unbound in whistle.json, and the switch key still leaves WHISTLE",
+    world: world({ user: { keys: Object.fromEntries(Object.keys(ACTIONS).map((a) => [a, null])) } }),
+    steps: [...IN,
+      ...["enter", "i", "j", "ctrl-l", "escape", "backspace"].map((key) => ({ key, handled: false, effects: [], model: { mode: "whistle", problems: [] } })),
+      { command: "whistle", effects: TO_TYPE, model: { mode: "type" } }],
+  },
   {
     name: "A mapping in the defaults runs its command",
     world: world({ map: { n: ["Next tab", "tab.next"] } }),
@@ -78,6 +86,30 @@ const SCENARIOS = [
     steps: [...IN, { key: "i", effects: [], handled: false, model: { mode: "whistle" } }],
   },
   {
+    name: "pick, Enter by default, goes back to TYPE on the terminal field",
+    world: world(),
+    steps: [...IN, { key: "enter", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "A layer that still sets \"open\" is honoured as pick, and listed as a config problem asking to rename it",
+    world: world({ user: { keys: { open: ["o"] } } }),
+    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle",
+      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
+      { key: "o", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "A layer that sets both \"pick\" and \"open\": pick wins, and open is still listed",
+    world: world({ user: { keys: { open: ["o"], pick: ["p"] } } }),
+    steps: [...IN, { key: "o", effects: [], handled: false, model: { mode: "whistle",
+      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
+      { key: "p", effects: TO_TYPE, model: { mode: "type" } }],
+  },
+  {
+    name: "\"open\" set to null in a layer takes pick's keys away",
+    world: world({ props: { keys: { open: null } } }),
+    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle" } }],
+  },
+  {
     name: "Own keys are claimed from the layers too",
     world: { ...world({ user: { keys: { "field-left": ["alt-h"], "field-down": null, "field-up": null, "field-right": null } } }),
       platform: "linux", layoutName: "main",
@@ -112,12 +144,19 @@ const SCENARIOS = [
       { key: "q", effects: [], handled: false }],
   },
   {
-    name: "The back key goes up one level, and out of the first",
-    world: world({ keys: { ...TEST_DEFAULTS.keys, back: ["backspace"] },
-      map: { w: { name: "Panes", map: { m: { name: "More", map: { z: ["Zoom pane", "pane.zoom"] } } } } } }),
+    name: "A layer setting back is ignored and listed: the key is gone, and a sequence has no step back",
+    world: world({ keys: { ...TEST_DEFAULTS.keys, cancel: ["escape"] },
+      map: { w: { name: "Panes", map: { m: { name: "More", map: { z: ["Zoom pane", "pane.zoom"] } } } } },
+      user: { keys: { back: ["backspace"] } } }),
     steps: [...IN, { key: "w" }, { key: "m" },
-      { key: "backspace", handled: true, model: { sequence: ["w"] } },
-      { key: "backspace", handled: true, model: { sequence: null } }],
+      { key: "backspace", handled: true, effects: [], bar: { label: "w m ⌫ is not mapped" }, model: { sequence: null,
+        problems: [{ source: "whistle.json", detail: "keys › back: whistle has no back key any more; it's ignored (Escape ends a key sequence)" }] } },
+      { key: "w" }, { key: "escape", handled: true, model: { sequence: null } }],
+  },
+  {
+    name: "Outside a key sequence Backspace is an ordinary key: a mapping on it runs",
+    world: world({ user: { map: { backspace: ["Previous tab", "tab.prev"] } } }),
+    steps: [...IN, { key: "backspace", handled: true, effects: ran("tab.prev") }],
   },
   {
     name: "Inside a key sequence an own key is just a key of the group",

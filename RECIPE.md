@@ -39,12 +39,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   The advanced setup may use the real terms.
 - **Ask only what is the person's choice**, one question at a time, and say what each answer
   means for them ("Yes: the spaces list gets a highlight and j/k move in it. No: whistle still
-  moves between the lists, but moving in one opens what you land on.").
+  moves between the lists, but moving in one shows what you land on.").
 - **Technical problems are yours to solve** by this recipe's rules: a name already taken, a
   layout that can't be edited, a check that fails. Don't ask the person how to fix them; fix
   them, and afterwards say in a sentence what you did.
 - **Describe Integrate by its result**: "the list you're in gets a highlight, and j/k move a
-  cursor in it without opening anything; Enter opens", not by how it is made.
+  cursor in it without picking or showing anything; Enter goes there and you type in it, Space shows it
+  and you keep moving", not by how it is made.
 - **Ask as few questions as needed**: where this recipe gives a default, use it without asking.
 
 ## What you see
@@ -143,10 +144,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   sequence, pane }` whenever it changes, and only then; an inert copy never writes it
   (docs/contracts/state.md). Every other `whistle.*` key is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
-  key>")` says `v: 2`. Whistle names the selected one in `shared("keynav") = { v: 2, active }`,
-  sends it moves and its declared keys as `<mod>.keynav-*` commands, and reads its request slot
-  `shared("keynav.request:<field key>")`. Declared keys beat mappings but not own keys
-  (docs/contracts/keynav.md).
+  key>")` says `v: 3` (or `v: 2`, still driven, with a notice in settings). Whistle names the
+  selected one in `shared("keynav") = { v: 3, active }`, sends it moves and its declared keys
+  as `<mod>.keynav-*` commands, and reads its request slot `shared("keynav.request:<field
+  key>")`. Declared keys beat mappings but not own keys (docs/contracts/keynav.md).
 
 ## Built from
 
@@ -217,8 +218,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - A fresh Install on Herdr's `main` layout asks before copying the layout, then shows the bar
   on `main-whistle`; the conversation uses the words the person sees.
 - After Install on Herdr's `main` layout, Integrate (simple path, Herdr's blocks) shows
-  `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without opening a space
-  and Enter opens it, and a long spaces list scrolls to keep the cursor and one more space
+  `main-whistle`; in WHISTLE, `j`/`k` on the spaces field move a cursor without showing a space,
+  Space shows the space and the spaces field stays selected, and Enter goes to it and
+  switches to TYPE; on the agents field, Enter puts you in TYPE in the agent's pane; a long
+  spaces list scrolls to keep the cursor and one more space
   past it in view, with a gap below the last space and above the first; the selected field glows in `accent`; files and changes are fields; the
   selected terminal's header glows in `accent` while in WHISTLE with the terminal selected,
   and not while Spaces or Agents is.
@@ -270,10 +273,11 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
      show: say so, and that you can add it whenever they say yes, or they can add it
      themselves.
 8. Offer [Integrate](#integrate), by its result: "Right now whistle moves you between the
-   lists, but moving inside the spaces or agents list opens what you land on, and the files
+   lists, but moving inside the spaces or agents list shows what you land on, and the files
    and changes panel can't be reached. I can make copies of Herdr's sidebar lists where the
-   list you're in gets a highlight, j/k move in it without opening anything and Enter opens,
-   and mark the terminal you've picked. Do that?" If the person says yes, follow Integrate; if
+   list you're in gets a highlight, j/k move in it without picking or showing anything, Space shows the
+   space or agent while you keep moving, and Enter goes there so you can type, and mark the
+   terminal you've picked. Do that?" If the person says yes, follow Integrate; if
    not, say they can ask for it any time.
 9. **Close with a short summary** in the person's words: Ctrl+Space switches between typing
    and moving around (the bar shows which); Alt+A and Alt+S (Ctrl+Shift+A / Ctrl+Shift+S on
@@ -284,10 +288,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 ## Integrate
 
 **Integration** (ADR 0015) makes the blocks of the person's shown layout into keynav fields,
-with a look for the selected field and a cursor that moves without opening. It is
+with a look for the selected field and a cursor that moves without showing anything. It is
 instructions for you, not part of whistle: whistle's code doesn't change, whistle ships no
 clones and never reads the record, and a keynav mod works the same without whistle. Herdr's
-own blocks stay stock fields (no cursor, moving opens) for anyone who doesn't integrate.
+own blocks stay stock fields (no cursor, moving shows) for anyone who doesn't integrate.
 
 Offer it after Install's last step. Do it at any other time the person asks.
 
@@ -304,10 +308,11 @@ Offer it after Install's last step. Do it at any other time the person asks.
   README, a LICENSE or an author in the folder). When you can't tell, treat a mod as
   third-party.
 - **Already fields, left as they are**: terminal blocks (`content` is a `pane`, `tab`,
-  `terminal` or `agent`), mods that already speak keynav v2 (a `keynav.js` with `V = 2` whose
+  `terminal` or `agent`), mods that already speak keynav v3 (a `keynav.js` with `V = 3` whose
   `announce` the mod calls), and whistle's own blocks (`"title": "Whistle"` in the mod's
-  `mod.json`). A mod still on keynav v1 (`shared("keynav.fields")`) is adapted: its
-  `keynav.js` is replaced and its calls changed as below.
+  `mod.json`). A mod still on keynav v2 (`V = 2`) or v1 (`shared("keynav.fields")`) is
+  adapted: its `keynav.js` is replaced and its calls changed as below (from v2, its `open`
+  move becomes `pick`; nothing else changes).
 
 ### Simple path
 
@@ -351,7 +356,8 @@ Then, without asking more:
    | `spaces` | `n` | New space | `space.new` |
    | `spaces` | `r` | Rename | `space.rename` |
    | `spaces` | `x` | Close | `space.close` |
-   | `agents` | none | | |
+   | `spaces` | `space` | Show | `space.select` |
+   | `agents` | `space` | Show | `agent.focus` |
    | `tabs` | `n` | New tab | `tab.new` |
    | `tabs` | `r` | Rename | `tab.rename` |
    | `tabs` | `x` | Close | `tab.close` |
@@ -359,16 +365,21 @@ Then, without asking more:
    | `changes` | none | | |
 
    `n` runs the command with no args; `r` and `x` pass the cursor item, `{ "id": <its id> }`
-   (Herdr asks for the name, and asks before closing a space). For other mods, declare keys
+   (Herdr asks for the name, and asks before closing a space). `space` is Show, as in
+   [Pick and Show](#pick-and-show): `{ "id": <its id> }` for a space, `{ "terminal": <its
+   terminal> }` for an agent. For other mods, declare keys
    for the mod's clear actions on one item (what its buttons or its menu do to an item),
    never a chord and never one of whistle's own keys (the `keys` in `mods/whistle/mappings.json`
-   and the person's `whistle.json`: `h`/`j`/`k`/`l`, the arrows, `enter`, `i`, `escape`,
-   `backspace` by default).
-5. **The selected terminal's header**, as in
+   and the person's `whistle.json`: `h`/`j`/`k`/`l`, the arrows, `enter`, `i`, `escape`
+   by default).
+5. **Pick into TYPE** on the spaces and agents fields, as in [Pick and Show](#pick-and-show).
+   Other fields' pick stays as it is.
+6. **The selected terminal's header**, as in
    [The selected terminal's header](#the-selected-terminals-header), with whistle's suggested
    look. On the simple path it counts among Herdr's blocks: do it with either answer.
-6. **Check** each mod you changed, write the [record](#the-record), and tell the person, in
-   plain words, what you made: which lists now get a highlight and a cursor, that the
+7. **Check** each mod you changed, write the [record](#the-record), and tell the person, in
+   plain words, what you made: which lists now get a highlight and a cursor, that Enter on a
+   space or agent goes there to type and Space shows it while they keep moving, that the
    terminal they've picked is marked in its title strip while whistle's mode is on and no list
    is selected, that `ctrl-h/j/k/l` in WHISTLE now reach those lists, and that Uninstall
    offers to undo it.
@@ -383,6 +394,7 @@ The person chooses; you do the rest as on the simple path:
   its cursor item, and of the selected terminal's header. Use the theme's colors (`accent`,
   `selected`, `foreground`, …), not fixed ones.
 - **The declared keys** of each field: which keys, their labels, what each runs.
+- **Pick into TYPE** for each field: on the simple path only spaces and agents do it.
 - **Clone or in place** for each third-party mod. In place, the mod's next update from its
   author may remove the change; Update offers to add it again.
 
@@ -432,13 +444,14 @@ own mod):
    `cx.spawn(async (cx) => { for (;;) { this.keynav(await nextCommand(), cx); cx.notify(); } })`
    (pass `cx` on where the mod's own click handlers need it).
    `keynav(c)` does nothing unless `isActive(this.key)`. `move(c)`: `up`/`down` move the
-   cursor through a list (`left`/`right` through a row, such as tabs) without opening anything;
-   `open` does what a click on the cursor item does; in a tree, `left` closes the cursor's
+   cursor through a list (`left`/`right` through a row, such as tabs) without picking or showing anything;
+   `pick` does what a click on the cursor item does; in a tree, `left` closes the cursor's
    open folder, and a preview's back button is `left` too. `declared(c)` runs that key's
    action on the cursor item.
-5. **Requests**: after `open` focused a terminal pane (an agent's), call
+5. **Requests**: after `pick` focused a terminal pane (an agent's), call
    `toTerminal(this.key)`; after it showed something else (another space or tab), call
-   `keepKeys(this.key)`.
+   `keepKeys(this.key)`. A pick that lands in TYPE, and Show, are in
+   [Pick and Show](#pick-and-show).
 6. **The look**, drawn only while `isActive(this.key)`: the field's glow and the cursor item's
    outline. Without a driver nothing is active and the mod looks as before.
 7. Change nothing else: the mod still works by mouse as it did.
@@ -448,6 +461,47 @@ own mod):
 
 A clone of a Herdr mod (`spaces-whistle`) is a field like any keynav mod: whistle's stock
 field table names only Herdr's own mods, so it never applies to the clone.
+
+### Pick and Show
+
+The glossary's names, used in the hints too: Enter is **Pick** (whistle's hint says `pick`),
+and Space is **Show**, a declared key labelled `Show`. Where each behaviour goes is ADR 0017's
+line: the moves are only what every field shares, a field's own behaviour is a declared key,
+and anything whistle-specific goes through whistle's public commands
+(docs/contracts/commands.md).
+
+**Pick into TYPE**: on the spaces and agents fields, pick runs the block's Herdr command on the
+cursor item, makes its request as in step 5 (`toTerminal` for an agent, `keepKeys` for a
+space), and then, if whistle is there, runs `whistle.type`, so the person lands typing in what
+they picked:
+
+<!-- table integrate-pick -->
+| Block | Herdr command | Then |
+|---|---|---|
+| `spaces` | `space.select` | `whistle.type` |
+| `agents` | `agent.focus` | `whistle.type` |
+
+`space.select` takes the space, `{ "id": <its id> }`; `agent.focus` the agent's terminal,
+`{ "terminal": <its terminal> }`; where the mod's click runs another command, use that one.
+For an agent:
+
+```js
+run("agent.focus", { terminal: item.terminal });
+toTerminal(this.key);                          // keepKeys(this.key) for a space
+if (shared("whistle")) run("whistle.type");    // shared and run from "herdr"
+```
+
+Check `shared("whistle")` first: without whistle, Herdr shows the person an "unknown command"
+error toast. In TYPE `whistle.type` does nothing, so don't check whistle's mode. Other fields
+decide for themselves whether their pick lands in TYPE; on the simple path, tabs, files and
+changes keep theirs.
+
+**Show** (`space`, declared as `{ space: "Show" }` along with the field's other keys): runs the
+same Herdr command on the cursor item, then `keepKeys(this.key)`, which writes
+`{ after: "hold" }`, for spaces and agents alike. Whistle stays in WHISTLE with the field
+selected: if the command moved the keyboard to a pane (`agent.focus` may), whistle takes it
+back, so the person looks at the item without working in it and moves on with `j`/`k`. Show never writes `{ after: "terminal" }` (no `toTerminal`) and never runs
+`whistle.type`.
 
 ### The selected terminal's header
 
@@ -500,7 +554,8 @@ Made by an agent following whistle's RECIPE.md (Integrate). Whistle never reads 
 
 | Mod | Original | Version | How | Blocks | Look | Declared keys |
 |---|---|---|---|---|---|---|
-| spaces-whistle | spaces | 0.1.15 | clone | main-whistle: spaces | suggested | n space.new, r space.rename, x space.close |
+| spaces-whistle | spaces | 0.1.15 | clone | main-whistle: spaces | suggested | n space.new, r space.rename, x space.close, space Show; pick into TYPE |
+| agents-whistle | agents | 0.1.15 | clone | main-whistle: agents | suggested | space Show; pick into TYPE |
 | notes | notes | 1.2.0 | in place | main-whistle: notes | suggested | d Delete |
 | pane-whistle | pane | 0.1.15 | clone | main-whistle: header | suggested | none |
 
