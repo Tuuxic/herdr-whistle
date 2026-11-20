@@ -74,6 +74,8 @@ export function blockProps(layout, folder = FOLDER) {
       else props[k] = v;
     }
   }
+  const [first, ...extra] = anchors(layout, folder);
+  for (const b of extra) problem(`anchor: ${b.id} is a second anchor and stands aside; ${first.id} runs whistle`);
   return { props, problems };
 }
 
@@ -88,12 +90,16 @@ export function resting(layout, folder, props, hid = []) {
   return blocks.length > 0 && blocks.every((b) => b.hidden && !hid.includes(b.id));
 }
 
+// This copy's anchors (blocks with `anchor: true`), in layout order: the first drives (ADR 0018).
+const anchors = (layout, folder) => bars(layout, folder).filter((b) => b.props.anchor === true);
+
 // Whether this copy is a view (ADR 0018): the layout has an anchor (a block of this copy with
-// `anchor: true`) and this copy's props aren't an anchor's, so it is a bar's copy, which only
-// draws. Unknown props: it isn't.
+// `anchor: true`) and this copy's props aren't the first anchor's, so it is a bar's copy, which
+// only draws, or a further anchor, which stands aside the same way. Unknown props: it isn't.
 export function viewing(layout, folder, props) {
-  if (props === undefined || (isObject(props) && props.anchor === true)) return false;
-  return bars(layout, folder).some((b) => b.props.anchor === true);
+  if (props === undefined) return false;
+  const [first] = anchors(layout, folder);
+  return first !== undefined && fieldKey(folder, first.props) !== fieldKey(folder, isObject(props) ? props : {});
 }
 
 // The bar spots: this copy's blocks named by a `bar` prop.
