@@ -11,6 +11,7 @@
 
 import { MIN_HERDR, FOLDER } from "./version.js";
 import { eachNode } from "./fields.js";
+import { isAnchor } from "./block.js";
 
 // The private shared key copies announce themselves under.
 export const COPIES = "whistle.copies";
@@ -39,7 +40,7 @@ const modsIn = (layout) => new Set(modNodes(layout).map((b) => b.content.mod));
 // The ids of this copy's bars that show (not hidden themselves): its blocks but its anchor,
 // which Herdr wouldn't run hidden (ADR 0018).
 export const ownBars = (world) => modNodes(world.layout)
-  .filter((b) => b.content.mod === world.folder && !b.hidden && b.content.props?.anchor !== true).map((b) => b.id);
+  .filter((b) => b.content.mod === world.folder && !b.hidden && !isAnchor(b.content.props)).map((b) => b.id);
 
 // The folder of the copy that runs: of this one and the announced copies in the layout,
 // mods/whistle/, else the first by name.

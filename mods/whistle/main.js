@@ -31,12 +31,14 @@ import * as herdr from "herdr";
 import { start, step, VIEWS, barKey } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
-import { renderBar, renderAnchor } from "./bar.js";
+import { renderBar } from "./bar.js";
+import { renderAnchor } from "./anchor.js";
 import { renderHints } from "./hints.js";
 import { renderSettings } from "./settings.js";
 import { HOME } from "./version.js";
 import { folderOf, COPIES } from "./inert.js";
 import { modBlocks, entryKey, requestKey } from "./fields.js";
+import { isAnchor } from "./block.js";
 
 const FOLDER = folderOf(HOME);
 const call = (f) => { try { return f(); } catch { return null; } };
@@ -200,7 +202,7 @@ export default class Whistle extends View {
       if (out.handled) cx.stop_propagation();
       cx.notify();
     };
-    if (call(() => props()?.anchor) === true) return renderAnchor(this.handle, onKey);
+    if (isAnchor(call(() => props()))) return renderAnchor(this.handle, onKey);
     // Until the core first sets it (its first step), the bar draws empty.
     const vm = shared(barKey(FOLDER)) ?? { badge: null, label: "", marker: null };
     return renderBar(vm, theme(), this.handle, onKey, (size) => { this.barSize = { width: size.width, height: size.height }; });

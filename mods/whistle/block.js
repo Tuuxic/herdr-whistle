@@ -17,8 +17,10 @@ export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
 const BEHAVIOUR = ["mappings", "keys", "mods", "enabled", "hints", "nav"];
-const KNOWN = ["mappings", "keys", "mods", "enabled", "hints", "nav", "bar", ...NUMBERS, "part", "anchor"];
+const KNOWN = [...BEHAVIOUR, "bar", ...NUMBERS, "part", "anchor"];
 
+// Whether a block's props make it the anchor (ADR 0018): `anchor: true`.
+export const isAnchor = (props) => isObject(props) && props.anchor === true;
 
 // Every block id in the layout.
 function ids(layout) {
@@ -68,17 +70,17 @@ export function blockProps(layout, folder = FOLDER) {
   const known = ids(layout);
   const props = {};
   const blocks = bars(layout, folder);
-  const anchor = blocks.find((b) => b.props.anchor === true); // one of blocks: compared by identity below
+  const anchor = blocks.find((b) => isAnchor(b.props)); // one of blocks: compared by identity below
   for (const b of blocks) {
     for (const [k, v] of Object.entries(b.props)) {
       if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
       if (k === "part" || k === "anchor" || v === undefined) continue;
       if (k === "bar") { if (typeof v !== "string") problem("bar should be the spot's name, a string"); continue; }
       if (anchor && BEHAVIOUR.includes(k) && b !== anchor) {
-        if (b.props.anchor !== true) problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`);
+        if (!isAnchor(b.props)) problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`);
         continue;
       }
-      if (b.props.anchor === true && NUMBERS.includes(k)) { problem(`${k}: the anchor's is skipped; put it on the bar it places`); continue; }
+      if (isAnchor(b.props) && NUMBERS.includes(k)) { problem(`${k}: the anchor's is skipped; put it on the bar it places`); continue; }
       if (k in props) continue;
       if (BOOLEANS.includes(k) && typeof v !== "boolean") problem(`${k} should be true or false`);
       else if (NUMBERS.includes(k) && !Number.isFinite(v)) problem(`${k} should be a number (px)`);
@@ -103,7 +105,7 @@ export function resting(layout, folder, props, hid = []) {
 }
 
 // This copy's anchors (blocks with `anchor: true`), in layout order: the first drives (ADR 0018).
-const anchors = (layout, folder) => bars(layout, folder).filter((b) => b.props.anchor === true);
+const anchors = (layout, folder) => bars(layout, folder).filter((b) => isAnchor(b.props));
 
 // Whether this copy is a view (ADR 0018): the layout has an anchor (a block of this copy with
 // `anchor: true`) and this copy's props aren't the first anchor's, so it is a bar's copy, which
@@ -122,7 +124,7 @@ export const spots = (layout, folder) => bars(layout, folder).filter((b) => type
 // (pick: whistle.json's `bar`, else the first bar in layout order), its own placement props;
 // with no bar at all, { none: true }.
 export function dock(layout, folder, pick) {
-  const all = bars(layout, folder).filter((b) => b.props.anchor !== true);
+  const all = bars(layout, folder).filter((b) => !isAnchor(b.props));
   if (all.some((b) => !b.hidden)) return { shown: true };
   const spot = all.find((b) => pick != null && b.props.bar === pick) ?? all[0];
   if (!spot) return { none: true };
