@@ -21,8 +21,9 @@ takes focus, and gets plain keys and its `mod:whistle` keys.
   it is a bar, so old layouts read unchanged.
 - One anchor drives a layout: the first in layout order; any others stand aside and are a
   config problem.
-- The layout's whistle props (`enabled`, `hints`, `nav`, `mods`, the hints' place) live on the
-  anchor; bars keep only their spot name and their look.
+- The layout's whistle props (`mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`) live on
+  the anchor. Bars keep their spot name (`bar`) and the hints' place props (`hintsAlignRight`,
+  `hintsAlignBorder`, `hintsGap`), which describe that bar's own position, plus their look.
 - Herdr hands every command and `mod:whistle` key to every shown copy, so bar copies ignore
   them; only the anchor acts.
 - With no bar showing, WHISTLE carries on, and the hints box docks where the picked bar would
