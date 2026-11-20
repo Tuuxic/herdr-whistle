@@ -51,14 +51,15 @@ export function runningCopy(world) {
   return all.includes(FOLDER) ? FOLDER : all[0];
 }
 
-// Why whistle is inert in this world: null, or { reason: "herdr" | "copy", problem: text }.
+// Why whistle is inert in this world: null, or { reason: "herdr" | "copy", problem: text, fix:
+// what the person can do about it }.
 export function inert(world) {
   if (older(world.herdr, MIN_HERDR)) {
     const is = parts(world.herdr) ? ` (this is ${world.herdr})` : "";
-    return { reason: "herdr", problem: `Whistle needs Herdr ≥ ${MIN_HERDR}${is}` };
+    return { reason: "herdr", problem: `Whistle needs Herdr ≥ ${MIN_HERDR}${is}`, fix: "Update Herdr." };
   }
   const runs = runningCopy(world);
-  if (runs !== world.folder) return { reason: "copy", problem: `Another whistle runs, from mods/${runs}/` };
+  if (runs !== world.folder) return { reason: "copy", problem: `Another whistle runs, from mods/${runs}/`, fix: "Delete the copies you don't want." };
   return null;
 }
 

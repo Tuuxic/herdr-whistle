@@ -22,6 +22,7 @@
 //          keynavActive: what whistle last wrote as shared("keynav").active, requestAt: the
 //          selected field's requests count after this ms, fieldProblems: keynav fields'
 //          problems [{ source: "keynav", detail }],
+//          told: why whistle is inert, as the notification last posted said it | null,
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null,
 //          sent: the views' models last set in their shared keys and the hints window last
@@ -71,6 +72,7 @@
 //                                       under that name first)
 //   { closeOverlay: name }              close it
 //   { typeKey: key, terminal }          type a key into a terminal
+//   { notify: { title, body, level } }  post a Herdr notification (notify())
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
@@ -85,7 +87,7 @@ import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
 
 export const start = () => ({
-  mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
+  mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [], told: null,
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
   enabled: true, published: null, sent: { bar: null, hints: null, settings: null, box: null, size: null, leftOpen: true },
 });
@@ -556,9 +558,10 @@ function routed(model, input, world) {
   // and claimed key the anchor gets, so it acts on none of them.
   if (viewing(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
-  if (why) return barSent(hintsClosed(stepped(model, input, world, why)), world);
-  if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);
-  return publish(viewsSent(stepped(model, input, world, why), world), world);
+  if (why) return barSent(told(hintsClosed(stepped(model, input, world, why)), world, why), world);
+  const m = model.told ? { ...model, told: null } : model;
+  if (resting(world.layout, folderOf(world), world.props, m.hid)) return rest(hintsClosed({ model: m, effects: [] }), input, world);
+  return publish(viewsSent(stepped(m, input, world, why), world), world);
 }
 
 // A hidden bar copy rests while another spot's copy runs: in TYPE, it claims, publishes and
@@ -634,6 +637,16 @@ function barSent(out, world) {
   const b = barModel(out.model, world), bs = JSON.stringify(b);
   if (bs === sent.bar) return out;
   return { ...out, model: { ...out.model, sent: { ...sent, bar: bs } }, effects: [...out.effects, { setShared: barKey(folderOf(world)), value: b }] };
+}
+
+// Inert, one Herdr notification says why (ADR 0018: the bar may be hidden, or the layout shows
+// none), when whistle stands aside and again only when the reason changes, never per step.
+// A hidden spot's copy, which would rest, posts none: the shown one does.
+function told(out, world, why) {
+  if (out.model.told === why.problem) return out;
+  const model = { ...out.model, told: why.problem };
+  if (resting(world.layout, folderOf(world), world.props, model.hid)) return { ...out, model };
+  return { ...out, model, effects: [...out.effects, { notify: { title: "Whistle stands aside", body: `${why.problem}. ${why.fix}`, level: "error" } }] };
 }
 
 // An inert copy sets no shared keys but its bar's model (barSent); it closes its hints window, if open.

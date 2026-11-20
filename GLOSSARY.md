@@ -21,7 +21,7 @@ _Avoid_: entry key, toggle, hotkey
 **Inert**:
 Whistle loaded but standing aside because it can't run safely, such as on a Herdr older than it
 needs or when another copy of whistle already runs: it claims no keys, the switch keys type
-through, and the bar says why. Unlike switching whistle off, it isn't the person's choice.
+through, and one Herdr notification and the bar say why. Unlike switching whistle off, it isn't the person's choice.
 _Avoid_: disabled, dormant, off
 
 ## Keys

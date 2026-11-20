@@ -24,6 +24,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   the selected field and the key sequence; a bar shown again shows the current state.
   whistle.json's `bar` still picks which spot shows. Layouts without an anchor work as before:
   hiding their bar rests whistle.
+- **New**: when whistle stands aside (inert: Herdr too old, or another copy runs), one Herdr
+  notification says why, so you learn it with the bar hidden too. It comes again only if the
+  reason changes; the bar still says why as well (docs/guide.md, When whistle stands aside).
 - **New**: with every bar hidden, the hints box still opens inside a group, docked where the
   picked bar spot would sit (at the size that spot had when it last showed), or at the
   window's bottom right in a layout with no bar spot. With a bar shown, the box docks on it

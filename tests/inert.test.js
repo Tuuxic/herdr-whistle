@@ -1,5 +1,5 @@
 // Inert (ADR 0012): whistle stands aside on a Herdr older than MIN_HERDR, or when another copy
-// of whistle runs, and the bar says why.
+// of whistle runs, and the bar and one Herdr notification say why.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
@@ -22,7 +22,34 @@ const TWO = {
 const ANCHOR2 = { id: "anchor2", type: "block", content: { mod: "whistle-2", props: { anchor: true } } };
 const RENAMED = {...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
 
+// The notification an inert whistle posts on a Herdr that's too old (0.1.14).
+const TOLD_OLD = { title: "Whistle stands aside", body: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14). Update Herdr.", level: "error" };
+const spotBlock = (id, name, hidden) => ({ id, type: "block", hidden, content: { mod: "whistle", props: { bar: name } } });
+
 const SCENARIOS = [
+  {
+    name: "Inert again after running, whistle posts its notification again",
+    world: OLD,
+    steps: [
+      { command: "type", notified: [TOLD_OLD] },
+      { world: { herdr: "0.1.15" }, command: "type", notified: [] },
+      { world: { herdr: "0.1.14" }, command: "type", notified: [TOLD_OLD] },
+    ],
+  },
+  {
+    // Only the copy that would run posts it: one notification, however many blocks.
+    name: "Inert, a hidden spot's copy posts no notification",
+    world: { ...OLD, props: { bar: "Top" },
+      layout: { id: "root", type: "column", children: [spotBlock("top", "Top", true), term("main"), spotBlock("bottom", "Bottom", false)] } },
+    steps: [{ command: "type", notified: [] }],
+  },
+  {
+    name: "Inert, a bar's copy in a layout with an anchor posts no notification: the anchor's does",
+    world: { ...OLD, props: { bar: "Bottom" },
+      layout: { id: "root", type: "column", children: [term("main"), spotBlock("bottom", "Bottom", false),
+        { id: "anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } }] } },
+    steps: [{ command: "type", notified: [] }, { world: { props: { anchor: true } }, command: "type", notified: [TOLD_OLD] }],
+  },
   {
     name: "On a Herdr older than the minimum, Ctrl+Space types through and whistle stays in TYPE",
     world: OLD,

@@ -20,12 +20,14 @@
 //                                          // from whistle state (`published` checks it)
 //                                          // the views' models, the bar's included
 //                                          // (`shared` checks them) and
-//                                          // the hints window (`hintsWindow` checks it)
+//                                          // the hints window (`hintsWindow` checks it) and
+//                                          // notifications (`notified` checks them)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
 //         shared: { "whistle.hints": null }, // what these private shared keys were set to
 //                                          // in this step; a key given as undefined: not set
 //         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
+//         notified: [{ title, body, level }],  // exactly these Herdr notifications posted
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
 //         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
@@ -110,7 +112,10 @@ export function runScenario(sc, core) {
       const isState = (e) => e?.setShared === STATE;
       const isView = (e) => VIEW_KEYS.includes(e?.setShared) || isBarKey(e?.setShared);
       const isWindow = (e) => e?.openOverlay === "hints" || e?.closeOverlay === "hints";
-      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e));
+      const isNotify = (e) => e && "notify" in e;
+      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e) && !isNotify(e));
+      if ("notified" in s && show(out.effects.filter(isNotify).map((e) => e.notify)) !== show(s.notified))
+        fails.push(`${at}: notified ${show(out.effects.filter(isNotify).map((e) => e.notify))}, want ${show(s.notified)}`);
       if ("hintsWindow" in s && show(out.effects.filter(isWindow)) !== show(s.hintsWindow))
         fails.push(`${at}: hintsWindow ${show(out.effects.filter(isWindow))}, want ${show(s.hintsWindow)}`);
       if ("effects" in s && show(effects) !== show(s.effects))

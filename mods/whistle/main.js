@@ -200,6 +200,9 @@ export default class Whistle extends View {
     }
     else if ("closeOverlay" in e) this.closeOverlay(e.closeOverlay);
     else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
+    // Through the namespace and guarded: notify() is in every Herdr from 0.1.10 to 0.1.16 (checked), but
+    // a Herdr without it, or one that throws, must leave an inert whistle quiet, not broken.
+    else if ("notify" in e) call(() => herdr.notify?.(e.notify));
   }
 
   render(_cx) {

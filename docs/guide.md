@@ -522,13 +522,15 @@ setting for you; `whistle.settings` opens the settings. Every command whistle an
 ## When whistle stands aside
 
 Sometimes whistle can't run safely, so it loads but stands aside (it is **inert**) and says why
-in the bar instead of a mode badge:
+in one Herdr notification, and in the bar instead of a mode badge. The notification comes once,
+when whistle stands aside, so you learn why even with the bar hidden (in a layout with an
+anchor); it comes again only if the reason changes:
 
 - **Herdr is older than whistle needs** (`mods/whistle/mod.json` says which, under `herdr`):
-  the bar reads "Whistle needs Herdr ≥ …". Update Herdr.
+  "Whistle needs Herdr ≥ …". Update Herdr.
 - **Another copy of whistle runs**: two folders under `mods/` hold whistle (say an old one and
   `mods/whistle/`) and both are in the shown layout. The copy in `mods/whistle/` runs (else the
-  first folder by name); the others hide their bars and read "Another whistle runs, from
+  first folder by name); the others hide their bars and say "Another whistle runs, from
   mods/whistle/". Delete the copies you don't want.
 
 ### A copy in another folder
@@ -570,7 +572,7 @@ mods, and the switch key types into the terminal as if whistle weren't there. Un
 [switching it off](#switching-whistle-off), it isn't your choice: it runs again by itself once
 the reason goes.
 
-```json example On a Herdr that's too old, the switch key types through and the bar says why
+```json example On a Herdr that's too old, the switch key types through, and a notification and the bar say why
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -582,8 +584,8 @@ the reason goes.
     "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
-      "bar": { "badge": null } }
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
+      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "published": null, "bar": { "badge": null } }
   ]
 }
 ```
@@ -602,8 +604,34 @@ the reason goes.
     "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle-old.whistle" }]
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "published": null,
-      "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
+      "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+  ]
+}
+```
+
+The notification comes once per reason, not on every tick or key, and again when the reason
+changes:
+
+```json example An inert whistle notifies once, and again when the reason changes
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle-old", "props": { "anchor": true } } },
+      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "props": { "anchor": true },
+    "herdr": "0.1.0",
+    "folder": "whistle-old",
+    "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" }
+  },
+  "steps": [
+    { "command": "type", "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }] },
+    { "command": "type", "notified": [] },
+    { "command": "whistle", "notified": [] },
+    { "world": { "herdr": "0.1.15" }, "command": "type", "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }] },
+    { "command": "type", "notified": [] }
   ]
 }
 ```
