@@ -143,10 +143,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   sequence, pane }` whenever it changes, and only then; an inert copy never writes it
   (docs/contracts/state.md). Every other `whistle.*` key is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
-  key>")` says `v: 2`. Whistle names the selected one in `shared("keynav") = { v: 2, active }`,
-  sends it moves and its declared keys as `<mod>.keynav-*` commands, and reads its request slot
-  `shared("keynav.request:<field key>")`. Declared keys beat mappings but not own keys
-  (docs/contracts/keynav.md).
+  key>")` says `v: 3` (or `v: 2`, still driven, with a notice in settings). Whistle names the
+  selected one in `shared("keynav") = { v: 3, active }`, sends it moves and its declared keys
+  as `<mod>.keynav-*` commands, and reads its request slot `shared("keynav.request:<field
+  key>")`. Declared keys beat mappings but not own keys (docs/contracts/keynav.md).
 
 ## Built from
 
@@ -304,10 +304,11 @@ Offer it after Install's last step. Do it at any other time the person asks.
   README, a LICENSE or an author in the folder). When you can't tell, treat a mod as
   third-party.
 - **Already fields, left as they are**: terminal blocks (`content` is a `pane`, `tab`,
-  `terminal` or `agent`), mods that already speak keynav v2 (a `keynav.js` with `V = 2` whose
+  `terminal` or `agent`), mods that already speak keynav v3 (a `keynav.js` with `V = 3` whose
   `announce` the mod calls), and whistle's own blocks (`"title": "Whistle"` in the mod's
-  `mod.json`). A mod still on keynav v1 (`shared("keynav.fields")`) is adapted: its
-  `keynav.js` is replaced and its calls changed as below.
+  `mod.json`). A mod still on keynav v2 (`V = 2`) or v1 (`shared("keynav.fields")`) is
+  adapted: its `keynav.js` is replaced and its calls changed as below (from v2, its `open`
+  move becomes `pick`; nothing else changes).
 
 ### Simple path
 
@@ -433,10 +434,10 @@ own mod):
    (pass `cx` on where the mod's own click handlers need it).
    `keynav(c)` does nothing unless `isActive(this.key)`. `move(c)`: `up`/`down` move the
    cursor through a list (`left`/`right` through a row, such as tabs) without opening anything;
-   `open` does what a click on the cursor item does; in a tree, `left` closes the cursor's
+   `pick` does what a click on the cursor item does; in a tree, `left` closes the cursor's
    open folder, and a preview's back button is `left` too. `declared(c)` runs that key's
    action on the cursor item.
-5. **Requests**: after `open` focused a terminal pane (an agent's), call
+5. **Requests**: after `pick` focused a terminal pane (an agent's), call
    `toTerminal(this.key)`; after it showed something else (another space or tab), call
    `keepKeys(this.key)`.
 6. **The look**, drawn only while `isActive(this.key)`: the field's glow and the cursor item's
