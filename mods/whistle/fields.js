@@ -126,7 +126,7 @@ export function declaredKeys(field, own, platform) {
     const k = canonicalKey(written, platform);
     if (!k) problems.push(`${who} declares ${written}, which isn't a key`);
     else if (isChord(k)) problems.push(`${who} declares ${written}, a chord; fields declare only keys without Ctrl, Alt or Super`);
-    else if (own?.[k]) problems.push(`${who} declares ${written}, one of whistle's own keys; it's ignored`);
+    else if (own?.[k]) problems.push(`${who} declares ${written}, ${own[k]}'s own key; it counts once you unbind ${own[k]}`);
     else keys[k] = written;
   }
   return { keys, problems };

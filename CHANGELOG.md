@@ -20,11 +20,19 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 - **Changed**: Backspace is an ordinary key. Map it in `whistle.json`, and a keynav field may
   declare it (a tree's "up a folder"); while such a field is selected, its key goes over your
   mapping, as for any declared key.
+- **New**: unbinding an own key frees it. Set any own key to `null` or `[]` in whistle.json
+  (the switch key still leaves WHISTLE); the freed key then belongs to a selected keynav field
+  that declares it, or to your mapping where none does. With `open` unbound, a field that
+  declares `enter` gets Enter (docs/guide.md, Unbinding an own key).
+- A field that declares one of whistle's own keys is still a config problem, which now names
+  the own key and says the field's key counts once you unbind it.
 
 ### Keynav authors
 
 - **Changed**: a field may declare Backspace. It is no longer one of whistle's own keys, so
   declaring it is no longer a config problem.
+- Rule 5: a declared key that is one of whistle's own keys counts once the person unbinds that
+  own key; until then it is a config problem naming the own key (docs/contracts/keynav.md).
 
 ## v1.0.0 (2026-11-15)
 
