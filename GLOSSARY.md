@@ -54,14 +54,10 @@ going to a space, going to an agent and typing there, or flipping a setting. Ent
 _Avoid_: open, select, activate, confirm
 
 **Show**:
-Bringing up the item under a field's cursor while keeping WHISTLE, to look at it without
-working in it; a field that offers it does so on Space.
+Bringing up the item under a field's cursor while staying in WHISTLE with that field selected,
+so the keyboard doesn't go to the item's terminal: you look at it without working in it. A
+field that offers it does so on Space; Pick is the one that goes in.
 _Avoid_: preview, peek
-
-**Aside**:
-In a pane split off to the right of the tab, beside what you were working in, so a
-field can pick or show an agent there without leaving the tab.
-_Avoid_: split, side view, peek
 
 **Jump key**:
 A regular Herdr key that runs a verb from either mode and goes to WHISTLE, unless its verb says

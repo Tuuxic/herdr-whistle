@@ -8,8 +8,7 @@ spec change. We decided to draw the line in three:
 
 - **Moves** (up, down, left, right, pick) are only what every kind of field shares, the
   terminal and stock fields included. The list grows only for something just as universal.
-- **Declared keys** carry everything one field does: Space to show, Shift+Enter to pick aside,
-  d to delete.
+- **Declared keys** carry everything one field does: Space to show, d to delete.
 - **The driver's public commands and state** carry anything driver-specific: a field that
   wants its pick to land in TYPE runs `whistle.type` itself after picking. It does nothing in
   TYPE, so the field needs no check of the mode.
@@ -24,7 +23,8 @@ undoes rebinding.
 ## Consequences
 
 - Whistle's code doesn't change for this; RECIPE tells integrating agents how a clone picks
-  into TYPE, shows and picks aside, and uses those names (GLOSSARY: Pick, Show, Aside).
+  into TYPE and shows, and uses those names (GLOSSARY: Pick, Show). Putting an agent aside in
+  a split is not whistle's concern, and RECIPE doesn't offer it.
 - Stock fields keep their behaviour: Pick on Herdr's own lists stays in WHISTLE.
 - Keynav v3 renames the move open to pick (`<mod>.keynav-pick`) and gives requests one shape,
   `{ after: "terminal" | "hold", at }`, in place of `{ to: "terminal" }` and `{ hold: true }`;
