@@ -652,7 +652,9 @@ name with a `+`. The box follows the sequence into nested groups and goes away w
 whether a mapping runs, the cancel key ends it or a key isn't mapped. Outside a sequence, while
 a [field](#fields) that declares keys of its own is selected, the box lists those keys instead,
 under the field's name. `"hints": false` in your whistle.json (or the layout's whistle block;
-yours wins) turns the box off.
+yours wins) turns the box off. In a layout with an anchor, the box opens with every bar hidden
+too, docked where the bar spot whistle.json's `bar` picks would sit (the layout's first spot
+without one), or at the window's bottom right in a layout with no bar spot.
 
 ```json example Hints list the keys that can follow a group
 {

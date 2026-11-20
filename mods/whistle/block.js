@@ -105,6 +105,20 @@ export function viewing(layout, folder, props) {
 // The bar spots: this copy's blocks named by a `bar` prop.
 export const spots = (layout, folder) => bars(layout, folder).filter((b) => typeof b.props.bar === "string");
 
+// Where the hints box docks (ADR 0018): { shown: true } while one of this copy's bars (its
+// blocks but the anchor) shows; with every bar hidden, { place } of the spot that would show
+// (pick: whistle.json's `bar`, else the first bar in layout order), its own placement props;
+// with no bar at all, { none: true }.
+export function dock(layout, folder, pick) {
+  const all = bars(layout, folder).filter((b) => b.props.anchor !== true);
+  if (all.some((b) => !b.hidden)) return { shown: true };
+  const spot = all.find((b) => pick != null && b.props.bar === pick) ?? all[0];
+  if (!spot) return { none: true };
+  const place = {};
+  for (const k of NUMBERS) if (Number.isFinite(spot.props[k])) place[k] = spot.props[k];
+  return { place };
+}
+
 // whistle.json's `enabled`, `hints` and `bar` over the layout's props: { settings, problems }.
 // settings: { enabled, hints, nav, bar: the spot whistle.json picks | null, place: the hints'
 // placement props }.

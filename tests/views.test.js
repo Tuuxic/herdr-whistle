@@ -33,6 +33,16 @@ const HINTS = (width, height, at) => ({ openOverlay: "hints", spec: { mod: "whis
 const MEASURED = { viewport: { width: 1000, height: 600 }, barSize: { width: 1000, height: 22 } };
 // The Panes group's two items fit on one row: the window is 22 (title) + 18 (row) + 10 high.
 const ONE_ROW = 50;
+// An anchored layout (ADR 0018) seen from the anchor's copy: a Side spot (ending 700 px from the
+// window's right edge, 1 px border, gap 4) and a Top spot (100 px in, gap 2), each hidden or not.
+const ANCHOR = { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } };
+const spot = (id, hidden, props) => ({ id, type: "block", hidden, content: { mod: "whistle", props } });
+const anchored = ({ side, top }) => ({
+  layout: { id: "root", type: "column", children: [term("main"),
+    spot("side-bar", side, { bar: "Side", hintsAlignRight: 700, hintsAlignBorder: 1, hintsGap: 4 }),
+    spot("top-bar", top, { bar: "Top", hintsAlignRight: 100, hintsGap: 2 }), ANCHOR] },
+  props: { anchor: true }, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }],
+});
 
 const SCENARIOS = [
   // The hints window: the core opens, docks and closes it; the shell only measures.
@@ -89,6 +99,27 @@ const SCENARIOS = [
     name: "Before the shell has measured anything, the hints window opens 900 wide where Herdr puts it",
     world: world({ map: PANES }),
     steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW)] }],
+  },
+  {
+    // ADR 0018: with every bar hidden, the box docks where whistle.json's spot would sit, by
+    // that spot's own place props (the first spot's are ignored).
+    name: "Anchored with every bar hidden, the hints window docks on the place of the spot whistle.json picks",
+    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW, { x: 0, y: 600 - 22 - 2 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with a bar shown, the hints window docks on that bar as without an anchor",
+    world: { ...anchored({ side: false, top: true }), viewport: { width: 1000, height: 600 }, barSize: { width: 296, height: 22 },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(298, ONE_ROW, { x: 1000 - 700 - 298, y: 600 - 24 - 4 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with no bar spot, the hints window docks at the window's bottom right, no wider than the window",
+    world: { layout: { id: "root", type: "column", children: [term("main"), ANCHOR] }, props: { anchor: true },
+      focused: { pane: "p1", terminal: "t1" }, viewport: { width: 300, height: 600 },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(300, ONE_ROW, { x: 0, y: 600 - 6 - ONE_ROW })] }],
   },
   {
     name: "An inert copy closes its hints window and sets no hints' or settings' models",

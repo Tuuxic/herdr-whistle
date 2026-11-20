@@ -32,7 +32,8 @@ The three `hints*` props line the hints box up with the bar. Whistle can't measu
 layout puts the bar, only the bar's own size inside any border, so a layout that sets the bar
 in from the window's right edge, or draws a border around it, tells whistle by how much: the
 box is then as wide as the bar block, border included, ends where the block ends, and sits
-`hintsGap` above the block's top edge, border included (rule 7).
+`hintsGap` above the block's top edge, border included (rule 7). With every bar hidden, the
+box docks where the picked spot would sit, by that spot's own `hints*` props (rule 13).
 
 A layout may have several whistle blocks (bar spots). Each prop but `bar` comes from the first
 block, in layout order, that has it, so a second spot needn't repeat the mappings.
@@ -454,6 +455,66 @@ tell it isn't the first: remove it.
     { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
       { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and stands aside; whistle-anchor runs whistle" }
     ] } }
+  ]
+}
+```
+
+### 13. With no bar shown, the hints box docks where the picked spot would sit
+
+Inside a group the hints box opens whether or not a bar shows. While a bar shows, it docks on
+that bar (rule 7). With every bar hidden, it docks where the picked spot (whistle.json's `bar`,
+else the layout's first whistle block that isn't the anchor) would sit, lined up by that
+spot's own `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`. Whistle can't measure a hidden
+block, so it takes the spot as reaching from the window's left edge to `hintsAlignRight`, along
+the window's bottom, 22 px high inside its border.
+
+```json example Anchored with every bar hidden, the hints box docks on the first spot's place
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "side-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": {
+        "bar": "Side", "hintsAlignRight": 700, "hintsAlignBorder": 1, "hintsGap": 4 } } },
+      { "id": "bottom-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "viewport": { "width": 1000, "height": 600 },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
+      "mod": "whistle", "kind": "window", "frame": "none", "width": 300, "height": 50,
+      "at": { "x": 0, "y": 522 }, "props": { "part": "hints", "width": 300 } } }] }
+  ]
+}
+```
+
+The spot's block is 1000 − 700 = 300 px wide, border included, and 22 + 2 × 1 = 24 px high, so
+the box (50 px, one row) ends 4 px above it: 600 − 24 − 4 − 50 = 522.
+
+A layout with no bar spot at all, only the anchor, docks the box at the window's bottom right:
+480 px wide (the window's width, if narrower), 6 px in from the bottom and right edges.
+
+```json example Anchored with no bar spot, the hints box docks at the window's bottom right
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+    ] },
+    "props": { "anchor": true },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "viewport": { "width": 1000, "height": 600 },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
+  },
+  "steps": [
+    { "command": "whistle" },
+    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
+      "mod": "whistle", "kind": "window", "frame": "none", "width": 480, "height": 50,
+      "at": { "x": 514, "y": 544 }, "props": { "part": "hints", "width": 480 } } }] }
   ]
 }
 ```

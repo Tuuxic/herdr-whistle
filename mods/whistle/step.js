@@ -76,7 +76,7 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots, resting, viewing } from "./block.js";
+import { blockProps, settings as blockSettings, spots, resting, viewing, dock } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
@@ -590,7 +590,7 @@ function viewsSent(out, world) {
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;
   if (h) {
-    const b = hintsBox(h.items, m.config?.place ?? {}, world);
+    const b = hintsBox(h.items, m.config?.place ?? {}, world, dock(world.layout, folderOf(world), m.config?.bar));
     const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
