@@ -105,7 +105,7 @@ every public surface: ADR 0002). Agents relay these entries when they update whi
   `whistle.unsubscribe:<mod>`. Whistle runs `<mod>.whistle-event:<event>` for each event a
   subscriber's filter passes, only while the mod has a block that shows; one that doesn't
   show reads the feed when it shows again. Subscriptions are per mod and outlive layout
-  changes; unsubscribing in `close()` is the mod's job
+  changes and whistle standing aside; unsubscribing in `close()` is the mod's job
   ([events.md](docs/contracts/events.md#subscriptions)).
 - **New**: the whistle state's fields `field`, the selected field's block id in WHISTLE (else
   `null`), and `inert`, `{ problem, fix }` while whistle stands aside (else `null`). A copy

@@ -112,7 +112,8 @@ the first colon. A bad argument raises `command-failed`.
   which is why whistle skips subscribers that don't show. And as the subscription is the mod's,
   one copy unsubscribing unsubscribes every copy.
 - Whistle keeps the subscriptions across layout changes (each new copy of whistle reads them
-  back), but not across a restart of Herdr: subscribe on every start.
+  back) and while it stands aside ([rule 6](#6-who-writes-the-feed)), but not across a restart
+  of Herdr: subscribe on every start.
 
 ## Rules
 
@@ -283,8 +284,11 @@ The running copy writes the feed and pushes. With **no copy running** (on a Herd
 whistle needs, or with whistle blocks that share their props), the copy that would run raises
 `whistle-inert` and writes the feed, under the same rule as the whistle state's `inert`
 ([state.md](state.md#8-only-the-running-whistle-writes-it-with-none-running-inert-says-why)):
-once, and again only when the reason changes. It pushes nothing. A copy standing aside for
-another copy writes nothing. When a copy that stood aside runs, it raises `whistle-active`.
+once, and again only when the reason changes. It pushes nothing, but keeps the subscriptions:
+`whistle.subscribe` and `whistle.unsubscribe` change them whether whistle runs or not, so a mod
+that subscribes while whistle stands aside gets its pushes once whistle runs. A copy standing
+aside for another copy writes nothing, subscriptions included: they are the running copy's to
+keep. When a copy that stood aside runs, it raises `whistle-active`.
 
 ```json example A lone inert copy writes whistle-inert, once
 {

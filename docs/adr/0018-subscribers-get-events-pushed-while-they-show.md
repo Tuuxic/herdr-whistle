@@ -16,7 +16,10 @@ last 32 events, and its readers take the same filter and say how many events wer
 
 Subscriptions are per mod, because Herdr delivers `<mod>.<cmd>` to every shown copy, in order,
 with nothing lost. Whistle keeps them in a private shared key, `whistle.subscribers`, which only
-whistle writes, so a new copy of whistle reads them back after a layout change.
+whistle writes, so a new copy of whistle reads them back after a layout change. That key is the
+one source of truth: a copy keeps no list of its own. The copy that runs (or, with none running,
+the one that would) writes it, even while standing aside; a copy standing aside for another
+copy leaves it alone.
 
 ## Considered options
 

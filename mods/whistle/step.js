@@ -28,9 +28,7 @@
 //          last written, as JSON ({ hints, events, config }; null: not yet),
 //          events: the last EVENTS_KEPT events [{ seq, kind, groups, text, ...data }]
 //          (events.js raised()), eventSeq: the last event's seq (0: none yet),
-//          inertRaised: the problem of the whistle-inert event this copy raised | null,
-//          subscribers: { [mod]: { groups?, kinds? } }, the subscriptions as this copy last
-//          wrote them (undefined: as world.subscribers says) }
+//          inertRaised: the problem of the whistle-inert event this copy raised | null }
 //
 // input: { command: "switch-mode" }      a whistle.<command>[:<argument>] from Herdr (keys.json,
 //                                          run()): "mode:type", 'keep-mapping:{"mod":…}'
@@ -61,8 +59,8 @@
 //                 whistle blocks apart | undefined (unknown),
 //          state: shared("whistle"), the whistle state as last published, by whichever copy
 //                 | null (Herdr makes a new copy whenever the layout changes or shows again),
-//          subscribers: shared("whistle.subscribers"), the subscriptions as a copy last wrote
-//                       them | null }
+//          subscribers: shared("whistle.subscribers"), the subscriptions ({ [mod]: { groups?,
+//                       kinds? } }) as a copy last wrote them | null }
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command (or a mod's: a push to a
@@ -372,28 +370,32 @@ function leaving(model, world, out) {
 // commands (commands.js parseCommand names).
 const ANY_TIME = ["on", "off", "mappings-on", "mappings-off", "keep-mapping", "subscribe", "unsubscribe"];
 
+// The commands kept while whistle is inert, by the copy that would run: the subscriptions.
+const KEPT_INERT = ["subscribe", "unsubscribe"];
+
 // The private shared key the subscriptions are kept in, so a new copy reads them back.
 export const SUBSCRIBERS = "whistle.subscribers";
 
-// The subscriptions now: this copy's, else those a copy before it wrote.
-const subscribersOf = (model, world) => model.subscribers ?? world.subscribers ?? {};
+// The subscriptions now: whistle.subscribers as whichever copy last wrote it, the one source of
+// truth (a copy keeps no list of its own, which would go stale while another copy runs).
+const subscribersOf = (world) => world.subscribers ?? {};
 
-// The model with the subscriptions changed to next, and the write of them if they changed.
+// The subscriptions changed to next: the write of them, if they changed.
 function subscribed(model, world, next) {
-  if (JSON.stringify(next) === JSON.stringify(subscribersOf(model, world))) return { model: { ...model, subscribers: next }, effects: [] };
-  return { model: { ...model, subscribers: next }, effects: [{ setShared: SUBSCRIBERS, value: next }] };
+  if (JSON.stringify(next) === JSON.stringify(subscribersOf(world))) return { model, effects: [] };
+  return { model, effects: [{ setShared: SUBSCRIBERS, value: next }] };
 }
 
 // whistle.subscribe:{ mod, groups?, kinds? }: the mod's whole filter, replacing any earlier one.
 function subscribe(model, world, c, arg) {
   const s = subscription(arg);
   if (!s) return failed(model, world, c, `${folderOf(world)}.subscribe needs {"mod":"<mod>","groups":[…],"kinds":[…]}`);
-  return subscribed(model, world, { ...subscribersOf(model, world), [s.mod]: s.filter });
+  return subscribed(model, world, { ...subscribersOf(world), [s.mod]: s.filter });
 }
 
 // whistle.unsubscribe:<mod>: the mod's filter removed.
 function unsubscribe(model, world, mod) {
-  const { [mod]: _gone, ...rest } = subscribersOf(model, world);
+  const { [mod]: _gone, ...rest } = subscribersOf(world);
   return subscribed(model, world, rest);
 }
 
@@ -605,6 +607,10 @@ function stepped(model, input, world, why) {
     const error = input.error ?? "unknown error";
     return { model: raised(model, { kind: "command-failed", command: input.ran, error, text: `${input.ran} failed: ${error}` }), effects: [] };
   }
+  // Inert, the copy that would run keeps the subscriptions (events.md rule 6); a copy standing
+  // aside for another copy leaves them to it.
+  if (why && KEPT_INERT.includes(parseCommand(input.command)?.name))
+    return runningCopy(world) === folderOf(world) ? command(model, world, input.command) : { model, effects: [], handled: false };
   const out = why ? standAside(model, input, world) : active(model, input, world);
   return input.tick ? copiesTick(out, world) : out;
 }
@@ -683,7 +689,7 @@ function publish(out, world, before) {
   const now = state(out.model, world);
   const model = changes(statePublished(out.model, world), now).reduce(raised, out.model);
   const written = published(writePublic({ ...out, model }, publicValues(model, world)), now);
-  return { ...written, effects: [...written.effects, ...pushes(model, before, subscribersOf(model, world), world)] };
+  return { ...written, effects: [...written.effects, ...pushes(model, before, subscribersOf(world), world)] };
 }
 
 // An inert copy's step, only from the copy that would run (inert.js runningCopy): while another

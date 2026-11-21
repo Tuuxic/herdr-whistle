@@ -40,6 +40,8 @@
 //         handled: true },                 // whether a key was handled
 //     ],
 //
+// whistle.subscribers set in a step is world.subscribers in the next, as Herdr's shared state is.
+//
 // Whatever a scenario checks, a step that sets a private shared key of whistle's (any
 // "whistle.<name>" but the public keys, whistle.copies and whistle.subscribers) or opens or closes an overlay fails:
 // whistle draws nothing and keeps no view state (ADR 0006).
@@ -174,6 +176,10 @@ export function runScenario(sc, core) {
       if ("handled" in s && Boolean(out.handled) !== s.handled)
         fails.push(`${at}: handled ${Boolean(out.handled)}, want ${s.handled}`);
       model = out.model;
+      // Herdr's shared state is live: whistle.subscribers as whistle set it is what the next
+      // step reads back (world.subscribers), as main.js reads it each step.
+      const subs = out.effects.filter((e) => e?.setShared === "whistle.subscribers");
+      if (subs.length) world = { ...world, subscribers: subs.at(-1).value };
     } catch (e) {
       fails.push(`${at}: threw ${e?.message ?? e}`);
     }

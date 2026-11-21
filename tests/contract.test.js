@@ -281,6 +281,13 @@ const SCENARIOS = [
       { run: 'notes.whistle-event:{"seq":2,"kind":"field-selected","groups":["field"],"text":"main selected","block":"main"}' }] }],
   },
   {
+    name: "whistle.subscribers is the source of truth: a subscribe builds on what another copy wrote since",
+    world: world({ mods: ["notes", "tree"] }),
+    steps: [{ tick: 120 },
+      { command: 'subscribe:{"mod":"notes"}', effects: [{ setShared: "whistle.subscribers", value: { notes: {} } }] },
+      { world: { subscribers: {} }, command: 'subscribe:{"mod":"tree"}', effects: [{ setShared: "whistle.subscribers", value: { tree: {} } }] }],
+  },
+  {
     name: "subscribe and unsubscribe work while WHISTLE is switched off",
     world: world({ mods: ["notes"], user: { enabled: false } }),
     steps: [{ tick: 120 }, { command: 'subscribe:{"mod":"notes"}', effects: [{ setShared: "whistle.subscribers", value: { notes: {} } }] }],
@@ -289,6 +296,19 @@ const SCENARIOS = [
     name: "A subscribe whose groups aren't strings raises command-failed and keeps nothing",
     world: world({ mods: ["notes"] }),
     steps: [{ tick: 120 }, { command: 'subscribe:{"mod":"notes","groups":"mode"}', effects: [], raised: [{ kind: "command-failed" }] }],
+  },
+  {
+    name: "A lone inert copy keeps the subscriptions: subscribe and unsubscribe write whistle.subscribers",
+    world: { ...world({ mods: ["notes"] }), herdr: "0.1.0" },
+    steps: [{ tick: 120 },
+      { command: 'subscribe:{"mod":"notes"}', effects: [{ setShared: "whistle.subscribers", value: { notes: {} } }] },
+      { command: "unsubscribe:notes", effects: [{ setShared: "whistle.subscribers", value: {} }] }],
+  },
+  {
+    name: "A copy standing aside for another copy leaves the subscriptions to it",
+    world: { ...world({ mods: ["notes"] }), folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
+      layout: { id: "root", type: "column", children: [term("main"), block("notes"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
+    steps: [{ tick: 120 }, { command: 'subscribe:{"mod":"notes"}', effects: [], raised: [] }],
   },
   {
     name: "A lone inert copy pushes nothing to its subscribers",
