@@ -11,12 +11,16 @@ spaces, tabs or agents list), `h/j/k/l` and the arrows move inside it, and keys 
 sequences run Herdr's commands (`p` opens the palette, `w v` splits the pane). Press `i`, or
 Ctrl+Space again, to type again.
 
+Whistle draws nothing itself. **whistle-ui**, shipped beside it, shows what it does:
+
 - **The bar**, a thin strip in the window, shows the mode and what has the keyboard. A short
   flash there says when a key isn't mapped or a command failed, and a `⚠` marker counts config
   problems.
 - **The hints**, a box over the bar, list the keys that can follow while you're inside a group
   (after `w`, the pane keys).
 - **Settings** list config problems and let you switch off the mappings other mods offer.
+
+Hide the bar and whistle works the same; replace any part of whistle-ui with your own.
 
 ## Keys outside WHISTLE
 
@@ -27,7 +31,7 @@ Whistle leaves TYPE yours: only these keys act there, all regular lines in Herdr
 | Ctrl+Space | Switch: TYPE to WHISTLE and back |
 | Alt+A | Jump to the agents list, in WHISTLE |
 | Alt+S | Jump to the spaces list, in WHISTLE |
-| Alt+, | Whistle's settings |
+| Alt+, | Settings (whistle-ui's) |
 
 On macOS, where Option+letter types characters, the installing agent offers Ctrl+Shift+A,
 Ctrl+Shift+S and Ctrl+Shift+, instead. If Ctrl+Space is taken on your setup (an input-source

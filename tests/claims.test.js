@@ -1,4 +1,4 @@
-// Claimed keys (ADR 0001): whistle keeps its keys in keys.json's mod:whistle section, as
+// Claimed keys (ADR 0009): whistle keeps its keys in keys.json's mod:whistle section, as
 // "<key>": "whistle.key-<key>", by write effects; the write's outcome comes back as an input.
 
 import { suite } from "./harness.js";
@@ -11,12 +11,12 @@ const keys = (all, extra = {}) => ({ keysFile: { text: text(all), error: null, a
 const world = (all, extra) => ({ ...IN_TERMINAL, platform: "linux", layoutName: "main", ...keys(all, extra) });
 
 // keys.json as shipped: the switch key only.
-const SHIPPED = { global: { "ctrl-space": "whistle.whistle" }, "mod:whistle": { "ctrl-space": "whistle.type" } };
+const SHIPPED = { global: { "ctrl-space": "whistle.switch-mode" }, "mod:whistle": { "ctrl-space": "whistle.mode:type" } };
 // What whistle makes of it: its chords (Ctrl+H/J/K/L) claimed after your entry.
 const CLAIMED = {
   ...SHIPPED,
   "mod:whistle": {
-    "ctrl-space": "whistle.type",
+    "ctrl-space": "whistle.mode:type",
     "ctrl-h": "whistle.key-ctrl-h", "ctrl-j": "whistle.key-ctrl-j",
     "ctrl-k": "whistle.key-ctrl-k", "ctrl-l": "whistle.key-ctrl-l",
   },
@@ -89,11 +89,11 @@ const SCENARIOS = [
     steps: [
       { tick: 120, effects: [WRITE] },
       { wrote: "keys.json", ok: false, error: "changed on disk", effects: [] },
-      { world: keys({ ...SHIPPED, global: { "ctrl-space": "whistle.whistle", "alt-1": "space.select:1" } }), tick: 120,
+      { world: keys({ ...SHIPPED, global: { "ctrl-space": "whistle.switch-mode", "alt-1": "space.select:1" } }), tick: 120,
         effects: [{
           write: "keys.json",
-          text: text({ ...CLAIMED, global: { "ctrl-space": "whistle.whistle", "alt-1": "space.select:1" } }),
-          expected: text({ ...SHIPPED, global: { "ctrl-space": "whistle.whistle", "alt-1": "space.select:1" } }),
+          text: text({ ...CLAIMED, global: { "ctrl-space": "whistle.switch-mode", "alt-1": "space.select:1" } }),
+          expected: text({ ...SHIPPED, global: { "ctrl-space": "whistle.switch-mode", "alt-1": "space.select:1" } }),
         }] },
     ],
   },
@@ -120,18 +120,18 @@ const SCENARIOS = [
   {
     name: "Your own entry for a key wins, in any spelling",
     world: world({ ...SHIPPED, "mod:whistle": {
-      "ctrl-space": "whistle.type", "CTRL-h": "tab.prev",
+      "ctrl-space": "whistle.mode:type", "CTRL-h": "tab.prev",
       "ctrl-j": "whistle.key-ctrl-j", "ctrl-k": "whistle.key-ctrl-k", "ctrl-l": "whistle.key-ctrl-l",
     } }),
     steps: [{ tick: 120, effects: [] }],
   },
   {
     name: "A key a global section binds is claimed though it isn't a chord",
-    world: world({ ...SHIPPED, global: { "ctrl-space": "whistle.whistle", j: "tab.next" } }),
+    world: world({ ...SHIPPED, global: { "ctrl-space": "whistle.switch-mode", j: "tab.next" } }),
     steps: [{ tick: 120, effects: [{
       write: "keys.json",
-      text: text({ ...SHIPPED, global: { "ctrl-space": "whistle.whistle", j: "tab.next" }, "mod:whistle": { ...CLAIMED["mod:whistle"], j: "whistle.key-j" } }),
-      expected: text({ ...SHIPPED, global: { "ctrl-space": "whistle.whistle", j: "tab.next" } }),
+      text: text({ ...SHIPPED, global: { "ctrl-space": "whistle.switch-mode", j: "tab.next" }, "mod:whistle": { ...CLAIMED["mod:whistle"], j: "whistle.key-j" } }),
+      expected: text({ ...SHIPPED, global: { "ctrl-space": "whistle.switch-mode", j: "tab.next" } }),
     }] }],
   },
   {
@@ -164,34 +164,35 @@ const SCENARIOS = [
   },
   {
     name: "A copy in another folder claims in its own section, with its own commands",
-    world: { ...world({ global: { "ctrl-space": "wh.whistle" } }), folder: "wh", copies: { wh: VERSION } },
+    world: { ...world({ global: { "ctrl-space": "wh.switch-mode" } }), folder: "wh", copies: { wh: VERSION },
+      layout: { id: "root", type: "column", children: [IN_TERMINAL.layout.children[0], { id: "anchor", type: "block", content: { mod: "wh" } }] } },
     steps: [{ tick: 120, effects: [{
       write: "keys.json",
-      text: text({ global: { "ctrl-space": "wh.whistle" }, "mod:wh": {
+      text: text({ global: { "ctrl-space": "wh.switch-mode" }, "mod:wh": {
         "ctrl-h": "wh.key-ctrl-h", "ctrl-j": "wh.key-ctrl-j", "ctrl-k": "wh.key-ctrl-k", "ctrl-l": "wh.key-ctrl-l",
       } }),
-      expected: text({ global: { "ctrl-space": "wh.whistle" } }),
+      expected: text({ global: { "ctrl-space": "wh.switch-mode" } }),
     }] }],
   },
   {
     name: "Claims are made in TYPE as in WHISTLE",
     world: world(SHIPPED),
-    steps: [{ command: "whistle" }, { world: { barFocused: true }, tick: 120, effects: [WRITE] }],
+    steps: [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120, effects: [WRITE] }],
   },
   {
     name: "A claimed key's command in WHISTLE acts as the key",
     world: world(CLAIMED),
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
   {
     name: "A claimed key's command in another spelling acts as the key",
     world: world(CLAIMED),
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, command: "key-Enter", model: { mode: "type" } },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, command: "key-Enter", model: { mode: "type" } },
     ],
   },
   {

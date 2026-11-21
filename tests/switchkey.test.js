@@ -1,7 +1,7 @@
 // The switch key of a renamed copy (issue #35): Herdr hands a keys.json action to the mod its
 // prefix names, so a copy in mods/whistle-2/ answers only to "whistle-2.*". When the global key
 // bound to the switch command names another folder, the running copy lists a config problem
-// (source keys.json). Whistle only reads global; it never writes it (ADR 0001).
+// (source keys.json). Whistle only reads global; it never writes it (ADR 0009).
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
@@ -18,33 +18,33 @@ const COPY2 = {
   folder: "whistle-2", copies: { "whistle-2": VERSION },
 };
 // Herdr's key bindings (keys()) for the copy in mods/whistle-2/: its switch key and a jump key.
-const KEYS2 = [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" },
+const KEYS2 = [{ section: "global", keys: "ctrl-space", action: "whistle-2.switch-mode" },
   { section: "global", keys: "alt-a", action: "whistle-2.focus:agents" }];
 const OFF = { configFiles: { defaults: json({ ...TEST_DEFAULTS, map: {} }), user: json({ enabled: false }) } };
 const THROUGH = (key) => ({ model: { mode: "type" }, effects: [{ typeKey: key, terminal: "t1" }] });
-const PROBLEM = { source: "keys.json", detail: "global › ctrl-space runs whistle.whistle, but this copy is whistle-2: make it whistle-2.whistle" };
+const PROBLEM = { source: "keys.json", detail: "global › ctrl-space runs whistle.switch-mode, but this copy is whistle-2: make it whistle-2.switch-mode" };
 
 const SCENARIOS = [
   {
-    name: "A copy in mods/whistle-2/ whose switch key runs whistle.whistle lists a config problem",
-    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents" } }) },
-    steps: [{ tick: 120, model: { problems: [PROBLEM] }, bar: { marker: "⚠ 1" } }],
+    name: "A copy in mods/whistle-2/ whose switch key runs whistle.switch-mode lists a config problem",
+    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents" } }) },
+    steps: [{ tick: 120, model: { problems: [PROBLEM] }, problems: 1 }],
   },
   {
-    name: "A copy in mods/whistle-2/ whose switch key runs whistle-2.whistle lists no problem",
-    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle-2.whistle", "alt-a": "whistle-2.focus:agents" } }) },
-    steps: [{ tick: 120, model: { problems: [] }, bar: { marker: null } }],
+    name: "A copy in mods/whistle-2/ whose switch key runs whistle-2.switch-mode lists no problem",
+    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle-2.switch-mode", "alt-a": "whistle-2.focus:agents" } }) },
+    steps: [{ tick: 120, model: { problems: [] }, problems: 0 }],
   },
   {
-    name: "The copy in mods/whistle/ never lists the switch-key problem for whistle.whistle",
+    name: "The copy in mods/whistle/ never lists the switch-key problem for whistle.switch-mode",
     world: { ...COPY2, folder: "whistle", copies: { whistle: VERSION },
       layout: { id: "root", type: "column", children: [term("main"), { ...bar2, content: { mod: "whistle" } }] },
-      ...keysFile({ global: { "ctrl-space": "whistle.whistle" } }) },
-    steps: [{ tick: 120, model: { problems: [] }, bar: { marker: null } }],
+      ...keysFile({ global: { "ctrl-space": "whistle.switch-mode" } }) },
+    steps: [{ tick: 120, model: { problems: [] }, problems: 0 }],
   },
   {
     name: "A switch key outside global is not the switch-key problem (whistle only reads global)",
-    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle-2.whistle" }, terminal: { "ctrl-q": "whistle.whistle" } }) },
+    world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle-2.switch-mode" }, terminal: { "ctrl-q": "whistle.switch-mode" } }) },
     steps: [{ tick: 120, model: { problems: [] } }],
   },
 
@@ -53,12 +53,12 @@ const SCENARIOS = [
   {
     name: "Switched off, a copy in mods/whistle-2/ types its switch key and a jump key through",
     world: { ...COPY2, keys: KEYS2, ...OFF },
-    steps: [{ command: "whistle", ...THROUGH("ctrl-space") }, { command: "focus:agents", ...THROUGH("alt-a") }],
+    steps: [{ command: "switch-mode", ...THROUGH("ctrl-space") }, { command: "focus:agents", ...THROUGH("alt-a") }],
   },
   {
     name: "Inert, a copy in mods/whistle-2/ types its switch key and a jump key through",
     world: { ...COPY2, keys: KEYS2, herdr: "0.1.14" },
-    steps: [{ command: "whistle", ...THROUGH("ctrl-space") }, { command: "focus:agents", ...THROUGH("alt-a") }],
+    steps: [{ command: "switch-mode", ...THROUGH("ctrl-space") }, { command: "focus:agents", ...THROUGH("alt-a") }],
   },
 ];
 

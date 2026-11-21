@@ -1,27 +1,23 @@
 // The layout's whistle block (docs/contracts/layout-block.md), a public contract: the props a
 // layout gives whistle's blocks, read and checked. Pure: it reads only the layout it is given.
 //
-// Stable props: `anchor` (the block whistle runs in, ADR 0018, which holds the layout's config
-// layer), `mappings` and `keys` (the layout's config layer, checked by config.js),
-// `mods` (switching mods' mappings off, checked by config.js),
-// `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`,
-// which place the hints box. `part` is private (whistle's own overlay copies). A bad prop is skipped and listed as a config problem; the rest still count.
+// Every whistle block is the anchor (ADR 0005): the block whistle runs in, which holds
+// the layout's config layer. The first in layout order runs; the others are extra, listed and left
+// out. Blocks with the same props can't be told apart (a copy knows its block only by its props),
+// so whistle is inert (inert.js). With no whistle block in the layout, nothing runs.
 //
-// whistle.json's `enabled` and `hints` go over the layout's (settings()). Its `bar` is ignored
-// and listed: the layout shows and hides bars, whistle never does (ADR 0019).
+// Stable props: `mappings` and `keys` (the layout's config layer, checked by config.js), `mods`
+// (switching mods' mappings off, checked by config.js), `enabled` and `nav`. A bad or unknown
+// prop is skipped and listed as a config problem; the rest still count.
+//
+// whistle.json's `enabled` goes over the layout's (settings()).
 
 import { fieldKey, eachNode } from "./fields.js";
 import { isObject } from "./config.js";
 import { FOLDER } from "./version.js";
 
 export const DIRS = ["left", "down", "up", "right"];
-const BOOLEANS = ["enabled", "hints"];
-const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
-export const BEHAVIOUR = ["mappings", "keys", "mods", "enabled", "hints", "nav"];
-const KNOWN = [...BEHAVIOUR, "bar", ...NUMBERS, "part", "anchor"];
-
-// Whether a block's props make it the anchor (ADR 0018): `anchor: true`.
-export const isAnchor = (props) => isObject(props) && props.anchor === true;
+const KNOWN = ["mappings", "keys", "mods", "enabled", "nav"];
 
 // Every block id in the layout.
 function ids(layout) {
@@ -30,13 +26,12 @@ function ids(layout) {
   return out;
 }
 
-// This copy's blocks in the layout (not whistle's own overlay copies): [{ id, hidden, props }],
-// in layout order. hidden: the block or one of its groups is hidden.
-export function bars(layout, folder = FOLDER) {
+// This copy's blocks in the layout: [{ id, props }], in layout order.
+export function blocks(layout, folder = FOLDER) {
   const out = [];
-  eachNode(layout, (n, _parent, hidden) => {
+  eachNode(layout, (n) => {
     const c = n.content;
-    if (c?.mod === folder && !(isObject(c.props) && c.props.part)) out.push({ id: n.id, hidden, props: isObject(c.props) ? c.props : {} });
+    if (c?.mod === folder) out.push({ id: n.id, props: isObject(c.props) ? c.props : {} });
   });
   return out;
 }
@@ -59,114 +54,71 @@ function readNav(nav, known, problem) {
   return out;
 }
 
-// The props of this copy's blocks, checked: { props, problems: [detail] }. Each prop comes from
-// the first block that has it (a second bar needn't repeat the mappings); `bar` is each
-// block's own, so it is only checked here. In a layout whose anchor runs whistle (ADR 0018,
-// anchors() below), the behaviour props (BEHAVIOUR) come from that anchor alone and the place
-// props (NUMBERS) from the bars alone; either on the other kind of block is skipped and listed.
-// An anchor that is left out counts for nothing, unlisted but for being one.
-export function blockProps(layout, folder = FOLDER) {
-  const problems = [];
-  const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
-  const known = ids(layout);
-  const props = {};
-  const blocks = bars(layout, folder);
-  const { runs, extra, twins } = anchors(blocks, folder); // of blocks: compared by identity below
-  for (const b of blocks) {
-    const leftOut = isAnchor(b.props) && b !== runs;
-    for (const [k, v] of Object.entries(b.props)) {
-      if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
-      if (leftOut || k === "part" || k === "anchor" || v === undefined) continue;
-      if (k === "bar") { if (typeof v !== "string") problem("bar should be the spot's name, a string"); continue; }
-      if (runs && BEHAVIOUR.includes(k) && b !== runs) { problem(`${k}: a bar's is skipped in a layout with an anchor; put it on the anchor`); continue; }
-      if (isAnchor(b.props) && NUMBERS.includes(k)) { problem(`${k}: the anchor's is skipped; put it on the bar it places`); continue; }
-      if (k in props) continue;
-      if (BOOLEANS.includes(k) && typeof v !== "boolean") problem(`${k} should be true or false`);
-      else if (NUMBERS.includes(k) && !Number.isFinite(v)) problem(`${k} should be a number (px)`);
-      else if (k === "nav") props.nav = readNav(v, known, problem);
-      else props[k] = v;
-    }
-  }
-  for (const b of extra) problem(`anchor: ${b.id} is a second anchor and is left out; ${runs.id} runs whistle`);
-  for (const group of twins) problem(`anchor: ${names(group.map((b) => b.id))} have the same props, so they can't tell which comes first and all are left out; keep one`);
-  return { props, problems };
-}
-
-const names = (all) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all[0] ?? "");
-
-// Whether this copy rests (ADR 0011): every block of the layout with this copy's props (props(),
-// which tell the copies of a layout's spots apart) is hidden. Unknown props: it doesn't rest.
-// A block the copy hid itself, standing aside for another copy (hid: their ids), doesn't count
-// as hidden: the copy shows it again once it runs.
-export function resting(layout, folder, props, hid = []) {
-  if (props === undefined) return false;
-  const mine = fieldKey(folder, isObject(props) ? props : {});
-  const blocks = bars(layout, folder).filter((b) => fieldKey(folder, b.props) === mine);
-  return blocks.length > 0 && blocks.every((b) => b.hidden && !hid.includes(b.id));
-}
-
-// The anchors among this copy's blocks (bars(): those with `anchor: true`, ADR 0018), which copies tell apart only by
-// their props: { runs: the anchor that runs whistle, the first in layout order whose props no
-// other anchor shares | undefined, extra: the other anchors with props of their own, twins:
-// groups of anchors that share their props [[block]] }. Every anchor but `runs` is left out.
-function anchors(blocks, folder) {
-  const all = blocks.filter((b) => isAnchor(b.props));
+// The whistle blocks' roles, which copies tell apart only by their props: { runs: the block
+// that runs whistle, the first in layout order | undefined (none, or twins), extra: the blocks
+// left out, twins: the ids of the first group of blocks that share their props | null }. With
+// twins nothing runs: no copy can tell whether it is the first.
+export function roles(layout, folder = FOLDER) {
+  const all = blocks(layout, folder);
   const byKey = new Map();
   for (const b of all) {
     const k = fieldKey(folder, b.props);
     byKey.set(k, [...(byKey.get(k) ?? []), b]);
   }
-  const twins = [...byKey.values()].filter((g) => g.length > 1);
-  const runs = all.find((b) => byKey.get(fieldKey(folder, b.props)).length === 1);
-  return { runs, extra: all.filter((b) => b !== runs && byKey.get(fieldKey(folder, b.props)).length === 1), twins };
+  const group = [...byKey.values()].find((g) => g.length > 1);
+  if (group) return { runs: undefined, extra: [], twins: group.map((b) => b.id) };
+  return { runs: all[0], extra: all.slice(1), twins: null };
 }
 
-// Whether this copy is a view (ADR 0018), acting on nothing: the layout's anchor runs whistle
-// and this copy's props aren't that anchor's, so it is a bar's copy, which only draws, or another
-// anchor, left out the same way. With no anchor that runs, a copy with the props of anchors that
-// share them is left out too, and the bars stand in. Unknown props: it isn't.
-export function viewing(layout, folder, props) {
-  if (props === undefined) return false;
-  const mine = fieldKey(folder, isObject(props) ? props : {});
-  const { runs, twins } = anchors(bars(layout, folder), folder);
-  if (runs) return fieldKey(folder, runs.props) !== mine;
-  return twins.some((g) => fieldKey(folder, g[0].props) === mine);
+// Whether this copy is left out, acting on nothing: the layout (when known) has no whistle
+// block, or this copy's props aren't those of the block that runs (an extra block's copy).
+// Unknown props or layout: it isn't.
+export function leftOut(layout, folder, props) {
+  if (!layout) return false;
+  const all = blocks(layout, folder);
+  if (!all.length) return true;
+  const { runs } = roles(layout, folder);
+  if (!runs || props === undefined) return false;
+  return fieldKey(folder, runs.props) !== fieldKey(folder, isObject(props) ? props : {});
 }
 
-// The bar the hints box docks on: the first of this copy's bars (its blocks but the anchor)
-// that shows, or null with no bar shown (the box docks at the window's bottom right, ADR 0019).
-// Which bar shows is the layout's business.
-export function dock(layout, folder) {
-  return bars(layout, folder).find((b) => !isAnchor(b.props) && !b.hidden) ?? null;
+// The props of the block that runs, checked: { props, problems: [detail] }. Extra blocks are
+// listed; their props count for nothing.
+export function blockProps(layout, folder = FOLDER) {
+  const problems = [];
+  const problem = (d) => { if (!problems.includes(d)) problems.push(d); };
+  const known = ids(layout);
+  const props = {};
+  const { runs, extra } = roles(layout, folder);
+  for (const [k, v] of Object.entries(runs?.props ?? {})) {
+    if (!KNOWN.includes(k)) { problem(`${k}: not a whistle block prop`); continue; }
+    if (v === undefined) continue;
+    if (k === "enabled" && typeof v !== "boolean") problem("enabled should be true or false");
+    else if (k === "nav") props.nav = readNav(v, known, problem);
+    else props[k] = v;
+  }
+  for (const b of extra) problem(`${b.id}: a second whistle block, left out; ${runs.id} runs whistle`);
+  return { props, problems };
 }
 
-// The spot a bar's props name (its `bar`), "" for a bar that names none.
-export const spotName = (props) => (typeof props?.bar === "string" ? props.bar : "");
+const names = (all) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all[0] ?? "");
 
-// What whistle.json's `bar` gets, whatever its value: whistle never shows or hides a bar (ADR 0019).
-const USER_BAR_PROBLEM = "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)";
+// Why whistle can't run in this layout, as inert.js gives it ({ problem, fix }), or null:
+// whistle blocks with the same props.
+export function twinsProblem(layout, folder = FOLDER) {
+  const { twins } = layout ? roles(layout, folder) : { twins: null };
+  if (!twins) return null;
+  return { problem: `Whistle blocks ${names(twins)} have the same props, so whistle can't tell which one runs`, fix: "Keep one." };
+}
 
-// whistle.json's `enabled` and `hints` over the layout's props: { settings, problems }.
-// settings: { enabled, hints, nav, place: the hints' placement props }. whistle.json's `bar` is
-// ignored and listed.
+// whistle.json's `enabled` over the layout's props: { settings, problems }.
+// settings: { enabled, nav }.
 export function settings(props, user) {
   const problems = [];
-  const own = {};
-  for (const k of BOOLEANS) {
-    if (user?.[k] === undefined) continue;
-    if (typeof user[k] === "boolean") own[k] = user[k];
-    else problems.push(`${k} should be true or false`);
+  let enabled = props.enabled ?? true;
+  if (user?.enabled !== undefined) {
+    if (typeof user.enabled === "boolean") enabled = user.enabled;
+    else problems.push("enabled should be true or false");
   }
-  if (isObject(user) && "bar" in user) problems.push(USER_BAR_PROBLEM);
-  const place = {};
-  for (const k of NUMBERS) if (k in props) place[k] = props[k];
-  return {
-    settings: {
-      enabled: own.enabled ?? props.enabled ?? true,
-      hints: own.hints ?? props.hints ?? true,
-      nav: props.nav ?? {},
-      place,
-    },
-    problems,
-  };
+  return { settings: { enabled, nav: props.nav ?? {} }, problems };
 }

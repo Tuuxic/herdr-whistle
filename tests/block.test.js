@@ -1,52 +1,55 @@
-// The layout's whistle block (docs/contracts/layout-block.md): its props in their 1.0 form.
-// `enabled`, `hints`, `nav`, `bar` and the hints' placement props; a bad prop is skipped and
-// listed as a config problem (source "layout"). whistle.json's `bar` is ignored and listed (ADR 0019).
+// The layout's whistle block (docs/contracts/layout-block.md): every whistle block is the anchor
+// (ADR 0005). Its props `mappings`, `keys`, `mods`, `enabled` and `nav`; a bad or
+// unknown prop is skipped and listed as a config problem (source "layout"). The first block runs
+// whistle, the others are listed and left out; blocks with the same props make whistle inert.
 
-import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
+import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { IN_TERMINAL, withProps, term, bar } from "./worlds.js";
+import { IN_TERMINAL, withProps, term, anchor } from "./worlds.js";
 
-const SWITCH = [{ section: "global", keys: "ctrl-space", action: "whistle.whistle" }];
+const SWITCH = [{ section: "global", keys: "ctrl-space", action: "whistle.switch-mode" }];
 const inTerminal = (props, extra = {}) => ({ ...IN_TERMINAL, layout: withProps(props), keys: SWITCH, ...extra });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 
 const user = (v) => ({ configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: JSON.stringify(v) } });
 
 // GRID (a and b side by side over c) with whistle's block carrying props.
 const grid = (props) => ({ id: "root", type: "column", children: [
-  { id: "top", type: "row", children: [term("a"), term("b")] }, term("c"), { ...bar, content: { mod: "whistle", props } },
+  { id: "top", type: "row", children: [term("a"), term("b")] }, term("c"), { ...anchor, content: { mod: "whistle", props } },
 ] });
 const onA = (props) => ({ layout: grid(props), focused: { pane: "p1", terminal: "t1" }, keys: SWITCH });
 
-// Two bar spots: "Bottom" shown, "Top" hidden.
-const spot = (id, name, hidden) => ({ id, type: "block", hidden, content: { mod: "whistle", props: { bar: name } } });
-const TWO_SPOTS = { id: "root", type: "column", children: [spot("top-bar", "Top", true), term("main"), spot("bottom-bar", "Bottom", false)] };
-const spots = (u) => ({ ...IN_TERMINAL, layout: TWO_SPOTS, ...user(u) });
+// A whistle block with props, and a layout of a terminal and whistle blocks.
+const block = (id, props, hidden) => ({ id, type: "block", ...(hidden ? { hidden } : {}), content: { mod: "whistle", ...(props ? { props } : {}) } });
+const withBlocks = (...blocks) => ({ id: "root", type: "column", children: [term("main"), ...blocks] });
 
-// The two spots with an anchor after them (ADR 0018).
-const ANCHOR = { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } };
-const ANCHORED = { ...IN_TERMINAL, layout: { ...TWO_SPOTS, children: [...TWO_SPOTS.children, ANCHOR] } };
+// Two whistle blocks with props of their own: the first runs, the second is extra.
+const TWO = { ...IN_TERMINAL, keys: SWITCH, layout: withBlocks(block("first", { enabled: true }), block("second", { mappings: {} })) };
+// Two whistle blocks with the same props: no copy can tell which one it is.
+const TWINS = { ...IN_TERMINAL, keys: SWITCH, layout: withBlocks(block("one"), block("two")) };
+const TOLD_TWINS = { title: "Whistle stands aside",
+  body: "Whistle blocks one and two have the same props, so whistle can't tell which one runs. Keep one.", level: "error" };
 
 const SCENARIOS = [
   {
     name: "enabled: false sends the switch key to the terminal",
     world: inTerminal({ enabled: false }),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }], model: { mode: "type" } }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }], model: { mode: "type" } }],
   },
   {
-    name: "Switched off, the bar shows no mode badge",
+    name: "Switched off, the whistle state says so and the mode is TYPE",
     world: inTerminal({ enabled: false }),
-    steps: [{ tick: 120, bar: { badge: null, label: "Whistle off", marker: null } }],
+    steps: [{ tick: 120, state: { mode: "type", enabled: false }, problems: 0 }],
   },
   {
     name: "whistle.json's enabled goes over the layout's",
     world: inTerminal({ enabled: false }, user({ enabled: true })),
-    steps: [{ command: "whistle", effects: [{ focusBar: true }], model: { mode: "whistle" } }],
+    steps: [{ command: "switch-mode", effects: [{ focusAnchor: true }], model: { mode: "whistle" } }],
   },
   {
     name: "whistle.json can switch whistle off in a layout that has it on",
     world: inTerminal({ enabled: true }, user({ enabled: false })),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }] }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }] }],
   },
   {
     name: "Switched off while in WHISTLE, whistle goes back to TYPE",
@@ -55,7 +58,7 @@ const SCENARIOS = [
       effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } }],
   },
   {
-    name: "Switched off, keys pressed on the bar aren't whistle's",
+    name: "Switched off, keys pressed on the anchor aren't whistle's",
     world: inTerminal({}),
     steps: [...IN, { world: user({ enabled: false }), key: "ctrl-l", handled: false, model: { mode: "type" } }],
   },
@@ -63,39 +66,39 @@ const SCENARIOS = [
     name: "A nav override picks the field in that direction",
     world: onA({ nav: { a: { down: "b" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle", model: { field: "a" } }, { key: "ctrl-j", model: { field: "b" } }],
+    steps: [{ command: "switch-mode", model: { field: "a" } }, { key: "ctrl-j", model: { field: "b" } }],
   },
   {
     name: "Directions a nav override leaves out follow the layout",
     world: onA({ nav: { a: { down: "b" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle" }, { key: "ctrl-l", model: { field: "b" } }, { key: "ctrl-j", model: { field: "c" } }],
+    steps: [{ command: "switch-mode" }, { key: "ctrl-l", model: { field: "b" } }, { key: "ctrl-j", model: { field: "c" } }],
   },
   {
     name: "A nav override on a group counts for the fields inside it",
     world: onA({ nav: { top: { up: "c" } } }),
     model: { recent: ["b"] },
-    steps: [{ command: "whistle", model: { field: "b" } }, { key: "ctrl-k", model: { field: "c" } }],
+    steps: [{ command: "switch-mode", model: { field: "b" } }, { key: "ctrl-k", model: { field: "c" } }],
   },
   {
     name: "A nav override to a block with no field doesn't move",
-    world: onA({ nav: { a: { down: "bar" } } }),
+    world: onA({ nav: { a: { down: "anchor" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle" }, { key: "ctrl-j", model: { field: "a" } }],
+    steps: [{ command: "switch-mode" }, { key: "ctrl-j", model: { field: "a" } }],
   },
 
   // A bad prop is skipped and listed; the rest of the block still counts.
   {
     name: "A bad enabled prop is skipped and listed, and whistle stays on",
     world: inTerminal({ enabled: "no" }),
-    steps: [{ command: "whistle", effects: [{ focusBar: true }],
-      model: { problems: [{ source: "layout", detail: "enabled should be true or false" }] }, bar: { marker: "⚠ 1" } }],
+    steps: [{ command: "switch-mode", effects: [{ focusAnchor: true }],
+      model: { problems: [{ source: "layout", detail: "enabled should be true or false" }] }, problems: 1 }],
   },
   {
     name: "A bad nav entry is skipped and listed, the good ones still count",
     world: onA({ nav: { a: { down: "b", below: "c", right: 3, up: "nowhere" }, ghost: { down: "c" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle", model: { problems: [
+    steps: [{ command: "switch-mode", model: { problems: [
       { source: "layout", detail: "nav › a › below: unknown direction (left, down, up, right)" },
       { source: "layout", detail: "nav › a › right: should be a block id" },
       { source: "layout", detail: "nav › a › up: no block nowhere in this layout" },
@@ -110,107 +113,89 @@ const SCENARIOS = [
     ] } }],
   },
   {
-    name: "Bad hints, bar and placement props and an unknown prop are listed",
-    world: inTerminal({ hints: 1, bar: 2, hintsGap: "6", hintsAlignRight: 4, colour: "red" }),
+    // whistle-ui's props and 1.x's are props whistle doesn't know, like any other.
+    name: "A prop whistle doesn't know is listed, the hints, bar and anchor props among them",
+    world: inTerminal({ hints: false, bar: "Bottom", hintsGap: 6, anchor: true, colour: "red" }),
     steps: [{ tick: 120, model: { problems: [
-      { source: "layout", detail: "hints should be true or false" },
-      { source: "layout", detail: "bar should be the spot's name, a string" },
-      { source: "layout", detail: "hintsGap should be a number (px)" },
+      { source: "layout", detail: "hints: not a whistle block prop" },
+      { source: "layout", detail: "bar: not a whistle block prop" },
+      { source: "layout", detail: "hintsGap: not a whistle block prop" },
+      { source: "layout", detail: "anchor: not a whistle block prop" },
       { source: "layout", detail: "colour: not a whistle block prop" },
     ] } }],
   },
   {
-    name: "The old names of the hints placement props aren't read: each is listed",
-    world: inTerminal({ hintsInset: 4, hintsBorder: 1, hintsLift: 6 }),
-    steps: [{ tick: 120, model: { problems: [
-      { source: "layout", detail: "hintsInset: not a whistle block prop" },
-      { source: "layout", detail: "hintsBorder: not a whistle block prop" },
-      { source: "layout", detail: "hintsLift: not a whistle block prop" },
-    ] } }],
-  },
-  {
-    name: "The private part prop isn't a problem",
-    world: inTerminal({ part: "hints" }),
-    steps: [{ tick: 120, model: { problems: [] } }],
-  },
-  {
     name: "A bad enabled in whistle.json is listed and the layout's counts",
     world: inTerminal({ enabled: false }, user({ enabled: "yes" })),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
       model: { problems: [{ source: "whistle.json", detail: "enabled should be true or false" }] } }],
   },
-
-  // Bar spots (ADR 0019): the layout shows and hides them; whistle.json's bar is ignored and listed,
-  // whatever its value.
-  ...[["names a spot", "Top"], ["names no spot", "Left"], ["isn't a string", 3], ["is false", false]].map(([what, v]) => ({
-    name: `whistle.json's bar that ${what} moves no bar and is listed`,
-    world: spots({ bar: v }),
-    steps: [{ tick: 120, effects: [],
-      model: { problems: [{ source: "whistle.json", detail: "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }] } }],
-  })),
   {
-    name: "With whistle.json's bar set, a bar the layout shows stays shown and one it hides stays hidden",
-    world: spots({ bar: "Top" }),
-    steps: [{ tick: 120, effects: [] },
-      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", true), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, effects: [] },
-      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", false)] } }, tick: 120, effects: [] }],
+    name: "whistle.json's hints and bar are keys whistle doesn't know: they list nothing",
+    world: inTerminal({}, user({ hints: false, bar: "Top" })),
+    steps: [{ tick: 120, effects: [], problems: 0 }],
   },
 
-  // A hidden bar copy rests (ADR 0011): each spot is a copy of whistle, known by its props.
+  // Every whistle block is the anchor: the first runs, the others are extra.
   {
-    name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views, the bar's included",
-    world: { ...spots({}), props: { bar: "Top" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined } }],
+    name: "Of two whistle blocks, the first runs and the second is listed as extra",
+    world: { ...TWO, props: { enabled: true } },
+    steps: [{ command: "switch-mode", model: { mode: "whistle", problems: [
+      { source: "layout", detail: "second: a second whistle block, left out; first runs whistle" }] } }],
   },
   {
-    name: "The shown bar copy runs: it claims its keys and publishes",
-    world: { ...spots({}), props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-      effects: [{ write: "keys.json", text: `${JSON.stringify({ "mod:whistle": {
-        "ctrl-h": "whistle.key-ctrl-h", "ctrl-j": "whistle.key-ctrl-j", "ctrl-k": "whistle.key-ctrl-k", "ctrl-l": "whistle.key-ctrl-l" } }, null, 2)}
-`, expected: "{}" }] }],
+    name: "An extra block's props count for nothing and aren't checked",
+    world: { ...TWO, layout: withBlocks(block("first", {}), block("second", { enabled: false, colour: "red" })), props: {} },
+    steps: [{ command: "switch-mode", model: { mode: "whistle", problems: [
+      { source: "layout", detail: "second: a second whistle block, left out; first runs whistle" }] } }],
   },
   {
-    name: "A hidden bar copy moves no bar",
-    world: { ...spots({ bar: "Top" }), props: { bar: "Top" } },
-    steps: [{ tick: 120, effects: [] }],
+    name: "An extra block's copy acts on nothing: no effects, no shared keys, no claims",
+    world: { ...TWO, props: { mappings: {} }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
+    steps: [
+      { tick: 120, effects: [], published: null, unset: ["whistle.hints", "whistle.events", "whistle.config", "whistle.copies", "keynav"] },
+      { command: "switch-mode", effects: [], published: null, model: { mode: "type" }, handled: false },
+    ],
   },
   {
-    name: "A resting copy in WHISTLE goes back to TYPE",
-    world: { ...spots({}), props: { bar: "Top" } }, model: { mode: "whistle" },
-    steps: [{ tick: 120, effects: [], model: { mode: "type" } }],
+    name: "A hidden whistle block still runs whistle, and it holds no bar to hide",
+    world: { ...IN_TERMINAL, keys: SWITCH, layout: withBlocks(block("only", {}, true)), props: {} },
+    steps: [{ command: "switch-mode", model: { mode: "whistle" }, state: { mode: "whistle" } }],
   },
   {
-    name: "A copy publishes its state and its bar's model again when shown after resting: the other spot's copy wrote them meanwhile",
-    world: { ...spots({}), props: { bar: "Bottom" } },
-    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
-      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
-      { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
+    name: "Whistle blocks with the same props make whistle inert, and one notification says to keep one",
+    world: { ...TWINS, props: {} },
+    steps: [
+      { command: "switch-mode", model: { mode: "type" }, effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
+        notified: [TOLD_TWINS],
+        state: { inert: { problem: "Whistle blocks one and two have the same props, so whistle can't tell which one runs", fix: "Keep one." } } },
+      { command: "switch-mode", notified: [] },
+    ],
   },
   {
-    name: "A bar copy shown again stops resting",
-    world: { ...spots({}), props: { bar: "Top" } },
-    steps: [{ tick: 120, published: null },
-      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120,
-        published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } }],
+    // Herdr runs one copy per block: the twin's copy sees the first's state, saying the same.
+    name: "Whistle blocks with the same props: a copy whose twin already said why posts no notification",
+    world: { ...TWINS, props: {}, state: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null,
+      inert: { problem: "Whistle blocks one and two have the same props, so whistle can't tell which one runs", fix: "Keep one." } } },
+    steps: [{ command: "mode:type", notified: [] }],
   },
-
-  // The anchor (ADR 0018): a bar's copy in an anchored layout is a view.
   {
-    name: "A bar's copy in an anchored layout sets no shared key, the bar's and the views' included",
-    world: { ...ANCHORED, props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, effects: [], published: null, hintsWindow: [],
-      shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined, keynav: undefined, "whistle.copies": undefined } }],
+    name: "Twins make whistle inert even beside a block with props of its own",
+    world: { ...TWINS, layout: withBlocks(block("one"), block("two"), block("three", { enabled: true })), props: { enabled: true } },
+    steps: [{ command: "switch-mode", model: { mode: "type" },
+      state: { inert: { problem: "Whistle blocks one and two have the same props, so whistle can't tell which one runs", fix: "Keep one." } } }],
+  },
+  {
+    name: "In a layout with no whistle block, whistle doesn't run: no effects, no shared keys",
+    world: { ...IN_TERMINAL, keys: SWITCH, layout: { id: "root", type: "column", children: [term("main")] }, props: {},
+      platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
+    steps: [
+      { tick: 120, effects: [], published: null, notified: [], unset: ["whistle.hints", "whistle.events", "whistle.config", "whistle.copies"] },
+      { command: "switch-mode", effects: [], published: null, model: { mode: "type" }, handled: false },
+    ],
   },
 ];
 
 export default suite("layout block", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
-
-  // hints (for the hints view): whistle.json's over the layout's, on by default.
-  const hints = (props, u) => core.step(core.start(), { tick: true }, { ...DEFAULT_WORLD, ...inTerminal(props, u ? user(u) : {}) }).model.config.hints;
-  t.check("hints are on by default", hints({}), true);
-  t.check("a layout can switch the hints off", hints({ hints: false }), false);
-  t.check("whistle.json's hints go over the layout's", hints({ hints: false }, { hints: true }), true);
 });

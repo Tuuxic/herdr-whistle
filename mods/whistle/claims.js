@@ -1,4 +1,4 @@
-// Claimed keys (ADR 0001): the mod:whistle section of keys.json whistle wants, and keeping it
+// Claimed keys (ADR 0009): the mod:whistle section of keys.json whistle wants, and keeping it
 // written (claimsTick, claimWrote: the core's model.claims and model.claimProblem). Pure: the
 // writes are effects step.js hands on.
 //

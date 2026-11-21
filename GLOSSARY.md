@@ -20,8 +20,9 @@ _Avoid_: entry key, toggle, hotkey
 
 **Inert**:
 Whistle loaded but standing aside because it can't run safely, such as on a Herdr older than it
-needs or when another copy of whistle already runs: it claims no keys, the switch keys type
-through, and one Herdr notification and the bar say why. Unlike switching whistle off, it isn't the person's choice.
+needs, when another copy of whistle already runs, or when its blocks can't be told apart: it
+claims no keys, the switch keys type through, one Herdr notification says why, and clients may
+show it. Unlike switching whistle off, it isn't the person's choice.
 _Avoid_: disabled, dormant, off
 
 ## Keys
@@ -132,16 +133,36 @@ _Avoid_: controller, host, navigator
 ## Display
 
 **Anchor**:
-The element in the layout that whistle runs in and holds the keyboard through; it draws
-nothing, and whistle works whether any bar shows or not. A layout should have one; an extra
-anchor is left out and listed as a config problem, and in a layout without one, a bar stands
-in for it.
+Whistle's block in the layout, which whistle runs in and holds the keyboard through; it draws
+nothing. Every whistle block is one: the first runs, an extra one is left out and listed as a
+config problem.
 _Avoid_: core, engine, host, driver block
 
+**Client**:
+A mod that shows what whistle publishes and may run whistle's commands, such as whistle-ui; it
+never changes how whistle works.
+_Avoid_: view, UI, frontend
+
+**Event**:
+Something that happened in whistle that clients may want to know, such as a mode switch, a
+field selected, a key that isn't mapped or a command that failed; published with a stable kind,
+its event groups and a default text.
+_Avoid_: flash, message, notification
+
+**Event group**:
+A named set of event kinds a client can ask for together, such as `mode` or `problem` (every
+kind that says something went wrong); a kind may be in several. Not a group of mappings.
+_Avoid_: category, level, channel
+
+**Subscriber**:
+A mod that named itself to whistle with a filter of event groups and kinds, so whistle runs
+its `whistle-event` command for each event the filter passes while the mod has a block that
+shows.
+_Avoid_: listener, observer, handler
+
 **Bar**:
-Whistle's strip in the window showing the mode badge and where the keyboard is; only an aid,
-so hiding it changes what you see, never what whistle does. A layout can offer several spots
-for it; the layout decides which spot shows, never whistle.
+A client's strip in the window showing the mode badge and where the keyboard is; only an aid,
+so hiding it changes what you see, never what whistle does.
 _Avoid_: status bar, statusline
 
 **Mode badge**:
@@ -149,22 +170,21 @@ The TYPE or WHISTLE label at the start of the bar.
 _Avoid_: mode indicator, pill
 
 **Hints**:
-The box above the bar, or at the window's bottom right with no bar shown, listing the keys
-that can follow the current key sequence.
+The keys that can follow the current key sequence, which a client shows in a box above the bar,
+or at the window's bottom right with no bar shown.
 _Avoid_: which-key, popup, help
 
 **Flash**:
-A short message in the bar about the key just pressed, such as a key that isn't mapped or a
-command that failed; gone with the next key.
+A client's short display of an event, such as on the bar in place of its label.
 _Avoid_: toast, notification, error
 
 **Config problem**:
-Something wrong in whistle's config or in keys.json that whistle works around and lists in its
-settings until it is fixed, such as a file that doesn't parse or a mapping to an unknown command.
+Something wrong in whistle's config or in keys.json that whistle works around and publishes in
+its config until it is fixed, such as a file that doesn't parse or a mapping to an unknown command.
 _Avoid_: error, warning, issue
 
 **Whistle state**:
 What whistle tells other mods about itself: the mode, whether WHISTLE is switched on, the key
-sequence so far, the terminal it has selected and whether the terminal is the selected field.
-Which keynav field is selected is keynav's to say, not whistle state's.
+sequence so far, the terminal pane it has selected, the selected field and whether it is the
+terminal, and why whistle is inert if it is.
 _Avoid_: status, whistle API, public state

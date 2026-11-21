@@ -1,25 +1,22 @@
-// Keynav v3 (ADR 0009, ADR 0017, docs/contracts/keynav.md): a mod's block is a field once its entry
-// shared("keynav.field:<fieldKey>") says v 3 (or v 2, still driven); whistle names the selected one in
+// Keynav v3 (ADR 0013, ADR 0014, docs/contracts/keynav.md): a mod's block is a field once its entry
+// shared("keynav.field:<fieldKey>") says v 3; whistle names the selected one in
 // shared("keynav") = { v: 3, active }, sends it moves and its declared keys as
 // <mod>.keynav-* commands, and reads only its request slot.
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { term, bar } from "./worlds.js";
+import { term, anchor } from "./worlds.js";
 import { fieldKey } from "./fields.js";
 import * as helper from "./keynav.js";
 import texts from "./texts.js";
 
-// A terminal with a files block to its right, over the bar.
+// A terminal with a files block to its right, over the anchor.
 const files = (props) => ({ id: "files", type: "block", content: { mod: "files", ...(props ? { props } : {}) } });
-const LAYOUT = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), files()] }, bar] };
-const NO_FILES = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main")] }, bar] };
+const LAYOUT = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), files()] }, anchor] };
+const NO_FILES = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main")] }, anchor] };
 const KEY = "files {}";
-const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3, label, keys } });
-// The same field on a copy of keynav.js still at v 2.
-const entry2 = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 2, label, keys } });
-const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3, label, keys } });const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
 // The shipped defaults (mappings.json), no whistle.json.
@@ -31,9 +28,9 @@ const ACTIVE = { setShared: "keynav", value: { v: 3, active: KEY } };
 const SCENARIOS = [
   // A field appearing.
   {
-    name: "A mod's block is a field once its entry announces v 2: Ctrl+L selects it and names it active",
+    name: "A mod's block is a field once its entry announces v 3: Ctrl+L selects it and names it active",
     world: { ...WORLD, shared: entry() },
-    steps: [...IN, { key: "ctrl-l", handled: true, effects: [ACTIVE], model: { field: "files" }, bar: { label: "Files" } }],
+    steps: [...IN, { key: "ctrl-l", handled: true, effects: [ACTIVE], model: { field: "files" }, state: { field: "files" } }],
   },
   {
     name: "A field appearing: a block with no entry isn't a field until its mod announces",
@@ -47,21 +44,21 @@ const SCENARIOS = [
     name: `${key} in a keynav field sends it ${move} as files.keynav-${move}`,
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { key, handled: true, effects: [{ run: `files.keynav-${move}`, args: {} }, { focusBar: true }], model: { field: "files" } }],
+      { key, handled: true, effects: [{ run: `files.keynav-${move}`, args: {} }, { focusAnchor: true }], model: { field: "files" } }],
   })),
   {
     name: "A field's moves go to its own mod, by the block's mod name",
-    world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree", props: { root: "~" } } }] }, bar] },
+    world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree", props: { root: "~" } } }] }, anchor] },
       shared: { 'keynav.field:tree {"root":"~"}': { v: 3, label: "Tree", keys: {} } } },
     steps: [...IN, { key: "ctrl-l", effects: [{ setShared: "keynav", value: { v: 3, active: 'tree {"root":"~"}' } }] },
-      { key: "j", effects: [{ run: "tree.keynav-down", args: {} }, { focusBar: true }] }],
+      { key: "j", effects: [{ run: "tree.keynav-down", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "A field whose props hold an object inside an array is found by its entry, keys sorted inside the array too",
     world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"),
-      { id: "tree", type: "block", content: { mod: "tree", props: { roots: [{ name: "home", at: "~" }] } } }] }, bar] },
+      { id: "tree", type: "block", content: { mod: "tree", props: { roots: [{ name: "home", at: "~" }] } } }] }, anchor] },
       shared: { 'keynav.field:tree {"roots":[{"at":"~","name":"home"}]}': { v: 3, label: "Tree", keys: {} } } },
-    steps: [...IN, { key: "ctrl-l", model: { field: "tree" }, bar: { label: "Tree" } }],
+    steps: [...IN, { key: "ctrl-l", model: { field: "tree" }, state: { field: "tree" } }],
   },
   // Declared keys.
   {
@@ -89,18 +86,18 @@ const SCENARIOS = [
     name: "A declared key beats a mapping while its field is selected, and arrives as keynav-key-<name>",
     world: { ...WORLD, ...MAPPED, shared: entry({ d: "Delete" }) },
     steps: [...IN,
-      { key: "d", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] },
+      { key: "d", effects: [{ run: "tab.next", args: {} }, { focusAnchor: true }] },
       { key: "ctrl-l" },
-      { key: "d", handled: true, effects: [{ run: "files.keynav-key-d", args: {} }, { focusBar: true }] }],
+      { key: "d", handled: true, effects: [{ run: "files.keynav-key-d", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "An own key beats a declared key: the declared key is ignored and listed as a config problem",
     world: { ...WORLD, shared: entry({ j: "Jump", x: "Cut" }) },
     steps: [...IN, { key: "ctrl-l" },
-      { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }],
+      { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusAnchor: true }],
         model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, down's own key; it counts once you unbind down" }] } },
-      { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: "⚠ 1" } }],
+      { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusAnchor: true }] },
+      { tick: 120, problems: 1 }],
   },
   // Own keys the person unbinds (issue #44): a freed key is an ordinary key.
   {
@@ -108,15 +105,15 @@ const SCENARIOS = [
     world: { ...WORLD, ...unbound({ pick: null }), shared: entry({ enter: "Go in" }) },
     steps: [...IN,
       { key: "ctrl-l", hints: { title: "Files", items: [{ key: "Enter", label: "Go in", group: false }] } },
-      { key: "enter", handled: true, effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { key: "enter", handled: true, effects: [{ run: "files.keynav-key-enter", args: {} }, { focusAnchor: true }] },
+      { tick: 120, problems: 0 }],
   },
   {
     name: "Pick left without keys ([]) frees Enter the same way",
     world: { ...WORLD, ...unbound({ pick: [] }), shared: entry({ enter: "Go in" }) },
     steps: [...IN, { key: "ctrl-l" },
-      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusAnchor: true }] },
+      { tick: 120, problems: 0 }],
   },
   {
     name: "With pick unbound, Enter on a field that doesn't declare it reaches no field",
@@ -126,51 +123,51 @@ const SCENARIOS = [
   {
     name: "With pick unbound, a whistle.json mapping on Enter runs where no selected field declares it",
     world: { ...WORLD, ...unbound({ pick: null }, { enter: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
-    steps: [...IN, { key: "ctrl-l" }, { key: "enter", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+    steps: [...IN, { key: "ctrl-l" }, { key: "enter", effects: [{ run: "tab.next", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "With down unbound, j on a field that declares it is the field's key, with no config problem",
     world: { ...WORLD, ...unbound({ down: ["down"] }), shared: entry({ j: "Jump" }) },
     steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "j", label: "Jump", group: false }] } },
-      { key: "j", effects: [{ run: "files.keynav-key-j", args: {} }, { focusBar: true }] },
-      { key: "down", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { key: "j", effects: [{ run: "files.keynav-key-j", args: {} }, { focusAnchor: true }] },
+      { key: "down", effects: [{ run: "files.keynav-down", args: {} }, { focusAnchor: true }] },
+      { tick: 120, problems: 0 }],
   },
   {
     name: "With down unbound, j reaches no field that doesn't declare it, and a mapping on j runs instead",
     world: { ...WORLD, ...unbound({ down: null }, { j: ["Next tab", "tab.next"] }), shared: entry({ d: "Delete" }) },
-    steps: [...IN, { key: "ctrl-l" }, { key: "j", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+    steps: [...IN, { key: "ctrl-l" }, { key: "j", effects: [{ run: "tab.next", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "With pick bound, a field declaring Enter is a config problem naming pick and how to free it; Enter still picks and the hints leave it out",
     world: { ...WORLD, shared: entry({ enter: "Go in", d: "Delete" }) },
     steps: [...IN,
       { key: "ctrl-l", hints: { items: [{ key: "d", label: "Delete", group: false }] } },
-      { key: "enter", effects: [{ run: "files.keynav-pick", args: {} }, { focusBar: true }],
+      { key: "enter", effects: [{ run: "files.keynav-pick", args: {} }, { focusAnchor: true }],
         model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares enter, pick's own key; it counts once you unbind pick" }] } }],
   },
   {
     name: "Unbinding the own key a field declares takes its config problem away",
     world: { ...WORLD, shared: entry({ enter: "Go in" }) },
-    steps: [...IN, { key: "ctrl-l" }, { tick: 120, bar: { marker: "⚠ 1" } },
-      { world: unbound({ pick: null }), tick: 120, bar: { marker: null } },
-      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] }],
+    steps: [...IN, { key: "ctrl-l" }, { tick: 120, problems: 1 },
+      { world: unbound({ pick: null }), tick: 120, problems: 0 },
+      { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "On the shipped defaults a field may declare Backspace: it reaches the field, with no config problem",
     world: { ...WORLD, ...SHIPPED, shared: entry({ backspace: "Up a folder" }) },
     steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "⌫", label: "Up a folder", group: false }] } },
-      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusAnchor: true }] },
+      { tick: 120, problems: 0 }],
   },
   {
     name: "A whistle.json mapping on Backspace runs where no selected field declares it; the field wins where one does",
     world: { ...WORLD, configFiles: { ...SHIPPED.configFiles, user: JSON.stringify({ map: { backspace: ["Previous tab", "tab.prev"] } }) },
       shared: entry({ backspace: "Up a folder" }) },
     steps: [...IN,
-      { key: "backspace", handled: true, effects: [{ run: "tab.prev", args: {} }, { focusBar: true }] },
+      { key: "backspace", handled: true, effects: [{ run: "tab.prev", args: {} }, { focusAnchor: true }] },
       { key: "ctrl-l" },
-      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] }],
+      { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "A key the field doesn't declare never reaches it",
@@ -181,8 +178,8 @@ const SCENARIOS = [
     name: "A field declares its keys in any spelling and gets them back as it wrote them",
     world: { ...WORLD, platform: "linux", shared: entry({ D: "Delete all", Tab: "Next" }) },
     steps: [...IN, { key: "ctrl-l" },
-      { key: "D", effects: [{ run: "files.keynav-key-D", args: {} }, { focusBar: true }] },
-      { key: "tab", effects: [{ run: "files.keynav-key-Tab", args: {} }, { focusBar: true }] }],
+      { key: "D", effects: [{ run: "files.keynav-key-D", args: {} }, { focusAnchor: true }] },
+      { key: "tab", effects: [{ run: "files.keynav-key-Tab", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "A declared chord is ignored and listed: fields declare only keys without Ctrl, Alt or Super",
@@ -195,20 +192,20 @@ const SCENARIOS = [
     name: "Declared keys count only while their field is selected",
     world: { ...WORLD, ...MAPPED, shared: entry({ d: "Delete" }) },
     steps: [...IN, { key: "ctrl-l" }, { key: "ctrl-h", model: { field: "main" } },
-      { key: "d", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+      { key: "d", effects: [{ run: "tab.next", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "A field announcing again changes its declared keys",
     world: { ...WORLD, shared: entry({ d: "Delete" }) },
     steps: [...IN, { key: "ctrl-l" },
       { world: { shared: entry({ r: "Rename" }) }, key: "d", handled: false, effects: [] },
-      { key: "r", effects: [{ run: "files.keynav-key-r", args: {} }, { focusBar: true }] }],
+      { key: "r", effects: [{ run: "files.keynav-key-r", args: {} }, { focusAnchor: true }] }],
   },
   {
     name: "Inside a key sequence, keys are the group's: a declared key doesn't count",
     world: { ...WORLD, configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { g: { name: "Go", map: { d: ["Next tab", "tab.next"] } } } }), user: null },
       shared: entry({ d: "Delete" }) },
-    steps: [...IN, { key: "ctrl-l" }, { key: "g" }, { key: "d", effects: [{ run: "tab.next", args: {} }, { focusBar: true }] }],
+    steps: [...IN, { key: "ctrl-l" }, { key: "g" }, { key: "d", effects: [{ run: "tab.next", args: {} }, { focusAnchor: true }] }],
   },
   // A field leaving.
   {
@@ -216,7 +213,7 @@ const SCENARIOS = [
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
       { world: { layout: NO_FILES }, tick: 120, effects: [{ setShared: "keynav", value: { v: 3, active: null } }],
-        model: { field: "main" }, bar: { label: "Terminal · zsh" } },
+        model: { field: "main" }, state: { onTerminal: true } },
       { tick: 120, effects: [] }],
   },
   {
@@ -229,7 +226,7 @@ const SCENARIOS = [
     name: "Back to TYPE, keynav names no field",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { command: "whistle", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { setShared: "keynav", value: { v: 3, active: null } }] }],
+      { command: "switch-mode", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { setShared: "keynav", value: { v: 3, active: null } }] }],
   },
   {
     name: "A field another driver left named active is set straight on the first step",
@@ -241,17 +238,17 @@ const SCENARIOS = [
     name: "A field asking for the terminal: whistle selects it on the pane the field focused, and holds the keyboard",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "terminal", at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }, { setShared: "keynav", value: { v: 3, active: null } }],
+      { world: { anchorFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "terminal", at: 150 } } },
+        tick: 120, effects: [{ focusAnchor: true }, { setShared: "keynav", value: { v: 3, active: null } }],
         model: { mode: "whistle", field: "main", pane: "p2", holdUntil: 840 } }],
   },
   {
     name: "A field asking to hold: whistle takes the keyboard back instead of leaving WHISTLE",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "hold", at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }], model: { mode: "whistle", field: "files", holdUntil: 840 } },
-      { world: { barFocused: true }, tick: 120, effects: [] }],
+      { world: { anchorFocused: false, shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "hold", at: 150 } } },
+        tick: 120, effects: [{ focusAnchor: true }], model: { mode: "whistle", field: "files", holdUntil: 840 } },
+      { world: { anchorFocused: true }, tick: 120, effects: [] }],
   },
   {
     name: "A request is acted on once",
@@ -276,56 +273,27 @@ const SCENARIOS = [
   {
     name: "In TYPE, requests are left alone",
     world: { ...WORLD, shared: entry() },
-    steps: [...IN, { key: "ctrl-l" }, { world: { barFocused: false }, tick: 120, model: { mode: "type" } },
+    steps: [...IN, { key: "ctrl-l" }, { world: { anchorFocused: false }, tick: 120, model: { mode: "type" } },
       { world: { shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "hold", at: 300 } } }, tick: 120, effects: [], model: { mode: "type" } }],
   },
-  // Versions.
   {
-    name: "A field still on keynav v2 stays a field, and settings say to update its keynav.js",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l", model: { field: "files",
-      fieldProblems: [{ source: "keynav", detail: "files speaks keynav v2: whistle still drives it, but update its keynav.js to v3" }] } },
-      { tick: 120, bar: { marker: "⚠ 1" } }],
-  },
-  {
-    name: "A field still on keynav v2 asking for the terminal with { to: \"terminal\" }: whistle selects it on the pane the field focused",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry2(), [`keynav.request:${KEY}`]: { to: "terminal", at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }, { setShared: "keynav", value: { v: 3, active: null } }],
-        model: { mode: "whistle", field: "main", pane: "p2", holdUntil: 840 } }],
-  },
-  {
-    name: "A field still on keynav v2 asking to hold with { hold: true }: whistle takes the keyboard back",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, shared: { ...entry2(), [`keynav.request:${KEY}`]: { hold: true, at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }], model: { mode: "whistle", field: "files", holdUntil: 840 } }],
-  },
-  {
-    name: "A v3 field's request in v2's shape isn't one",
+    name: "A request with to instead of after isn't one",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry(), [`keynav.request:${KEY}`]: { to: "terminal", at: 150 } } },
+      { world: { anchorFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry(), [`keynav.request:${KEY}`]: { to: "terminal", at: 150 } } },
         tick: 120, effects: [{ setShared: "keynav", value: { v: 3, active: null } }], model: { mode: "type", holdUntil: 0 } }],
   },
-  {
-    name: "A field still on keynav v2 is driven as before: Enter sends it open as files.keynav-open, other moves as in v3",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l", effects: [ACTIVE], model: { field: "files" } },
-      { key: "enter", effects: [{ run: "files.keynav-open", args: {} }, { focusBar: true }] },
-      { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] }],
-  },
-  {
-    name: "A copy that announces keynav v1 isn't a field, and settings say to update its keynav.js",
-    world: { ...WORLD, shared: { "keynav.fields": { [KEY]: { v: 1, mod: "files", props: {}, label: "Files" } } } },
-    steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main",
-      fieldProblems: [{ source: "keynav", detail: "files speaks keynav v1, which whistle no longer drives; update its keynav.js" }] } }],
-  },
+  // Versions.
   {
     name: "An entry with a v this driver doesn't speak isn't a field",
     world: { ...WORLD, shared: { [`keynav.field:${KEY}`]: { v: 4, label: "Files", keys: {} } } },
     steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main" } }],
+  },
+  {
+    name: "An entry with v 2 isn't a field, and settings list nothing about it",
+    world: { ...WORLD, shared: { [`keynav.field:${KEY}`]: { v: 2, label: "Files", keys: {} } } },
+    steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main" } },
+      { tick: 120, problems: 0 }],
   },
 ];
 
@@ -345,7 +313,6 @@ export default suite("keynav", (t) => {
   t.check("keynav.js's entry declares no keys by default", helper.entry("Files"), { v: 3, label: "Files", keys: {} });
   t.check("keynav.js reads a move", helper.move("keynav-down"), "down");
   t.check("keynav.js reads pick", helper.move("keynav-pick"), "pick");
-  t.check("keynav.js doesn't read v2's open", helper.move("keynav-open"), null);
   t.check("a declared key isn't a move", helper.move("keynav-key-d"), null);
   t.check("keynav.js reads a declared key as the field wrote it", helper.declared("keynav-key-D"), "D");
   t.check("keynav.js ignores other commands", [helper.move("settings"), helper.declared("settings"), helper.move(null)], [null, null, null]);

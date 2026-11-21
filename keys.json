@@ -1,11 +1,10 @@
 {
   "global": {
-    "ctrl-space": "whistle.whistle",
+    "ctrl-space": "whistle.switch-mode",
     "alt-a": "whistle.focus:agents",
-    "alt-s": "whistle.focus:spaces",
-    "alt-,": "whistle.settings"
+    "alt-s": "whistle.focus:spaces"
   },
   "mod:whistle": {
-    "ctrl-space": "whistle.type"
+    "ctrl-space": "whistle.mode:type"
   }
 }

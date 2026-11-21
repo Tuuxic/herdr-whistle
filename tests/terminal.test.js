@@ -1,5 +1,5 @@
 // The terminal as a field: h/j/k/l and the arrows move between split panes, with the keyboard
-// held on the bar through Herdr's late focus; Ctrl+H/J/K/L move between fields by the layout's
+// held on the anchor through Herdr's late focus; Ctrl+H/J/K/L move between fields by the layout's
 // rows and columns.
 
 import { suite } from "./harness.js";
@@ -13,12 +13,12 @@ const paneMove = (key, direction) => ({
   name: `${key} in WHISTLE moves to the split pane ${direction}`,
   world: IN_TERMINAL,
   steps: [
-    { command: "whistle" },
-    { world: { barFocused: true }, key, handled: true,
+    { command: "switch-mode" },
+    { world: { anchorFocused: true }, key, handled: true,
       effects: [
         { run: "pane.focus", args: { pane: "p1" } },
         { run: "pane.go", args: { direction } },
-        { focusBar: true },
+        { focusAnchor: true },
       ],
       model: { mode: "whistle", holdUntil: HOLD } },
   ],
@@ -28,44 +28,44 @@ const fieldMove = (name, from, key, to, recent = []) => ({
   name,
   world: { layout: GRID, focused: { pane: "p1" } },
   model: { mode: "whistle", field: from, recent: [from, ...recent], pane: "p1" },
-  steps: [{ world: { barFocused: true }, key, handled: true, effects: [], model: { mode: "whistle", field: to } }],
+  steps: [{ world: { anchorFocused: true }, key, handled: true, effects: [], model: { mode: "whistle", field: to } }],
 });
 
 const SCENARIOS = [
   paneMove("h", "left"), paneMove("j", "down"), paneMove("k", "up"), paneMove("l", "right"),
   paneMove("left", "left"), paneMove("down", "down"), paneMove("up", "up"), paneMove("right", "right"),
   {
-    name: "A pane move holds the keyboard: the bar takes it back and follows the focused pane",
+    name: "A pane move holds the keyboard: the anchor takes it back and follows the focused pane",
     world: IN_TERMINAL,
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, key: "l" },
-      { world: { barFocused: false, focused: { pane: "p2" } }, tick: 120,
-        effects: [{ focusBar: true }], model: { mode: "whistle", pane: "p2" } },
-      { world: { barFocused: true }, tick: 120, effects: [], model: { mode: "whistle", pane: "p2" } },
-      { world: { barFocused: false }, tick: 120,
-        effects: [{ focusBar: true }], model: { mode: "whistle" } },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, key: "l" },
+      { world: { anchorFocused: false, focused: { pane: "p2" } }, tick: 120,
+        effects: [{ focusAnchor: true }], model: { mode: "whistle", pane: "p2" } },
+      { world: { anchorFocused: true }, tick: 120, effects: [], model: { mode: "whistle", pane: "p2" } },
+      { world: { anchorFocused: false }, tick: 120,
+        effects: [{ focusAnchor: true }], model: { mode: "whistle" } },
     ],
   },
   {
     name: "Once the hold is over, losing the keyboard ends WHISTLE",
     world: IN_TERMINAL,
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, key: "l" },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, key: "l" },
       { tick: HOLD, effects: [], model: { mode: "whistle" } },
-      { world: { barFocused: false }, tick: 1, effects: [], model: { mode: "type" } },
+      { world: { anchorFocused: false }, tick: 1, effects: [], model: { mode: "type" } },
     ],
   },
   {
     name: "Going back to TYPE in a hold ends the hold",
     world: IN_TERMINAL,
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, key: "l" },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, key: "l" },
       { world: { focused: { pane: "p2" } }, tick: 120, model: { pane: "p2" } },
       { key: "i", effects: [{ run: "pane.focus", args: { pane: "p2" } }], model: { mode: "type", holdUntil: 0 } },
-      { world: { barFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
+      { world: { anchorFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
     ],
   },
   fieldMove("Ctrl+L moves to the field on the right", "a", "ctrl-l", "b"),
@@ -81,6 +81,7 @@ const SCENARIOS = [
         { id: "a", type: "block", content: { pane: {} } },
         { id: "gone", type: "block", hidden: true, content: { pane: {} } },
         { id: "b", type: "block", content: { pane: {} } },
+        { id: "anchor", type: "block", content: { mod: "whistle" } },
       ] },
       focused: { pane: "p1" },
     },
@@ -91,8 +92,8 @@ const SCENARIOS = [
     name: "A key whistle has no use for goes on",
     world: IN_TERMINAL,
     steps: [
-      { command: "whistle" },
-      { world: { barFocused: true }, key: "x", handled: false, effects: [], model: { mode: "whistle" } },
+      { command: "switch-mode" },
+      { world: { anchorFocused: true }, key: "x", handled: false, effects: [], model: { mode: "whistle" } },
     ],
   },
   {
