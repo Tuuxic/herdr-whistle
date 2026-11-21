@@ -568,8 +568,8 @@ it.
 }
 ```
 
-Standing aside, whistle claims no keys, leaves keys.json alone, publishes nothing to other
-mods, and the switch key types into the terminal as if whistle weren't there. Unlike
+Standing aside, whistle claims no keys, leaves keys.json alone, tells other mods only why it
+stands aside (and only when no other copy runs), and the switch key types into the terminal as if whistle weren't there. Unlike
 [switching it off](#switching-whistle-off), it isn't your choice: it runs again by itself once
 the reason goes.
 
@@ -586,7 +586,9 @@ the reason goes.
   },
   "steps": [
     { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "published": null, "bar": { "badge": null } }
+      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "bar": { "badge": null },
+      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
+        "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0)", "fix": "Update Herdr." } } }
   ]
 }
 ```

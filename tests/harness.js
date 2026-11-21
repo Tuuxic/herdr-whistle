@@ -27,6 +27,8 @@
 //                                          // (shared("whistle")), or null: none
 //         shared: { "whistle.hints": null }, // what these shared keys were set to
 //                                          // in this step; a key given as undefined: not set
+//         unset: ["whistle.hints"],        // these shared keys weren't set in this step
+//                                          // (`shared` with undefined, as JSON can say it)
 //         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
 //         notified: [{ title, body, level }],  // exactly these Herdr notifications posted
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
@@ -129,7 +131,8 @@ export function runScenario(sc, core) {
         const want = s.published === null ? [] : [s.published];
         if (show(got) !== show(want)) fails.push(`${at}: published ${show(got)}, want ${show(want)}`);
       }
-      for (const [k, want] of Object.entries(s.shared ?? {})) {
+      const wants = { ...s.shared, ...Object.fromEntries((s.unset ?? []).map((k) => [k, undefined])) };
+      for (const [k, want] of Object.entries(wants)) {
         const set = out.effects.filter((e) => e?.setShared === k);
         const got = set.length ? set.at(-1).value : undefined;
         if (set.length > 1 || show(got) !== show(want)) fails.push(`${at}: shared ${k} set to ${show(set.map((e) => e.value))}, want ${want === undefined ? "not set" : show(want)}`);

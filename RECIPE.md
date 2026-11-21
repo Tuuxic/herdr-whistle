@@ -137,7 +137,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   claims, no state; only the shown spot's copy runs
   (docs/contracts/layout-block.md, rule 6).
 - **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
-  sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
+  sets them in private shared keys, `whistle.hintsbox` and `whistle.settings`, when they change;
   two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
   and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
   sizes the shell measures) and closes the hints window, as effects. Each bar's copy
@@ -147,9 +147,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.
-- **Whistle state**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
-  sequence, pane }` whenever it changes, and only then; an inert copy never writes it
-  (docs/contracts/state.md). Every other `whistle.*` key is private.
+- **Whistle state and the public keys**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
+  sequence, pane, onTerminal }` whenever it changes, and only then; an inert copy writes it only with
+  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it, since 1.4.0:
+  `whistle.hints`, `whistle.events` and `whistle.config` (docs/contracts/hints.md, events.md,
+  config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings:<mod>:on|off`
+  and `whistle.keep-mapping:<mod>:<keys>` (docs/contracts/commands.md). Every other `whistle.*` key
+  is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
   key>")` says `v: 3` (or `v: 2`, still driven, with a notice in settings). Whistle names the
   selected one in `shared("keynav") = { v: 3, active }`, sends it moves and its declared keys

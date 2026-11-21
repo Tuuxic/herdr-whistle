@@ -5,6 +5,12 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { term, bar } from "./worlds.js";
+import { settingsCommandFor } from "./config.js";
+import { VERSION, MIN_HERDR } from "./version.js";
+import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
+
+// The problem listed for a mod offering mappings under a name whistle doesn't take.
+const BAD_NAME = "offers mappings under a name with characters other than letters, digits, \".\", \"_\" and \"-\": whistle skips them";
 
 const json = (v) => JSON.stringify(v);
 const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
@@ -125,8 +131,110 @@ const SCENARIOS = [
       shared: { "whistle.events": { v: 1, events: [
         { seq: 1, kind: "settings-write-failed", error: "denied", text: "couldn't write whistle.json: denied" }] } } }],
   },
+
+  // The settings commands: whistle writes whistle.json itself.
+  {
+    name: "The switch-mod command writes the mod off into whistle.json, keeping the rest, even while switched off",
+    world: world({ mods: ["alpha"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }) }, user: { enabled: false } }),
+    steps: [{ tick: 120 }, { command: settingsCommandFor.switchMod("alpha", false), effects: [
+      { write: "whistle.json", text: `${JSON.stringify({ enabled: false, mods: { alpha: false } }, null, 2)}\n`, expected: json({ enabled: false }) }] }],
+  },
+  {
+    name: "The switch-mod command writes the mod on into a whistle.json that isn't there yet",
+    world: world(),
+    steps: [{ command: settingsCommandFor.switchMod("alpha", true), effects: [
+      { write: "whistle.json", text: `${JSON.stringify({ mods: { alpha: true } }, null, 2)}\n`, expected: null }] }],
+  },
+  {
+    name: "The keep command writes the mod's mapping, as the mod wrote it, at the key sequence into whistle.json",
+    world: { ...world({ mods: ["alpha", "beta"], entries: {
+      alpha: entry({ g: { name: "Alpha", map: { "Ctrl-d": ["D", "alpha.d"] } } }),
+      beta: entry({ g: { name: "Beta", map: { "ctrl-d": ["D", "beta.d"] } } }),
+    } }), platform: "linux" },
+    steps: [{ tick: 120 }, { command: settingsCommandFor.keep("alpha", ["g", "ctrl-d"]), effects: [
+      { write: "whistle.json", text: `${JSON.stringify({ map: { g: { map: { "ctrl-d": ["D", "alpha.d"] } } } }, null, 2)}\n`, expected: null }] }],
+  },
+  {
+    name: "The keep command on a key sequence the mod doesn't map raises command-failed and writes nothing",
+    world: world({ mods: ["alpha"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
+    steps: [{ tick: 120 }, { command: settingsCommandFor.keep("alpha", ["x", "y"]), effects: [],
+      shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "command-failed", command: `whistle.${settingsCommandFor.keep("alpha", ["x", "y"])}`,
+        error: "alpha maps nothing at x y", text: "alpha maps nothing at x y" }] } } }],
+  },
+  {
+    name: "A settings command on a whistle.json that doesn't parse raises settings-broken and writes nothing",
+    world: world({ user: "[1]" }),
+    steps: [{ command: settingsCommandFor.switchMod("alpha", false), effects: [], shared: { "whistle.events": { v: 1, events: [
+      { seq: 1, kind: "settings-broken", detail: "isn't a JSON object", text: "whistle.json isn't a JSON object; fix it first" }] } } }],
+  },
+  {
+    name: "A mappings command whose state isn't on or off is no command: it writes nothing and raises nothing",
+    world: world(),
+    steps: [{ tick: 120 }, { command: "mappings:alpha:maybe", effects: [], shared: { "whistle.events": undefined } }],
+  },
+  {
+    name: "keys.json may bind the settings commands, and not a mappings command without a state",
+    world: { ...world(), keysFile: { text: json({ global: {
+      "f7": `whistle.${settingsCommandFor.switchMod("alpha", false)}`, "f8": `whistle.${settingsCommandFor.keep("alpha", ["g", "d"])}`,
+      "f9": "whistle.mappings:alpha" } }), error: null, at: 0 } },
+    steps: [{ tick: 120, shared: { "whistle.config": { v: 1, problems: [
+      { source: "keys.json", detail: "global › f9: unknown whistle command whistle.mappings:alpha" }], mods: [], conflicts: [], overrides: [] } } }],
+  },
+
+  // Mod names (docs/contracts/mod-mappings.md): letters, digits, ".", "_" and "-" only.
+  {
+    name: "A mod offering mappings under a name with other characters is skipped and listed as a problem, which raises mod-problem-new",
+    world: world({ mods: ["my mod", "alpha"], entries: { "my mod": entry({ g: ["Go", "my.go"] }), alpha: entry({ z: ["Zap", "alpha.zap"] }) } }),
+    steps: [{ tick: 120,
+      shared: {
+        "whistle.config": { v: 1, problems: [{ source: "my mod", detail: BAD_NAME }], mods: [{ name: "alpha", on: true, problems: [] }], conflicts: [], overrides: [] },
+        "whistle.events": { v: 1, events: [{ seq: 1, kind: "mod-problem-new", source: "my mod", detail: BAD_NAME, text: "my mod's mappings have a problem, see settings" }] },
+      } },
+      { tick: 120, shared: { "whistle.events": undefined } }],
+  },
+
+  // The whistle state's inert field.
+  {
+    name: "A copy inert on an old Herdr, with no other copy running, publishes the state with inert, once",
+    world: { herdr: "0.1.0", focused: { pane: "p1" } },
+    steps: [
+      { tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false,
+        inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." } },
+        shared: { "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } },
+      { tick: 120, published: null },
+      { world: { herdr: MIN_HERDR }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
+    ],
+  },
+  {
+    name: "A copy inert while another copy runs writes no state",
+    world: { folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
+      layout: { id: "root", type: "column", children: [term("main"), bar, { id: "bar-2", type: "block", content: { mod: "whistle-2" } }] } },
+    steps: [{ tick: 120, published: null, shared: { "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } }],
+  },
+  {
+    name: "A copy inert on an old Herdr writes no state while another copy would run",
+    world: { herdr: "0.1.0", folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
+      layout: { id: "root", type: "column", children: [term("main"), bar, { id: "bar-2", type: "block", content: { mod: "whistle-2" } }] } },
+    steps: [{ tick: 120, published: null }],
+  },
 ];
+
+const EV = (seq) => ({ seq, kind: "unmapped", keys: ["x"], text: "x is not mapped" });
 
 export default suite("contract", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // The copyable readers (whistle.js).
+  t.check("readState gives inert, null while whistle runs", [readState({ v: 1, mode: "type" }).inert,
+    readState({ v: 1, mode: "type", inert: { problem: "p", fix: "f" } }).inert], [null, { problem: "p", fix: "f" }]);
+  t.check("hintsOf gives the v1 hints, else null", [hintsOf(PANES_HINTS), hintsOf(null), hintsOf({ ...PANES_HINTS, v: 2 })],
+    [{ keys: "w", title: "Panes", items: PANES_HINTS.items, exit: null }, null, null]);
+  t.check("configOf gives the v1 config, else null", [configOf({ v: 1, problems: [], mods: [], conflicts: [], overrides: [], later: 1 }), configOf({ v: 2 })],
+    [{ problems: [], mods: [], conflicts: [], overrides: [] }, null]);
+  const feed = { v: 1, events: [EV(3), EV(4), EV(5)] };
+  t.check("eventsSince gives the events after the last seq handled, and the new last", eventsSince(feed, 3), { events: [EV(4), EV(5)], last: 5 });
+  t.check("eventsSince gives nothing new when nothing came", eventsSince(feed, 5), { events: [], last: 5 });
+  t.check("eventsSince starts over when the seqs went back (whistle started again)", eventsSince({ v: 1, events: [EV(1)] }, 5), { events: [EV(1)], last: 1 });
+  t.check("eventsSince gives nothing for no feed or another v, keeping the last", [eventsSince(null, 4), eventsSince({ v: 2, events: [EV(9)] }, 4)],
+    [{ events: [], last: 4 }, { events: [], last: 4 }]);
 });

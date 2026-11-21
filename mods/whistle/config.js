@@ -52,6 +52,40 @@ export const MODS = "mods";
 
 export const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
+// The settings commands (spec #57): a mod's mappings switched on or off, and one mod's mapping
+// kept at a key sequence, which whistle writes into whistle.json itself. Herdr hands a command
+// no args, so the target is in the name (as a verb's block is): "mappings:<mod>:on|off" and
+// "keep-mapping:<mod>:<keys>", the keys Herdr's key names joined by one space. A mod name never
+// holds ":" or a space (MOD_NAME), so nothing needs escaping. The names live here only.
+const SETTINGS_VERBS = { switchMod: "mappings", keep: "keep-mapping" };
+
+// The names a mod may offer mappings under (docs/contracts/mod-mappings.md).
+export const MOD_NAME = /^[A-Za-z0-9._-]+$/;
+
+// A settings command as Herdr hands it over (no "whistle." before it): { mod, on } (switch a
+// mod: the mod up to the last colon, then "on" or "off"), { mod, keys } (keep its mapping: the
+// mod up to the first colon, the rest the keys) | null when it is no settings command.
+export function settingsCommand(c) {
+  if (typeof c !== "string") return null;
+  const colon = c.indexOf(":");
+  if (colon <= 0) return null;
+  const verb = c.slice(0, colon), target = c.slice(colon + 1);
+  if (verb === SETTINGS_VERBS.switchMod) {
+    const last = target.lastIndexOf(":"), state = target.slice(last + 1);
+    return last > 0 && (state === "on" || state === "off") ? { mod: target.slice(0, last), on: state === "on" } : null;
+  }
+  if (verb !== SETTINGS_VERBS.keep) return null;
+  const at = target.indexOf(":");
+  return { mod: at < 0 ? target : target.slice(0, at), keys: at < 0 ? [] : target.slice(at + 1).split(" ").filter(Boolean) };
+}
+
+// The settings commands as a client runs them, after "whistle.": switchMod("alpha", false) is
+// "mappings:alpha:off", keep("alpha", ["g", "d"]) is "keep-mapping:alpha:g d".
+export const settingsCommandFor = {
+  switchMod: (mod, on) => `${SETTINGS_VERBS.switchMod}:${mod}:${on ? "on" : "off"}`,
+  keep: (mod, keys) => `${SETTINGS_VERBS.keep}:${mod}:${keys.join(" ")}`,
+};
+
 // One file's text against its last good version (good: { text, json } | null):
 // { good, missing } | { good, broken: why } | { good: the new version }. A text of undefined
 // is a file not read yet: { good, unread }.
@@ -138,7 +172,7 @@ export function keysProblems(text, folder) {
       if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
       const c = action.slice(folder.length + 1);
       const { verb, block } = verbAndBlock(c);
-      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb)) continue;
+      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb) || settingsCommand(c)) continue;
       const why = block === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
       out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
     }

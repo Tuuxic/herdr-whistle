@@ -4,6 +4,53 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.4.0 (unreleased)
+
+### Upgrading
+
+1. **Mod names**: whistle now takes mappings only from a mod whose folder name is made of
+   letters, digits, `.`, `_` and `-`. If the person has a mod that offers whistle mappings
+   from a folder with any other character in its name (a space, `:`, an accent), its whistle
+   keys stop working, and settings list it as a config problem under its name. Offer to
+   rename that folder (and its blocks' `mod` in their layouts), by its result: "its whistle
+   keys work again". Nothing else needs doing.
+
+### You
+
+- Nothing changes in how whistle works: the bar, the hints and the settings are as in 1.3.0.
+- **Changed**: a mod whose folder name has characters other than letters, digits, `.`, `_` and
+  `-` no longer gets its mappings; settings list it as a problem, and the bar flashes once.
+
+### Layout authors
+
+- Nothing changes for you.
+
+### Mod authors
+
+- **New**: three public keys, each with its contract page and `whistle.js` reader:
+  `whistle.hints`, the hint items whether or not whistle's hints box is on
+  ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the last 8 events,
+  each with a stable kind, its data and a default English text, numbered by `seq`
+  ([events.md](docs/contracts/events.md), `readEvents(last)`); `whistle.config`, what the
+  settings show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy
+  writes them, and only when they change.
+- **New**: the whistle state's optional `inert` field, `{ problem, fix }`. A copy standing
+  aside on an old Herdr, with no other copy running, now writes the state with it (it wrote
+  nothing before) ([state.md](docs/contracts/state.md), rule 7). `readState` gives `inert`,
+  `null` while whistle runs.
+- **New**: the settings commands, `whistle.mappings:<mod>:on|off` and
+  `whistle.keep-mapping:<mod>:<keys>`: whistle writes whistle.json itself
+  ([commands.md](docs/contracts/commands.md#settings-commands)).
+- **Changed**: a mod offering mappings must have a name made of letters, digits, `.`, `_` and
+  `-` (`[A-Za-z0-9._-]+`). An entry under any other name is skipped and listed as a problem
+  under that name ([mod-mappings.md](docs/contracts/mod-mappings.md), rule 7).
+- The private key that held the hints box's view model under the name `whistle.hints` moved;
+  `whistle.hints` is now the public key above.
+
+### Keynav authors
+
+- Nothing changes for you.
+
 ## v1.3.0 (2026-11-21)
 
 ### Upgrading

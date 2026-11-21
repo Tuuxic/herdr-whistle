@@ -24,7 +24,10 @@
 //          problems [{ source: "keynav", detail }],
 //          told: why whistle is inert, as the notification this copy posted said it | null,
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
-//          published (state() below, as JSON) | null,
+//          published (state() below, as JSON) | null, publicSent: the public keys (PUBLIC)
+//          last written, as JSON ({ hints, events, config }; null: not yet),
+//          events: the last EVENTS_KEPT events [{ seq, kind, text, ...data }] (raised()),
+//          eventSeq: the last event's seq (0: none yet),
 //          sent: the views' models last set in their shared keys and the hints window last
 //          opened, as JSON ({ bar, hints, settings, box }; null: none yet / not open), and leftOpen:
 //          a hints window an earlier copy may have left open (Herdr makes a new copy when the
@@ -33,6 +36,7 @@
 // input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
 //        { command: "<verb>:<block>" }     a jump key (ADR 0014): "whistle.focus:agents"
+//        { command: "mappings:<mod>:on" }  a settings command (config.js settingsCommand)
 //        { key: "ctrl-l" }                 a key pressed on the bar in WHISTLE (keynames.js)
 //        { tick: true }                    the shell's timer; world.now and world.barFocused
 //                                          say what changed (a click away, a late focus)
@@ -67,8 +71,9 @@
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command
 //   { focusBar: true }                  the bar takes the keyboard
-//   { setShared: key, value }           set shared state; step adds { setShared: "whistle" }
-//                                       last whenever the whistle state changes (state())
+//   { setShared: key, value }           set shared state; step adds the public keys (PUBLIC)
+//                                       that changed, then { setShared: "whistle" } last
+//                                       whenever the whistle state changes (state())
 //   { write: path, text, expected }     write a file (path relative to Herdr's home: "keys.json");
 //                                       the outcome comes back as { wrote }
 //   { openOverlay: name, spec }         open an overlay, known by name (closing the one open
@@ -82,12 +87,12 @@
 import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
-import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
+import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, settingsCommand, switchMod, keepMapping, MOD_NAME } from "./config.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, resting, viewing, dock, spotName, isAnchor } from "./block.js";
-import { inert, announce, ownBars, COPIES } from "./inert.js";
+import { inert, announce, ownBars, runningCopy, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
-import { problems, hints, hintItems, settings, hintsBox } from "./views.js";
+import { problems, hints, hintItems, settings, hintsBox, offered } from "./views.js";
 
 // The public keys (PUBLIC) as last written, as JSON: none yet.
 const NOTHING_SENT = { hints: null, events: null, config: null };
@@ -168,6 +173,9 @@ const conflictId = (c) => JSON.stringify([c.seq, c.mods]);
 // What the bar flashes for a new problem in a mod's offered mappings (issue #10).
 const modProblemFlash = (p) => `${p.source}'s mappings have a problem, see settings`;
 const problemId = (p) => JSON.stringify([p.source, p.detail]);
+// The problem listed for a mod offering mappings under a name whistle doesn't take (config.js
+// MOD_NAME), under that name.
+const BAD_NAME = "offers mappings under a name with characters other than letters, digits, \".\", \"_\" and \"-\": whistle skips them";
 
 // The model with its config brought in line with the world: the files (each run on its last
 // good version while it doesn't parse), the mods' mappings (those of mods in the shown layout),
@@ -179,9 +187,12 @@ function configured(model, world) {
   const block = blockProps(world.layout, folder);
   const props = block.props;
   const offered = world.modMappings ?? {};
-  const offers = modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, entry: offered[name] }));
+  const offering = modsShown(world).filter((name) => offered[name] !== undefined);
+  // A mod offering under a name MOD_NAME doesn't take is skipped, and listed under its name.
+  const badNames = offering.filter((name) => !MOD_NAME.test(name));
+  const offers = offering.filter((name) => MOD_NAME.test(name)).map((name) => ({ name, entry: offered[name] }));
   const sig = JSON.stringify([texts.defaults, texts.user, props, block.problems,
-    offers, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
+    offers, badNames, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
   const defaults = readFile(files.defaults, texts.defaults), user = readFile(files.user, texts.user);
@@ -201,9 +212,10 @@ function configured(model, world) {
   // Broken (or not read yet): keys.json isn't written until every source reads.
   const before = new Set((model.conflicts ?? []).map(conflictId));
   const fresh = composed.conflicts.filter((x) => !before.has(conflictId(x)));
-  const offering = new Set(offers.map((o) => o.name));
-  const known = new Set((model.problems ?? []).filter((p) => offering.has(p.source)).map(problemId));
-  const freshModProblems = composed.problems.filter((p) => offering.has(p.source) && !known.has(problemId(p)));
+  const modProblems = [...badNames.map((name) => ({ source: name, detail: BAD_NAME })), ...composed.problems];
+  const fromMods = new Set(offering);
+  const known = new Set((model.problems ?? []).filter((p) => fromMods.has(p.source)).map(problemId));
+  const freshModProblems = modProblems.filter((p) => fromMods.has(p.source) && !known.has(problemId(p)));
   const broken = Boolean(defaults.unread || defaults.missing || defaults.broken || user.unread || user.broken);
   // Each new conflict and mod problem is an event; the bar flashes the first.
   const events = [
@@ -221,7 +233,7 @@ function configured(model, world) {
       ...fileProblems,
       ...block.problems.map((detail) => ({ source: LAYOUT, detail })),
       ...chosen.problems.map((detail) => ({ source: USER, detail })),
-      ...composed.problems,
+      ...modProblems,
       ...keysProblems(world.keysFile?.text, folder),
     ],
     conflicts: composed.conflicts,
@@ -348,6 +360,20 @@ function userWrite(model, world, change) {
 // whistle.json with one setting changed, as a write effect (an event if it can't be).
 const setUser = (model, world, key, value) => userWrite(model, world, (text) => ({
   text: `${JSON.stringify({ ...(text === null ? {} : JSON.parse(text)), [key]: value }, null, 2)}\n` }));
+
+// A settings command (config.js settingsCommand: { mod, on } | { mod, keys }) as a write of
+// whistle.json (docs/contracts/commands.md). Keeping a mapping writes the mod's mapping there as
+// the mod wrote it; a mod that maps nothing there, or a name no mod can have, raises
+// command-failed. It works whether whistle is on or off.
+function settingsChange(model, world, c, s) {
+  const failed = (error) => ({ model: flashed(model, { kind: "command-failed", command: `${folderOf(world)}.${c}`, error, text: error }), effects: [] });
+  if (!MOD_NAME.test(s.mod)) return failed(`${s.mod || "no mod"} isn't a mod name`);
+  if ("on" in s) return userWrite(model, world, (text) => switchMod(text, s.mod, s.on));
+  const keys = s.keys.map((k) => canonicalKey(k, world.platform ?? null));
+  const value = keys.length ? offered(world, s.mod, keys) : undefined;
+  if (value === undefined) return failed(`${s.mod} maps nothing at ${keys.map(keyLabel).join(" ")}`.trimEnd());
+  return userWrite(model, world, (text) => keepMapping(text, keys, value));
+}
 
 // In WHISTLE, back to TYPE before out (a dialog takes the keyboard, or whistle switches off).
 function leaving(model, world, out) {
@@ -578,7 +604,7 @@ function routed(model, input, world) {
   // and claimed key the anchor gets, so it acts on none of them.
   if (viewing(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
-  if (why) return barSent(told(hintsClosed(stepped(model, input, world, why)), world, why), world);
+  if (why) return barSent(inertPublished(told(hintsClosed(stepped(model, input, world, why)), world, why), world, why), world);
   const m = model.told ? { ...model, told: null } : model;
   if (resting(world.layout, folderOf(world), world.props, m.hid)) return rest(hintsClosed({ model: m, effects: [] }), input, world);
   return untold(publish(viewsSent(stepped(m, input, world, why), world), world), world);
@@ -738,6 +764,14 @@ function publish(out, world) {
   return published({ ...out, model: { ...out.model, publicSent }, effects }, state(out.model, world));
 }
 
+// An inert copy's step: the whistle state with why it is inert ({ problem, fix }), when it
+// changed, but only from the copy that would run (inert.js runningCopy): while another copy
+// runs, that copy's state stands. The public keys stay as they were.
+function inertPublished(out, world, why) {
+  if (runningCopy(world) !== folderOf(world)) return out;
+  return published(out, { ...state(out.model, world), inert: { problem: why.problem, fix: why.fix } });
+}
+
 // The whistle state value written, if it isn't what was last.
 function published(out, value) {
   const sig = JSON.stringify(value);
@@ -770,6 +804,8 @@ function running(model, input, world) {
   model = configured(model, world);
   const none = { model, effects: [] };
   if (["on", "off", "settings"].includes(input.command)) return command(model, world, input.command);
+  const change = settingsCommand(input.command);
+  if (change) return settingsChange(model, world, input.command, change);
   // Switched off: standing aside, but still keeping its claims.
   if (model.enabled === false) {
     if (input.tick && model.mode !== "whistle") return claimsTick(model, world);

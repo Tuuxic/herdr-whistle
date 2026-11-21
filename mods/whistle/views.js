@@ -122,7 +122,7 @@ const names = (mods) => (mods.length > 1 ? `${mods.slice(0, -1).join(", ")} and 
 const WHO = { [USER]: "you", [LAYOUT]: "the layout" };
 
 // What a mod offers at a key sequence, as it wrote it (its keys in any spelling), or undefined.
-function offered(world, mod, seq) {
+export function offered(world, mod, seq) {
   let map = world.modMappings?.[mod]?.map;
   let v;
   for (const k of seq) {

@@ -1,8 +1,9 @@
 // Whistle state (ADR 0010, docs/contracts/state.md): shared("whistle") = { v: 1, mode, enabled,
-// sequence, pane, onTerminal } (onTerminal: ADR 0016), published as an effect when it changes and only then, never by an inert
-// copy. Also the copyable reader in whistle.js.
+// sequence, pane, onTerminal, inert? } (onTerminal: ADR 0016), published as an effect when it changes and only then; an
+// inert copy publishes only why (inert), and only when no other copy runs. Also the copyable reader in whistle.js.
 
 import { suite, DEFAULT_WORLD } from "./harness.js";
+import { MIN_HERDR } from "./version.js";
 import * as core from "./step.js";
 import { readState } from "./whistle.js";
 import { IN_TERMINAL, GRID, STOCK, term, bar } from "./worlds.js";
@@ -127,9 +128,11 @@ const SCENARIOS = [
     ],
   },
   {
-    name: "An inert copy publishes nothing",
+    name: "An inert copy publishes only why it is inert, once",
     world: { ...WORLD, herdr: "0.1.14" },
-    steps: [{ tick: 120, published: null }, { command: "whistle", published: null }],
+    steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false,
+      inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.14)`, fix: "Update Herdr." } } },
+    { command: "whistle", published: null }],
   },
 ];
 
@@ -144,8 +147,8 @@ export default suite("whistle state", (t) => {
   t.check("switched back on, enabled true is published", on.effects.find((e) => e.setShared === "whistle")?.value?.enabled, true);
 
   // The reader (whistle.js), as a mod would use it.
-  t.check("the reader gives v1's fields", readState(WHISTLE), { mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: true });
-  t.check("the reader ignores fields it doesn't know", readState({ ...WHISTLE, later: 1 }), { mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: true });
+  t.check("the reader gives v1's fields", readState(WHISTLE), { mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: true, inert: null });
+  t.check("the reader ignores fields it doesn't know", readState({ ...WHISTLE, later: 1 }), { mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: true, inert: null });
   t.check("the reader gives onTerminal false from a whistle that doesn't publish it yet", readState({ v: 1, mode: "whistle", enabled: true, sequence: null, pane: "p1" }).onTerminal, false);
   t.check("the reader gives null before whistle publishes", readState(undefined), null);
   t.check("the reader gives null for a later, breaking v", readState({ ...WHISTLE, v: 2 }), null);
