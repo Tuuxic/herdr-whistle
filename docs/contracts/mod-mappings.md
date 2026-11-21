@@ -90,10 +90,10 @@ the title of the mod first in layout order.
     }
   },
   "steps": [
-    { "tick": 120, "bar": { "label": "g: 2 mods want it, see settings" },
+    { "tick": 120, "raised": [{ "text": "g: 2 mods want it, see settings" }],
       "model": { "conflicts": [{ "seq": ["g"], "mods": ["alpha", "beta"] }] } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "tick": 120, "bar": { "label": "Terminal" } },
+    { "world": { "barFocused": true }, "tick": 120 },
     { "key": "g", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
   ]
 }
@@ -117,10 +117,10 @@ taken an own key's action away, its key is free.
     "modMappings": { "alpha": { "v": 1, "map": { "i": ["Info", "alpha.info"] } } }
   },
   "steps": [
-    { "tick": 120, "bar": { "label": "i: alpha wants an own key, see settings" } },
+    { "tick": 120, "raised": [{ "text": "i: alpha wants an own key, see settings" }] },
     { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "i",
-      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }], "bar": { "badge": "TYPE" } }
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }], "state": { "mode": "type" } }
   ]
 }
 ```
@@ -171,7 +171,7 @@ section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's
     "modMappings": { "alpha": { "v": 1, "map": { "g": ["Go", "alpha.go"] } } }
   },
   "steps": [
-    { "tick": 120, "bar": { "label": "Terminal" },
+    { "tick": 120,
       "model": { "overrides": [{ "seq": ["g"], "source": "layout", "over": ["alpha"] }] } }
   ]
 }
@@ -202,9 +202,9 @@ appears. It isn't one of the person's config problems, so the bar's marker doesn
     "modMappings": { "alpha": { "v": 1, "map": { "g": ["Go", "alpha.go"], "x": ["X"] } } }
   },
   "steps": [
-    { "tick": 120, "bar": { "label": "alpha's mappings have a problem, see settings", "marker": null },
+    { "tick": 120, "problems": 0, "raised": [{ "text": "alpha's mappings have a problem, see settings" }],
       "settings": { "mods": [{ "name": "alpha", "on": true, "problems": ["map › x: should be [label, command] or a group { name, map }"] }] } },
-    { "command": "switch-mode", "bar": { "label": "Terminal" } },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusBar": true }] }
   ]
 }

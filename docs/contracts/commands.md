@@ -174,7 +174,7 @@ The examples below run as tests: each is a scenario through whistle's core.
   "steps": [
     { "command": "switch-mode", "model": { "field": "main" } },
     { "world": { "barFocused": true }, "key": "n", "model": { "field": "notes" }, "effects": [] },
-    { "key": "l", "model": { "field": "notes" }, "bar": { "label": "log can't be selected now" } }
+    { "key": "l", "model": { "field": "notes" }, "raised": [{ "text": "log can't be selected now" }] }
   ]
 }
 ```
@@ -301,8 +301,8 @@ The examples below run as tests: each is a scenario through whistle's core.
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "focus:agents", "model": { "mode": "type" }, "effects": [], "bar": { "badge": "TYPE", "label": "No agents in this layout" } },
-    { "tick": 2500, "bar": { "label": "Terminal" } }
+    { "command": "focus:agents", "model": { "mode": "type" }, "effects": [], "state": { "mode": "type" }, "raised": [{ "text": "No agents in this layout" }] },
+    { "tick": 2500 }
   ]
 }
 ```
@@ -338,7 +338,7 @@ The examples below run as tests: each is a scenario through whistle's core.
     "keysFile": { "text": "{ \"global\": { \"alt-a\": \"whistle.fcous:agents\", \"alt-g\": \"whistle.focus:ghost\" } }", "error": null, "at": 0 }
   },
   "steps": [
-    { "tick": 120, "model": { "problems": [{ "source": "keys.json", "detail": "global › alt-a: unknown whistle command whistle.fcous:agents" }] }, "bar": { "marker": "⚠ 1" } }
+    { "tick": 120, "model": { "problems": [{ "source": "keys.json", "detail": "global › alt-a: unknown whistle command whistle.fcous:agents" }] }, "problems": 1 }
   ]
 }
 ```

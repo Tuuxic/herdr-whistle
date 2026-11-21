@@ -7,9 +7,8 @@
 // copy can't read.
 export function readState(value) {
   if (!value || typeof value !== "object" || value.v !== 1) return null;
-  const { mode, enabled, sequence, pane, onTerminal, inert } = value;
-  // Missing, onTerminal reads as false, and inert as null (whistle runs).
-  return { mode, enabled, sequence, pane, onTerminal: onTerminal === true, inert: inert ?? null };
+  const { mode, enabled, sequence, pane, onTerminal, field, inert } = value;
+  return { mode, enabled, sequence, pane, onTerminal, field, inert };
 }
 
 const v1 = (value) => Boolean(value) && typeof value === "object" && value.v === 1;

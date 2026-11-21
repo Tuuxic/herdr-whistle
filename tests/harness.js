@@ -18,29 +18,35 @@
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it),
-//                                          // the public keys whistle.hints, .events, .config,
-//                                          // the views' models, the bar's included
+//                                          // the public keys whistle.hints, .events, .config
 //                                          // (`shared` checks them) and
-//                                          // the hints window (`hintsWindow` checks it) and
 //                                          // notifications (`notified` checks them)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
+//         state: { mode: "whistle" },      // these fields of the whistle state as it is
+//                                          // now, published in this step or before
 //         shared: { "whistle.hints": null }, // what these shared keys were set to
 //                                          // in this step; a key given as undefined: not set
 //         unset: ["whistle.hints"],        // these shared keys weren't set in this step
 //                                          // (`shared` with undefined, as JSON can say it)
-//         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
+//         raised: [{ kind: "unmapped" }],  // exactly these events raised in this step, in
+//                                          // order, each checked on the fields given
 //         notified: [{ title, body, level }],  // exactly these Herdr notifications posted
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
-//         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
-//         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
-//         settings: { conflicts: [] },     // these fields of the settings' view model
+//         hints: { title: "Panes" },       // these fields of the hint items (whistle.hints
+//                                          // without its v; null: none)
+//         config: { conflicts: [] },       // these fields of whistle.config, without its v
+//         problems: 1,                     // how many config problems whistle.config lists
 //         handled: true },                 // whether a key was handled
 //     ],
+//
+// Whatever a scenario checks, a step that sets a private shared key of whistle's (any
+// "whistle.<name>" but the public keys and whistle.copies) or opens or closes an overlay fails:
+// whistle draws nothing and keeps no view state (ADR 0020).
 //   }
 
 import { VERSION, MIN_HERDR } from "./version.js";
-import * as views from "./views.js";
+import * as facts from "./facts.js";
 
 // The defaults scenarios run on (world.configFiles.defaults), unless they give their own: own
 // keys only, so a scenario's mappings are the ones it writes. mappings.json's own text is in
@@ -67,14 +73,17 @@ export const DEFAULT_WORLD = {
 export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
-// The shared key whistle state is published under (docs/contracts/state.md), the public keys
-// beside it (step.js PUBLIC) and the private keys the views' models go in (step.js VIEWS): set
-// on most steps, so `effects` leaves them out.
+// The shared key whistle state is published under (docs/contracts/state.md) and the public
+// keys beside it (step.js PUBLIC): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
-const VIEW_KEYS = ["whistle.hints", "whistle.events", "whistle.config", "whistle.hintsbox", "whistle.settings"];
-// The bar's model goes in a key per folder (step.js barKey), and so does the reason an inert
-// whistle told (toldKey): `shared` checks them, `effects` leaves them out.
-const isBarKey = (k) => typeof k === "string" && (k.startsWith("whistle.bar:") || k.startsWith("whistle.told:"));
+const PUBLIC_KEYS = ["whistle.hints", "whistle.events", "whistle.config"];
+// The shared keys whistle may set: the public ones, whistle.copies (inert.js) and keynav's.
+const ALLOWED = [STATE, ...PUBLIC_KEYS, "whistle.copies"];
+const isPrivate = (e) => typeof e?.setShared === "string" && e.setShared.startsWith("whistle.") && !ALLOWED.includes(e.setShared);
+const isOverlay = (e) => Boolean(e) && ("openOverlay" in e || "closeOverlay" in e);
+
+// Whether an object has the fields want gives (deep equal per field).
+const fieldsMatch = (got, want) => Boolean(got) && Object.entries(want).every(([k, v]) => show(got[k]) === show(v));
 
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
@@ -96,7 +105,7 @@ function freeze(v) {
   for (const x of Object.values(v)) freeze(x);
 }
 
-// Runs one scenario through core ({ start, step, bar }), with the views' models from views.js:
+// Runs one scenario through core ({ start, step, state }), with the public values from facts.js:
 // its failures as lines.
 export function runScenario(sc, core) {
   const fails = [];
@@ -115,21 +124,24 @@ export function runScenario(sc, core) {
       try { out = core.step(model, next.input, world); }
       catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
-      const isView = (e) => VIEW_KEYS.includes(e?.setShared) || isBarKey(e?.setShared);
-      const isWindow = (e) => e?.openOverlay === "hints" || e?.closeOverlay === "hints";
-      const isNotify = (e) => e && "notify" in e;
-      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e) && !isNotify(e));
+      const isPublic = (e) => PUBLIC_KEYS.includes(e?.setShared);
+      const isNotify = (e) => Boolean(e) && "notify" in e;
+      for (const e of out.effects.filter((x) => isPrivate(x) || isOverlay(x)))
+        fails.push(`${at}: whistle set a private key or an overlay: ${show(e)}`);
+      const effects = out.effects.filter((e) => !isState(e) && !isPublic(e) && !isNotify(e));
       if ("notified" in s && show(out.effects.filter(isNotify).map((e) => e.notify)) !== show(s.notified))
         fails.push(`${at}: notified ${show(out.effects.filter(isNotify).map((e) => e.notify))}, want ${show(s.notified)}`);
-      if ("hintsWindow" in s && show(out.effects.filter(isWindow)) !== show(s.hintsWindow))
-        fails.push(`${at}: hintsWindow ${show(out.effects.filter(isWindow))}, want ${show(s.hintsWindow)}`);
       if ("effects" in s && show(effects) !== show(s.effects))
         fails.push(`${at}: effects ${show(effects)}, want ${show(s.effects)}`);
       if ("published" in s) {
-        const pub = out.effects.filter(isState).map((e) => e.value);
-        const got = pub;
+        const got = out.effects.filter(isState).map((e) => e.value);
         const want = s.published === null ? [] : [s.published];
         if (show(got) !== show(want)) fails.push(`${at}: published ${show(got)}, want ${show(want)}`);
+      }
+      if (s.state) {
+        const st = core.state(out.model, world);
+        for (const [k, want] of Object.entries(s.state))
+          if (show(st[k]) !== show(want)) fails.push(`${at}: state.${k} ${show(st[k])}, want ${show(want)}`);
       }
       const wants = { ...s.shared, ...Object.fromEntries((s.unset ?? []).map((k) => [k, undefined])) };
       for (const [k, want] of Object.entries(wants)) {
@@ -137,23 +149,27 @@ export function runScenario(sc, core) {
         const got = set.length ? set.at(-1).value : undefined;
         if (set.length > 1 || show(got) !== show(want)) fails.push(`${at}: shared ${k} set to ${show(set.map((e) => e.value))}, want ${want === undefined ? "not set" : show(want)}`);
       }
+      if ("raised" in s) {
+        const got = (out.model.events ?? []).filter((e) => e.seq > (model.eventSeq ?? 0));
+        if (got.length !== s.raised.length || !s.raised.every((w, j) => fieldsMatch(got[j], w)))
+          fails.push(`${at}: raised ${show(got)}, want ${show(s.raised)}`);
+      }
       for (const [k, want] of Object.entries(s.model ?? {}))
         if (show(out.model[k]) !== show(want)) fails.push(`${at}: model.${k} ${show(out.model[k])}, want ${show(want)}`);
-      if (s.bar) {
-        const bar = core.bar(out.model, world);
-        for (const [k, want] of Object.entries(s.bar))
-          if (show(bar[k]) !== show(want)) fails.push(`${at}: bar.${k} ${show(bar[k])}, want ${show(want)}`);
+      if ("hints" in s) {
+        const vm = facts.hints(out.model, world);
+        if (s.hints === null || vm === null) {
+          if (show(vm) !== show(s.hints)) fails.push(`${at}: hints ${show(vm)}, want ${show(s.hints)}`);
+        } else for (const [k, want] of Object.entries(s.hints))
+          if (show(vm[k]) !== show(want)) fails.push(`${at}: hints.${k} ${show(vm[k])}, want ${show(want)}`);
       }
-      for (const view of ["hints", "settings"]) {
-        if (!(view in s)) continue;
-        const vm = views[view](out.model, world);
-        if (s[view] === null || vm === null) {
-          if (show(vm) !== show(s[view])) fails.push(`${at}: ${view} ${show(vm)}, want ${show(s[view])}`);
-          continue;
-        }
-        for (const [k, want] of Object.entries(s[view]))
-          if (show(vm[k]) !== show(want)) fails.push(`${at}: ${view}.${k} ${show(vm[k])}, want ${show(want)}`);
+      if (s.config) {
+        const c = facts.config(out.model, world);
+        for (const [k, want] of Object.entries(s.config))
+          if (show(c[k]) !== show(want)) fails.push(`${at}: config.${k} ${show(c[k])}, want ${show(want)}`);
       }
+      if ("problems" in s && facts.config(out.model, world).problems.length !== s.problems)
+        fails.push(`${at}: problems ${show(facts.config(out.model, world).problems)}, want ${s.problems} of them`);
       if ("handled" in s && Boolean(out.handled) !== s.handled)
         fails.push(`${at}: handled ${Boolean(out.handled)}, want ${s.handled}`);
       model = out.model;

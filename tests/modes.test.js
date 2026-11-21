@@ -1,4 +1,4 @@
-// Mode changes: TYPE and WHISTLE, the switch key's commands, click-away, the bar taking the keyboard.
+// Mode changes: TYPE and WHISTLE, the switch key's commands, click-away, the anchor taking the keyboard.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
@@ -23,7 +23,7 @@ const SCENARIOS = [
     ],
   },
   {
-    name: "whistle.mode:type (Ctrl+Space on the bar) goes back to TYPE",
+    name: "whistle.mode:type (Ctrl+Space on the anchor) goes back to TYPE",
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
@@ -46,7 +46,7 @@ const SCENARIOS = [
     ],
   },
   {
-    name: "A click away from the bar ends WHISTLE",
+    name: "A click away from the anchor ends WHISTLE",
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
@@ -65,23 +65,23 @@ const SCENARIOS = [
     name: "The bar shows the mode and where the keyboard is",
     world: IN_TERMINAL,
     steps: [
-      { tick: 120, bar: { badge: "TYPE", label: "Terminal" } },
-      { command: "switch-mode", bar: { badge: "WHISTLE", label: "Terminal · zsh" } },
-      { world: { barFocused: true }, key: "i", bar: { badge: "TYPE", label: "Terminal" } },
+      { tick: 120, state: { mode: "type" } },
+      { command: "switch-mode", state: { mode: "whistle", onTerminal: true } },
+      { world: { barFocused: true }, key: "i", state: { mode: "type" } },
     ],
   },
   {
     name: "The bar names the selected pane by its program when it has no title",
     world: { ...IN_TERMINAL, panes: [{ pane: "p1", title: "", program: { name: "vim" } }] },
-    steps: [{ command: "switch-mode", bar: { badge: "WHISTLE", label: "Terminal · vim" } }],
+    steps: [{ command: "switch-mode", state: { mode: "whistle", onTerminal: true } }],
   },
   {
     name: "The bar says nothing of where the keyboard is in TYPE outside a terminal",
     world: { ...IN_TERMINAL, focused: { pane: null } },
-    steps: [{ tick: 120, bar: { badge: "TYPE", label: "" } }],
+    steps: [{ tick: 120, state: { mode: "type" } }],
   },
   {
-    name: "Nothing changes on a tick while TYPE keeps out of the bar",
+    name: "Nothing changes on a tick while TYPE keeps out of the anchor",
     world: IN_TERMINAL,
     steps: [{ tick: 120, effects: [], model: { mode: "type", field: null } }],
   },

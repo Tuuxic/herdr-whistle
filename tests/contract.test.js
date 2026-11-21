@@ -4,7 +4,7 @@
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { term, bar } from "./worlds.js";
+import { term, anchor } from "./worlds.js";
 import { settingsCommandFor } from "./config.js";
 import { VERSION, MIN_HERDR } from "./version.js";
 import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
@@ -20,7 +20,7 @@ const entry = (map) => ({ v: 1, map });
 // A world in a terminal: the mods shown, their entries, the defaults' map, the layout's whistle
 // block props, whistle.json (undefined: no file; a string: its text as it is).
 const world = ({ map = {}, user, mods = [], entries = {}, props, layout } = {}) => ({
-  layout: layout ?? { id: "root", type: "column", children: [term("main"), ...mods.map(block), props ? { ...bar, content: { mod: "whistle", props } } : bar] },
+  layout: layout ?? { id: "root", type: "column", children: [term("main"), ...mods.map(block), props ? { ...anchor, content: { mod: "whistle", props } } : anchor] },
   focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }], modMappings: entries,
   configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map }), user: user === undefined ? null : typeof user === "string" ? user : json(user) },
 });
@@ -59,24 +59,24 @@ const SCENARIOS = [
 
   // whistle.events
   {
-    name: "whistle.events starts empty, and an unmapped key adds an unmapped event with its keys, while the bar still flashes",
+    name: "whistle.events starts empty, and an unmapped key adds an unmapped event with its keys",
     world: world({ map: PANES }),
     steps: [
       { tick: 120, shared: { "whistle.events": { v: 1, events: [] } } },
       ...IN.slice(0, 1),
       { world: { barFocused: true }, key: "w", shared: { "whistle.events": undefined } },
-      { key: "x", bar: { label: "w x is not mapped" },
+      { key: "x", raised: [{ text: "w x is not mapped" }],
         shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "unmapped", keys: ["w", "x"], text: "w x is not mapped" }] } } },
       { tick: 120, shared: { "whistle.events": undefined } },
     ],
   },
   {
-    name: "Several events in one step get consecutive seqs: two new conflicts and a new mod problem; the bar flashes the first",
+    name: "Several events in one step get consecutive seqs: two new conflicts and a new mod problem",
     world: world({ mods: ["alpha", "beta"], entries: {
       alpha: entry({ g: { name: "Alpha", map: { d: ["D", "alpha.d"], e: ["E", "alpha.e"] } }, z: "nope" }),
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"], e: ["E", "beta.e"] } } }),
     } }),
-    steps: [{ tick: 120, bar: { label: "g d: 2 mods want it, see settings" }, shared: { "whistle.events": { v: 1, events: [
+    steps: [{ tick: 120, shared: { "whistle.events": { v: 1, events: [
       { seq: 1, kind: "conflict-new", keys: ["g", "d"], mods: ["alpha", "beta"], text: "g d: 2 mods want it, see settings" },
       { seq: 2, kind: "conflict-new", keys: ["g", "e"], mods: ["alpha", "beta"], text: "g e: 2 mods want it, see settings" },
       { seq: 3, kind: "mod-problem-new", source: "alpha", detail: "map › z: should be [label, command] or a group { name, map }",
@@ -93,7 +93,7 @@ const SCENARIOS = [
   {
     name: "A block that can't be selected raises cant-select, and a verb on a block the layout lacks raises verb-failed",
     world: world({ layout: { id: "root", type: "column", children: [term("main"), { id: "notes", type: "block", hidden: true, content: { pane: {} } },
-        { ...bar, content: { mod: "whistle", props: { mappings: { n: ["Notes", "whistle.field:notes"], m: ["Missing", "whistle.toggle:gone"] } } } }] } }),
+        { ...anchor, content: { mod: "whistle", props: { mappings: { n: ["Notes", "whistle.field:notes"], m: ["Missing", "whistle.toggle:gone"] } } } }] } }),
     steps: [...IN,
       { key: "n", shared: { "whistle.events": { v: 1, events: [
         { seq: 1, kind: "cant-select", block: "notes", reason: "hidden", text: "notes can't be selected now" }] } } },
@@ -104,7 +104,7 @@ const SCENARIOS = [
   {
     name: "A jump key in TYPE on a block the layout lacks raises verb-failed",
     world: world(),
-    steps: [{ tick: 120 }, { command: "focus:gone", bar: { label: "No gone in this layout" }, shared: { "whistle.events": { v: 1, events: [
+    steps: [{ tick: 120 }, { command: "focus:gone", raised: [{ text: "No gone in this layout" }], shared: { "whistle.events": { v: 1, events: [
       { seq: 1, kind: "verb-failed", block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
   },
   {
@@ -128,7 +128,7 @@ const SCENARIOS = [
   {
     name: "A failed write of whistle.json raises settings-write-failed",
     world: world(),
-    steps: [{ tick: 120 }, { wrote: "whistle.json", ok: false, error: "denied", bar: { label: "couldn't write whistle.json: denied" },
+    steps: [{ tick: 120 }, { wrote: "whistle.json", ok: false, error: "denied", raised: [{ text: "couldn't write whistle.json: denied" }],
       shared: { "whistle.events": { v: 1, events: [
         { seq: 1, kind: "settings-write-failed", error: "denied", text: "couldn't write whistle.json: denied" }] } } }],
   },
@@ -234,23 +234,23 @@ const SCENARIOS = [
     name: "A copy inert on an old Herdr, with no other copy running, publishes the state with inert, once",
     world: { herdr: "0.1.0", focused: { pane: "p1" } },
     steps: [
-      { tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false,
+      { tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null,
         inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." } },
         shared: { "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } },
       { tick: 120, published: null },
-      { world: { herdr: MIN_HERDR }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
+      { world: { herdr: MIN_HERDR }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null, inert: null } },
     ],
   },
   {
     name: "A copy inert while another copy runs writes no state",
     world: { folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
-      layout: { id: "root", type: "column", children: [term("main"), bar, { id: "bar-2", type: "block", content: { mod: "whistle-2" } }] } },
+      layout: { id: "root", type: "column", children: [term("main"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
     steps: [{ tick: 120, published: null, shared: { "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } }],
   },
   {
     name: "A copy inert on an old Herdr writes no state while another copy would run",
     world: { herdr: "0.1.0", folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
-      layout: { id: "root", type: "column", children: [term("main"), bar, { id: "bar-2", type: "block", content: { mod: "whistle-2" } }] } },
+      layout: { id: "root", type: "column", children: [term("main"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
     steps: [{ tick: 120, published: null }],
   },
 ];
@@ -261,8 +261,10 @@ export default suite("contract", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
 
   // The copyable readers (whistle.js).
-  t.check("readState gives inert, null while whistle runs", [readState({ v: 1, mode: "type" }).inert,
-    readState({ v: 1, mode: "type", inert: { problem: "p", fix: "f" } }).inert], [null, { problem: "p", fix: "f" }]);
+  const RUNNING = { v: 1, mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: false, field: "spaces", inert: null };
+  t.check("readState gives the v1 fields, field and inert among them, and ignores the rest",
+    [readState({ ...RUNNING, later: 1 }), readState({ ...RUNNING, mode: "type", field: null, inert: { problem: "p", fix: "f" } }).inert, readState({ v: 2 })],
+    [{ mode: "whistle", enabled: true, sequence: null, pane: "p1", onTerminal: false, field: "spaces", inert: null }, { problem: "p", fix: "f" }, null]);
   t.check("hintsOf gives the v1 hints, else null", [hintsOf(PANES_HINTS), hintsOf(null), hintsOf({ ...PANES_HINTS, v: 2 })],
     [{ keys: "w", title: "Panes", items: PANES_HINTS.items, exit: null }, null, null]);
   t.check("configOf gives the v1 config, else null", [configOf({ v: 1, problems: [], mods: [], conflicts: [], overrides: [], later: 1 }), configOf({ v: 2 })],

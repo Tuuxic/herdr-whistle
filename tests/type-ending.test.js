@@ -17,10 +17,10 @@ const SCENARIOS = [
     name: "A TYPE-ending mapping runs its command and goes to TYPE",
     world: world({ "ctrl-n": ["New tab", "tab.new", null, "type"] }),
     steps: [...IN, { key: "ctrl-n", handled: true, effects: [{ run: "tab.new", args: {} }],
-      model: { mode: "type", holdUntil: 120 + HOLD }, bar: { badge: "TYPE" } }],
+      model: { mode: "type", holdUntil: 120 + HOLD }, state: { mode: "type" } }],
   },
   {
-    name: "After a TYPE-ending mapping the bar hands the keyboard to the terminal Herdr focused",
+    name: "After a TYPE-ending mapping the anchor hands the keyboard to the terminal Herdr focused",
     world: world({ "ctrl-n": ["New tab", "tab.new", null, "type"] }),
     steps: [...IN, { key: "ctrl-n" },
       { world: { focused: { pane: "p2", terminal: "t2" } }, tick: 120,
@@ -28,7 +28,7 @@ const SCENARIOS = [
       { world: { barFocused: false }, tick: 120, effects: [], model: { mode: "type" } }],
   },
   {
-    name: "Once that hold is over, the bar taking the keyboard is WHISTLE again",
+    name: "Once that hold is over, the anchor taking the keyboard is WHISTLE again",
     world: world({ "ctrl-n": ["New tab", "tab.new", null, "type"] }),
     steps: [...IN, { key: "ctrl-n" }, { world: { barFocused: false }, tick: HOLD },
       { world: { barFocused: true }, tick: 120, model: { mode: "whistle" } }],

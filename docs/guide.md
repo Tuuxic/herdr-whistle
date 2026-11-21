@@ -67,7 +67,7 @@ On macOS, Option+letter types characters (Option+A is å), so bind `ctrl-shift-a
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "bar": { "badge": "WHISTLE" } },
+    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "state": { "mode": "whistle" } },
     { "world": { "barFocused": true }, "command": "focus:spaces", "model": { "mode": "whistle", "field": "spaces" } }
   ]
 }
@@ -156,9 +156,9 @@ palette, settings, a rename), which takes it, and one that ends in TYPE.
   "steps": [
     { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-n",
-      "effects": [{ "run": "tab.new", "args": {} }], "bar": { "badge": "TYPE" } },
+      "effects": [{ "run": "tab.new", "args": {} }], "state": { "mode": "type" } },
     { "world": { "focused": { "pane": "p2" } }, "tick": 120,
-      "effects": [{ "run": "pane.focus", "args": { "pane": "p2" } }], "bar": { "badge": "TYPE" } }
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p2" } }], "state": { "mode": "type" } }
   ]
 }
 ```
@@ -223,7 +223,7 @@ goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "hints": { "title": "Files", "items": [{ "key": "Enter", "label": "Go in", "group": false }] } },
     { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusBar": true }] },
-    { "tick": 120, "bar": { "marker": null } }
+    { "tick": 120, "problems": 0 }
   ]
 }
 ```
@@ -275,7 +275,7 @@ Whether they wrap around at the ends is up to Herdr.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" } },
+    { "world": { "barFocused": true }, "key": "ctrl-h", "state": { "field": "spaces" } },
     { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] }
   ]
 }
@@ -299,7 +299,7 @@ After integration the `spaces` block holds the clone, which announces itself thr
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
+    { "world": { "barFocused": true }, "key": "ctrl-h", "state": { "field": "spaces" },
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "spaces-whistle {}" } }] },
     { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
     { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-pick", "args": {} }, { "focusBar": true }] },
@@ -368,7 +368,7 @@ A claimed key acts as if pressed on the bar:
     { "command": "switch-mode" },
     { "world": { "barFocused": true }, "command": "key-i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }],
-      "bar": { "badge": "TYPE" } }
+      "state": { "mode": "type" } }
   ]
 }
 ```
@@ -497,12 +497,12 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
     }
   },
   "steps": [
-    { "tick": 120, "bar": { "marker": null } },
+    { "tick": 120, "problems": 0 },
     { "world": { "configFiles": {
         "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }",
         "user": "{ \"map\": { \"n\": [\"Next tab\", " } }, "tick": 1000,
       "model": { "problems": [{ "source": "whistle.json", "detail": "doesn't parse; whistle runs on its last good version" }] },
-      "bar": { "marker": "⚠ 1" } },
+      "problems": 1 },
     { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "n",
       "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
@@ -561,7 +561,7 @@ it.
   "steps": [
     { "tick": 120, "model": { "problems": [{ "source": "keys.json",
         "detail": "global › ctrl-space runs whistle.switch-mode, but this copy is whistle-2: make it whistle-2.switch-mode" }] },
-      "bar": { "marker": "⚠ 1" } }
+      "problems": 1 }
   ]
 }
 ```
@@ -584,7 +584,7 @@ the reason goes.
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "bar": { "badge": null },
+      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }],
       "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
         "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0)", "fix": "Update Herdr." } } }
   ]
@@ -606,7 +606,7 @@ the reason goes.
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+      "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "state": { "inert": { "problem": "Another whistle runs, from mods/whistle/", "fix": "Delete the copies you don't want." } } }
   ]
 }
 ```
@@ -673,7 +673,7 @@ Standing aside, it shows only [why](#when-whistle-stands-aside).
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"enabled\": false, \"keys\": { \"jump\": [\"x\"] } }" }
   },
   "steps": [
-    { "tick": 120, "bar": { "badge": null, "label": "Whistle off", "marker": "⚠ 1" } }
+    { "tick": 120, "state": { "enabled": false }, "problems": 1 }
   ]
 }
 ```

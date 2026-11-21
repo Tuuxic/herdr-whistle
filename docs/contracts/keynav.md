@@ -103,7 +103,7 @@ longer in the layout are ignored, so a field never has to clean up after itself.
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
     { "world": { "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
-      "model": { "field": "files" }, "bar": { "label": "Files" } }
+      "model": { "field": "files" }, "state": { "field": "files" } }
   ]
 }
 ```
@@ -314,7 +314,7 @@ the driver selects the terminal and names no field.
       ] } },
       "tick": 120,
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": null } }],
-      "model": { "field": "main" }, "bar": { "label": "Terminal" } }
+      "model": { "field": "main" } }
   ]
 }
 ```
@@ -340,7 +340,7 @@ speak: the block isn't a field, and nothing reaches it. Whistle speaks `v: 3`.
   "steps": [
     { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [],
-      "model": { "field": "main" }, "bar": { "marker": null } }
+      "model": { "field": "main" }, "problems": 0 }
   ]
 }
 ```

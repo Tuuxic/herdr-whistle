@@ -20,10 +20,10 @@ scenario. Text around it, `${like this}` or a \backslash, is only prose.
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "focusBar": true }],
-      "bar": { "badge": "WHISTLE", "label": "Terminal · C:\\work" } },
+      "state": { "mode": "whistle", "onTerminal": true } },
     { "world": { "barFocused": true }, "command": "switch-mode",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }],
-      "bar": { "badge": "TYPE" } }
+      "state": { "mode": "type" } }
   ]
 }
 ```

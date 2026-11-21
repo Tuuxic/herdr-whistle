@@ -5,15 +5,15 @@
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { term, bar } from "./worlds.js";
+import { term, anchor } from "./worlds.js";
 import { fieldKey } from "./fields.js";
 import * as helper from "./keynav.js";
 import texts from "./texts.js";
 
-// A terminal with a files block to its right, over the bar.
+// A terminal with a files block to its right, over the anchor.
 const files = (props) => ({ id: "files", type: "block", content: { mod: "files", ...(props ? { props } : {}) } });
-const LAYOUT = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), files()] }, bar] };
-const NO_FILES = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main")] }, bar] };
+const LAYOUT = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), files()] }, anchor] };
+const NO_FILES = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main")] }, anchor] };
 const KEY = "files {}";
 const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3, label, keys } });const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
@@ -30,7 +30,7 @@ const SCENARIOS = [
   {
     name: "A mod's block is a field once its entry announces v 3: Ctrl+L selects it and names it active",
     world: { ...WORLD, shared: entry() },
-    steps: [...IN, { key: "ctrl-l", handled: true, effects: [ACTIVE], model: { field: "files" }, bar: { label: "Files" } }],
+    steps: [...IN, { key: "ctrl-l", handled: true, effects: [ACTIVE], model: { field: "files" }, state: { field: "files" } }],
   },
   {
     name: "A field appearing: a block with no entry isn't a field until its mod announces",
@@ -48,7 +48,7 @@ const SCENARIOS = [
   })),
   {
     name: "A field's moves go to its own mod, by the block's mod name",
-    world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree", props: { root: "~" } } }] }, bar] },
+    world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree", props: { root: "~" } } }] }, anchor] },
       shared: { 'keynav.field:tree {"root":"~"}': { v: 3, label: "Tree", keys: {} } } },
     steps: [...IN, { key: "ctrl-l", effects: [{ setShared: "keynav", value: { v: 3, active: 'tree {"root":"~"}' } }] },
       { key: "j", effects: [{ run: "tree.keynav-down", args: {} }, { focusBar: true }] }],
@@ -56,9 +56,9 @@ const SCENARIOS = [
   {
     name: "A field whose props hold an object inside an array is found by its entry, keys sorted inside the array too",
     world: { ...WORLD, layout: { ...LAYOUT, children: [{ id: "top", type: "row", children: [term("main"),
-      { id: "tree", type: "block", content: { mod: "tree", props: { roots: [{ name: "home", at: "~" }] } } }] }, bar] },
+      { id: "tree", type: "block", content: { mod: "tree", props: { roots: [{ name: "home", at: "~" }] } } }] }, anchor] },
       shared: { 'keynav.field:tree {"roots":[{"at":"~","name":"home"}]}': { v: 3, label: "Tree", keys: {} } } },
-    steps: [...IN, { key: "ctrl-l", model: { field: "tree" }, bar: { label: "Tree" } }],
+    steps: [...IN, { key: "ctrl-l", model: { field: "tree" }, state: { field: "tree" } }],
   },
   // Declared keys.
   {
@@ -97,7 +97,7 @@ const SCENARIOS = [
       { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }],
         model: { fieldProblems: [{ source: "keynav", detail: "Files (files) declares j, down's own key; it counts once you unbind down" }] } },
       { key: "x", effects: [{ run: "files.keynav-key-x", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: "⚠ 1" } }],
+      { tick: 120, problems: 1 }],
   },
   // Own keys the person unbinds (issue #44): a freed key is an ordinary key.
   {
@@ -106,14 +106,14 @@ const SCENARIOS = [
     steps: [...IN,
       { key: "ctrl-l", hints: { title: "Files", items: [{ key: "Enter", label: "Go in", group: false }] } },
       { key: "enter", handled: true, effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { tick: 120, problems: 0 }],
   },
   {
     name: "Pick left without keys ([]) frees Enter the same way",
     world: { ...WORLD, ...unbound({ pick: [] }), shared: entry({ enter: "Go in" }) },
     steps: [...IN, { key: "ctrl-l" },
       { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { tick: 120, problems: 0 }],
   },
   {
     name: "With pick unbound, Enter on a field that doesn't declare it reaches no field",
@@ -131,7 +131,7 @@ const SCENARIOS = [
     steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "j", label: "Jump", group: false }] } },
       { key: "j", effects: [{ run: "files.keynav-key-j", args: {} }, { focusBar: true }] },
       { key: "down", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { tick: 120, problems: 0 }],
   },
   {
     name: "With down unbound, j reaches no field that doesn't declare it, and a mapping on j runs instead",
@@ -149,8 +149,8 @@ const SCENARIOS = [
   {
     name: "Unbinding the own key a field declares takes its config problem away",
     world: { ...WORLD, shared: entry({ enter: "Go in" }) },
-    steps: [...IN, { key: "ctrl-l" }, { tick: 120, bar: { marker: "⚠ 1" } },
-      { world: unbound({ pick: null }), tick: 120, bar: { marker: null } },
+    steps: [...IN, { key: "ctrl-l" }, { tick: 120, problems: 1 },
+      { world: unbound({ pick: null }), tick: 120, problems: 0 },
       { key: "enter", effects: [{ run: "files.keynav-key-enter", args: {} }, { focusBar: true }] }],
   },
   {
@@ -158,7 +158,7 @@ const SCENARIOS = [
     world: { ...WORLD, ...SHIPPED, shared: entry({ backspace: "Up a folder" }) },
     steps: [...IN, { key: "ctrl-l", hints: { items: [{ key: "⌫", label: "Up a folder", group: false }] } },
       { key: "backspace", handled: true, effects: [{ run: "files.keynav-key-backspace", args: {} }, { focusBar: true }] },
-      { tick: 120, bar: { marker: null } }],
+      { tick: 120, problems: 0 }],
   },
   {
     name: "A whistle.json mapping on Backspace runs where no selected field declares it; the field wins where one does",
@@ -213,7 +213,7 @@ const SCENARIOS = [
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
       { world: { layout: NO_FILES }, tick: 120, effects: [{ setShared: "keynav", value: { v: 3, active: null } }],
-        model: { field: "main" }, bar: { label: "Terminal · zsh" } },
+        model: { field: "main" }, state: { onTerminal: true } },
       { tick: 120, effects: [] }],
   },
   {
@@ -293,7 +293,7 @@ const SCENARIOS = [
     name: "An entry with v 2 isn't a field, and settings list nothing about it",
     world: { ...WORLD, shared: { [`keynav.field:${KEY}`]: { v: 2, label: "Files", keys: {} } } },
     steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main" } },
-      { tick: 120, bar: { marker: null } }],
+      { tick: 120, problems: 0 }],
   },
 ];
 

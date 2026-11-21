@@ -164,7 +164,8 @@ const SCENARIOS = [
   },
   {
     name: "A copy in another folder claims in its own section, with its own commands",
-    world: { ...world({ global: { "ctrl-space": "wh.switch-mode" } }), folder: "wh", copies: { wh: VERSION } },
+    world: { ...world({ global: { "ctrl-space": "wh.switch-mode" } }), folder: "wh", copies: { wh: VERSION },
+      layout: { id: "root", type: "column", children: [IN_TERMINAL.layout.children[0], { id: "anchor", type: "block", content: { mod: "wh" } }] } },
     steps: [{ tick: 120, effects: [{
       write: "keys.json",
       text: text({ global: { "ctrl-space": "wh.switch-mode" }, "mod:wh": {

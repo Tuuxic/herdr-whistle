@@ -1,11 +1,11 @@
 // Failure behaviour (Failure behaviour, issue #10): broken files run on their last good version
 // (else they're left out, and with no defaults whistle runs on built-in safety own keys), bad
-// entries are skipped, every config problem is listed for settings with a marker on the bar, a
-// failed press only flashes, and keys.json is never written while a source is broken.
+// entries are skipped, every config problem is listed in whistle.config, a
+// failed press only raises an event, and keys.json is never written while a source is broken.
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { problems } from "./views.js";
+import { problems } from "./facts.js";
 import { IN_TERMINAL } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
@@ -138,43 +138,43 @@ const SCENARIOS = [
 
   // The bar and settings.
   {
-    name: "While there are problems the bar shows a marker, in TYPE and WHISTLE alike",
+    name: "While there are problems whistle.config lists them, in TYPE and WHISTLE alike",
     world: world("{ nope"),
     steps: [
-      { tick: 120, bar: { badge: "TYPE", label: "Terminal", marker: "⚠ 1" } },
+      { tick: 120, state: { mode: "type" }, problems: 1 },
       { command: "switch-mode" },
-      { world: { barFocused: true }, tick: 120, bar: { badge: "WHISTLE", label: "Terminal · zsh", marker: "⚠ 1" } },
-      { world: files(null), tick: 120, bar: { marker: null } },
+      { world: { barFocused: true }, tick: 120, state: { mode: "whistle", onTerminal: true }, problems: 1 },
+      { world: files(null), tick: 120, problems: 0 },
     ],
   },
   {
-    name: "A keys.json problem counts toward the bar's marker",
+    name: "A keys.json problem is a config problem",
     world: { ...world(null), ...keysFile("{ nope") },
-    steps: [{ tick: 120, bar: { marker: "⚠ 1" } }],
+    steps: [{ tick: 120, problems: 1 }],
   },
 
   // Failed presses.
   {
-    name: "A command that fails when pressed flashes, and isn't a problem",
+    name: "A command that fails when pressed raises an event, and isn't a problem",
     world: world(null),
     steps: [...IN,
       { key: "n", effects: ran("tab.next") },
-      { ran: "tab.next", error: "no next tab", effects: [], bar: { label: "tab.next failed: no next tab", marker: null }, model: { problems: [] } },
-      { tick: 120, bar: { label: "tab.next failed: no next tab" } },
-      { key: "j", bar: { label: "Terminal · zsh" } }],
+      { ran: "tab.next", error: "no next tab", effects: [], problems: 0, raised: [{ text: "tab.next failed: no next tab" }], model: { problems: [] } },
+      { tick: 120, raised: [] },
+      { key: "j", state: { onTerminal: true } }],
   },
   {
-    name: "A flash is gone with the switch key too",
+    name: "An event is raised once: the switch key raises none",
     world: world(null),
     steps: [...IN, { key: "n" }, { ran: "tab.next", error: "no next tab" },
-      { command: "switch-mode", bar: { badge: "TYPE", label: "Terminal" } }],
+      { command: "switch-mode", state: { mode: "type" }, raised: [] }],
   },
   {
-    name: "A key that isn't mapped in a key sequence flashes and ends it",
+    name: "A key that isn't mapped in a key sequence raises an event and ends it",
     world: world({ map: { w: { name: "Panes", map: { q: ["Close pane", "pane.close"] } } } }),
     steps: [...IN,
       { key: "w", model: { sequence: ["w"] } },
-      { key: "x", effects: [], handled: true, model: { sequence: null }, bar: { label: "w x is not mapped" } }],
+      { key: "x", effects: [], handled: true, model: { sequence: null }, raised: [{ text: "w x is not mapped" }] }],
   },
 
   // keys.json.

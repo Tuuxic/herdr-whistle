@@ -28,19 +28,19 @@ const SCENARIOS = [
   {
     name: "A copy in mods/whistle-2/ whose switch key runs whistle.switch-mode lists a config problem",
     world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents" } }) },
-    steps: [{ tick: 120, model: { problems: [PROBLEM] }, bar: { marker: "⚠ 1" } }],
+    steps: [{ tick: 120, model: { problems: [PROBLEM] }, problems: 1 }],
   },
   {
     name: "A copy in mods/whistle-2/ whose switch key runs whistle-2.switch-mode lists no problem",
     world: { ...COPY2, ...keysFile({ global: { "ctrl-space": "whistle-2.switch-mode", "alt-a": "whistle-2.focus:agents" } }) },
-    steps: [{ tick: 120, model: { problems: [] }, bar: { marker: null } }],
+    steps: [{ tick: 120, model: { problems: [] }, problems: 0 }],
   },
   {
     name: "The copy in mods/whistle/ never lists the switch-key problem for whistle.switch-mode",
     world: { ...COPY2, folder: "whistle", copies: { whistle: VERSION },
       layout: { id: "root", type: "column", children: [term("main"), { ...bar2, content: { mod: "whistle" } }] },
       ...keysFile({ global: { "ctrl-space": "whistle.switch-mode" } }) },
-    steps: [{ tick: 120, model: { problems: [] }, bar: { marker: null } }],
+    steps: [{ tick: 120, model: { problems: [] }, problems: 0 }],
   },
   {
     name: "A switch key outside global is not the switch-key problem (whistle only reads global)",

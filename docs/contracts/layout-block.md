@@ -70,7 +70,7 @@ there, and the bar shows no mode badge. Switched off in WHISTLE, whistle goes ba
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "bar": { "badge": null, "label": "Whistle off" } }
+      "state": { "enabled": false } }
   ]
 }
 ```
@@ -87,7 +87,7 @@ there, and the bar shows no mode badge. Switched off in WHISTLE, whistle goes ba
     "focused": { "pane": "p1", "terminal": "t1" },
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"enabled\": true }" }
   },
-  "steps": [{ "command": "switch-mode", "effects": [{ "focusBar": true }], "bar": { "badge": "WHISTLE" } }]
+  "steps": [{ "command": "switch-mode", "effects": [{ "focusBar": true }], "state": { "mode": "whistle" } }]
 }
 ```
 
@@ -137,7 +137,7 @@ with a marker on the bar. The rest of the block still counts.
   "steps": [
     { "command": "switch-mode", "effects": [{ "focusBar": true }],
       "model": { "problems": [{ "source": "layout", "detail": "enabled should be true or false" }] },
-      "bar": { "badge": "WHISTLE", "marker": "⚠ 1" } }
+      "state": { "mode": "whistle" }, "problems": 1 }
   ]
 }
 ```
@@ -419,7 +419,7 @@ straight away.
         { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
         { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
       ] } },
-      "tick": 120, "effects": [], "model": { "mode": "whistle" }, "bar": { "badge": "WHISTLE", "label": "Terminal" } }
+      "tick": 120, "effects": [], "model": { "mode": "whistle" }, "state": { "mode": "whistle", "onTerminal": true } }
   ]
 }
 ```
@@ -682,7 +682,7 @@ problem (source `layout`), so a bar spot never changes what whistle does. Move i
   "steps": [
     { "command": "switch-mode", "effects": [{ "focusBar": true }],
       "model": { "mode": "whistle", "problems": [{ "source": "layout", "detail": "enabled: a bar's is skipped in a layout with an anchor; put it on the anchor" }] },
-      "bar": { "badge": "WHISTLE", "marker": "⚠ 1" } }
+      "state": { "mode": "whistle" }, "problems": 1 }
   ]
 }
 ```

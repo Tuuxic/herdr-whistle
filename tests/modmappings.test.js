@@ -6,7 +6,7 @@
 
 import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
-import { term, bar } from "./worlds.js";
+import { term, anchor } from "./worlds.js";
 import { shared, setShared } from "herdr";
 import { offerMappings } from "./whistle.js";
 
@@ -15,7 +15,7 @@ const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
 const block = (mod) => ({ id: mod, type: "block", content: { mod } });
 // The usual layout with the named mods' blocks, in order, and whistle's block with props.
 const layout = (mods = [], props) => ({ id: "root", type: "column", children: [
-  term("main"), ...mods.map(block), props ? { ...bar, content: { mod: "whistle", props } } : bar,
+  term("main"), ...mods.map(block), props ? { ...anchor, content: { mod: "whistle", props } } : anchor,
 ] });
 // A world in a terminal: the mods shown, their entries, the defaults' map, whistle.json.
 const world = ({ mods = ["alpha", "beta"], entries = {}, map = {}, keys, props, user } = {}) => ({
@@ -67,22 +67,22 @@ const SCENARIOS = [
     steps: [{ tick: 120, model: { conflicts: [{ seq: ["g"], mods: ["alpha", "beta"] }], overrides: [] } }],
   },
   {
-    name: "A new mapping conflict flashes once",
+    name: "A new mapping conflict raises an event once",
     world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } }),
     steps: [
-      { tick: 120, bar: { label: "g: 2 mods want it, see settings" } },
-      { tick: 120, bar: { label: "g: 2 mods want it, see settings" } },
-      { command: "switch-mode", bar: { label: "Terminal · zsh" } },
-      { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
+      { tick: 120, raised: [{ text: "g: 2 mods want it, see settings" }] },
+      { tick: 120, raised: [] },
+      { command: "switch-mode", state: { onTerminal: true } },
+      { world: { barFocused: true }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {
-    name: "A mod registering a conflicting key mid-session flashes",
+    name: "A mod registering a conflicting key mid-session raises an event",
     world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [
-      { tick: 120, bar: { label: "Terminal" } },
+      { tick: 120 },
       { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } }, tick: 120,
-        bar: { label: "g: 2 mods want it, see settings" } },
+        raised: [{ text: "g: 2 mods want it, see settings" }] },
     ],
   },
   {
@@ -98,18 +98,18 @@ const SCENARIOS = [
     } }),
     steps: [...IN,
       { key: "g", handled: true, model: { sequence: ["g"], conflicts: [{ seq: ["g", "d"], mods: ["beta", "alpha"] }] },
-        bar: { label: "Terminal · zsh" } },
+        state: { onTerminal: true } },
       { key: "a", effects: ran("alpha.a") },
       { key: "g" }, { key: "b", effects: ran("beta.b") },
-      { key: "g" }, { key: "d", effects: [], bar: { label: "g d is not mapped" } }],
+      { key: "g" }, { key: "d", effects: [], raised: [{ text: "g d is not mapped" }] }],
   },
   {
-    name: "A mapping conflict inside merged groups flashes with its key sequence",
+    name: "A mapping conflict inside merged groups raises an event with its key sequence",
     world: world({ entries: {
       alpha: entry({ g: { name: "Alpha", map: { d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"] } } }),
     } }),
-    steps: [{ tick: 120, bar: { label: "g d: 2 mods want it, see settings" } }],
+    steps: [{ tick: 120, raised: [{ text: "g d: 2 mods want it, see settings" }] }],
   },
 
   // A mod on an own key.
@@ -120,9 +120,9 @@ const SCENARIOS = [
       model: { conflicts: [{ seq: ["j"], mods: ["alpha"], own: "down" }] } }],
   },
   {
-    name: "A mod on an own key flashes once, naming the mod",
+    name: "A mod on an own key raises an event once, naming the mod",
     world: world({ entries: { alpha: entry({ "ctrl-h": ["Left", "alpha.left"] }) } }),
-    steps: [{ tick: 120, bar: { label: "Ctrl+H: alpha wants an own key, see settings" } }],
+    steps: [{ tick: 120, raised: [{ text: "Ctrl+H: alpha wants an own key, see settings" }] }],
   },
   {
     name: "A mod on a key whose own action was taken away isn't a conflict",
@@ -137,10 +137,10 @@ const SCENARIOS = [
 
   // Settled by a layer above.
   {
-    name: "A conflict is settled by the layout mapping the key: an override, no flash",
+    name: "A conflict is settled by the layout mapping the key: an override, no event",
     world: world({ props: { mappings: { g: ["Previous tab", "tab.prev"] } },
       entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } }),
-    steps: [...IN, { key: "g", effects: ran("tab.prev"), bar: { label: "Terminal · zsh" },
+    steps: [...IN, { key: "g", effects: ran("tab.prev"), state: { onTerminal: true },
       model: { conflicts: [], overrides: [{ seq: ["g"], source: "layout", over: ["alpha", "beta"] }] } }],
   },
   {
@@ -156,7 +156,7 @@ const SCENARIOS = [
       alpha: entry({ g: { name: "Alpha", map: { d: ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"] } } }),
     } }),
-    steps: [{ tick: 120, bar: { label: "Terminal" },
+    steps: [{ tick: 120,
       model: { conflicts: [], overrides: [{ seq: ["g", "d"], source: "whistle.json", over: ["alpha", "beta"] }] } }],
   },
   {
@@ -174,19 +174,19 @@ const SCENARIOS = [
       model: { conflicts: [], overrides: [{ seq: ["j"], source: "layout", over: ["alpha"] }] } }],
   },
   {
-    name: "A layer above mapping over one mod's key is an override, labelled with the last layer, no flash",
+    name: "A layer above mapping over one mod's key is an override, labelled with the last layer, no event",
     world: world({ props: { mappings: { g: ["Previous tab", "tab.prev"] } }, user: { map: { g: ["Next space", "space.next"] } },
       entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
-    steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
+    steps: [...IN, { key: "g", effects: ran("space.next"), state: { onTerminal: true },
       model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] } }],
   },
   {
     name: "A layer above mapping over a mod's whole group is an override of that group, for settings",
     world: world({ user: { map: { g: ["Next space", "space.next"] } },
       entries: { alpha: entry({ g: { name: "Alpha", map: { a: ["A", "alpha.a"], b: { name: "More", map: { c: ["C", "alpha.c"] } } } } }) } }),
-    steps: [...IN, { key: "g", effects: ran("space.next"), bar: { label: "Terminal · zsh" },
+    steps: [...IN, { key: "g", effects: ran("space.next"), state: { onTerminal: true },
       model: { conflicts: [], overrides: [{ seq: ["g"], source: "whistle.json", over: ["alpha"] }] },
-      settings: { overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha"], text: "g: you, over alpha" }] } }],
+      config: { overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha"], text: "g: you, over alpha" }] } }],
   },
   {
     name: "A key set to null over a group two mods merged is an override of both",
@@ -253,24 +253,24 @@ const SCENARIOS = [
     ] } }, { key: "g", effects: ran("alpha.go") }],
   },
   {
-    name: "A new problem in a mod's mappings flashes once, naming the mod",
+    name: "A new problem in a mod's mappings raises an event once, naming the mod",
     world: world({ entries: { alpha: entry({ x: ["X", 5] }) } }),
     steps: [
-      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings", marker: null } },
-      { tick: 120, bar: { label: "alpha's mappings have a problem, see settings" } },
-      { command: "switch-mode", bar: { label: "Terminal · zsh" } },
-      { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
+      { tick: 120, problems: 0, raised: [{ text: "alpha's mappings have a problem, see settings" }] },
+      { tick: 120, raised: [] },
+      { command: "switch-mode", state: { onTerminal: true } },
+      { world: { barFocused: true }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {
-    name: "A mod offering a bad mapping mid-session flashes; the same problem again doesn't",
+    name: "A mod offering a bad mapping mid-session raises an event; the same problem again doesn't",
     world: world({ entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [
-      { tick: 120, bar: { label: "Terminal" } },
+      { tick: 120 },
       { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"], x: ["X", 5] }) } }, tick: 120,
-        bar: { label: "alpha's mappings have a problem, see settings" } },
+        raised: [{ text: "alpha's mappings have a problem, see settings" }] },
       { command: "switch-mode" },
-      { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, bar: { label: "Terminal · zsh" } },
+      { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {

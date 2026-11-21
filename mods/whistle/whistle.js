@@ -6,7 +6,8 @@
 // shared("whistle"):          { v: 1, mode: "type" | "whistle", enabled, sequence: null |
 //                               { keys, group }, pane: the terminal pane whistle has selected | null,
 //                               onTerminal: whether the terminal is the selected field in WHISTLE,
-//                               inert?: { problem, fix }: why whistle stands aside (2.0.0) }
+//                               field: the selected field's block id in WHISTLE | null,
+//                               inert: { problem, fix }: why whistle stands aside | null }
 // shared("whistle.hints"):    { v: 1, keys, title, items: [{ key, label, group }], exit } | null
 // shared("whistle.events"):   { v: 1, events: [{ seq, kind, text, ...data }] }, the last 8
 // shared("whistle.config"):   { v: 1, problems, mods: [{ name, on, problems }], conflicts, overrides }
@@ -23,9 +24,8 @@ import { shared, setShared } from "herdr";
 // copy can't read.
 export function readState(value) {
   if (!value || typeof value !== "object" || value.v !== 1) return null;
-  const { mode, enabled, sequence, pane, onTerminal, inert } = value;
-  // Missing, onTerminal reads as false, and inert as null (whistle runs).
-  return { mode, enabled, sequence, pane, onTerminal: onTerminal === true, inert: inert ?? null };
+  const { mode, enabled, sequence, pane, onTerminal, field, inert } = value;
+  return { mode, enabled, sequence, pane, onTerminal, field, inert };
 }
 
 // Whistle's state now: call it when you draw.

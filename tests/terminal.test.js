@@ -1,5 +1,5 @@
 // The terminal as a field: h/j/k/l and the arrows move between split panes, with the keyboard
-// held on the bar through Herdr's late focus; Ctrl+H/J/K/L move between fields by the layout's
+// held on the anchor through Herdr's late focus; Ctrl+H/J/K/L move between fields by the layout's
 // rows and columns.
 
 import { suite } from "./harness.js";
@@ -35,7 +35,7 @@ const SCENARIOS = [
   paneMove("h", "left"), paneMove("j", "down"), paneMove("k", "up"), paneMove("l", "right"),
   paneMove("left", "left"), paneMove("down", "down"), paneMove("up", "up"), paneMove("right", "right"),
   {
-    name: "A pane move holds the keyboard: the bar takes it back and follows the focused pane",
+    name: "A pane move holds the keyboard: the anchor takes it back and follows the focused pane",
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
@@ -81,6 +81,7 @@ const SCENARIOS = [
         { id: "a", type: "block", content: { pane: {} } },
         { id: "gone", type: "block", hidden: true, content: { pane: {} } },
         { id: "b", type: "block", content: { pane: {} } },
+        { id: "anchor", type: "block", content: { mod: "whistle" } },
       ] },
       focused: { pane: "p1" },
     },
