@@ -160,7 +160,7 @@ const SCENARIOS = [
   {
     name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views, the bar's included",
     world: { ...spots({}), props: { bar: "Top" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined } }],
+    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hintsbox": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined, "whistle.bar:whistle": undefined } }],
   },
   {
     name: "The shown bar copy runs: it claims its keys and publishes",
@@ -186,7 +186,7 @@ const SCENARIOS = [
     steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
       { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
+        shared: { "whistle.hintsbox": null, "whistle.hints": null, "whistle.events": { v: 1, events: [] }, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
   },
   {
     name: "A bar copy shown again stops resting",
@@ -201,7 +201,7 @@ const SCENARIOS = [
     name: "A bar's copy in an anchored layout sets no shared key, the bar's and the views' included",
     world: { ...ANCHORED, props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
     steps: [{ tick: 120, effects: [], published: null, hintsWindow: [],
-      shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined, keynav: undefined, "whistle.copies": undefined } }],
+      shared: { "whistle.settings": undefined, "whistle.hintsbox": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined, "whistle.bar:whistle": undefined, keynav: undefined, "whistle.copies": undefined } }],
   },
 ];
 

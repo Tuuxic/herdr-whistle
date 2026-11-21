@@ -139,15 +139,15 @@ const SCENARIOS = [
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { world: { herdr: "0.0.1" }, tick: 120,
       effects: [{ run: "pane.focus", args: { pane: "p1" } }], hintsWindow: [{ closeOverlay: "hints" }],
-      shared: { "whistle.hints": undefined, "whistle.settings": undefined } }],
+      shared: { "whistle.hintsbox": undefined, "whistle.settings": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } }],
   },
   {
     name: "The hints' and settings' models go in their private shared keys when they change, and only then",
     world: world({ map: PANES }),
     steps: [
-      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
-      { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
-      { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
+      { tick: 120, shared: { "whistle.hintsbox": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
+      { command: "whistle", shared: { "whistle.hintsbox": undefined, "whistle.settings": undefined } },
+      { world: { barFocused: true }, key: "w", shared: { "whistle.hintsbox": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
     ],
   },
