@@ -1,12 +1,13 @@
 // Layouts and worlds the scenarios share.
 
 export const term = (id) => ({ id, type: "block", content: { tab: "active", pane: {} } });
-export const bar = { id: "bar", type: "block", content: { mod: "whistle" } };
+// Whistle's block, the anchor (ADR 0018): every whistle block is one.
+export const anchor = { id: "anchor", type: "block", content: { mod: "whistle" } };
 
-// One terminal over the bar: the usual layout.
-export const ONE = { id: "root", type: "column", children: [term("main"), bar] };
+// One terminal over the anchor: the usual layout.
+export const ONE = { id: "root", type: "column", children: [term("main"), anchor] };
 
-// Three terminal blocks: a and b side by side over c, then the bar.
+// Three terminal blocks: a and b side by side over c, then the anchor.
 //   +---+---+
 //   | a | b |
 //   +---+---+
@@ -16,7 +17,7 @@ export const GRID = {
   id: "root", type: "column", children: [
     { id: "top", type: "row", children: [term("a"), term("b")] },
     term("c"),
-    bar,
+    anchor,
   ],
 };
 
@@ -24,13 +25,13 @@ export const GRID = {
 export const IN_TERMINAL = { layout: ONE, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 
 // The usual layout with whistle's block carrying props (the layout's whistle block).
-export const withProps = (props) => ({ id: "root", type: "column", children: [term("main"), { ...bar, content: { mod: "whistle", props } }] });
+export const withProps = (props) => ({ id: "root", type: "column", children: [term("main"), { ...anchor, content: { mod: "whistle", props } }] });
 
 // A stock block: one of Herdr's own spaces, tabs, agents or files mods.
 export const stock = (id, mod = id) => ({ id, type: "block", content: { mod } });
 
 // Herdr's stock main layout, cut down: spaces over agents in the sidebar, tabs over the
-// terminal and the files panel, then the bar.
+// terminal and the files panel, then the anchor.
 //   +--------+------------+
 //   | spaces | tabs       |
 //   +--------+------+-----+
@@ -45,6 +46,6 @@ export const STOCK = {
         { id: "work-body", type: "row", children: [term("main"), stock("files")] },
       ] },
     ] },
-    bar,
+    anchor,
   ],
 };

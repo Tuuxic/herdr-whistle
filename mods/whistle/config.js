@@ -17,7 +17,7 @@
 
 import { canonicalKey } from "./keynames.js";
 
-// Whistle's own-key actions, in the order settings list them.
+// Whistle's own-key actions, in the order clients list them.
 export const ACTIONS = {
   "field-left": { kind: "field", dir: "left", label: "Field to the left" },
   "field-down": { kind: "field", dir: "down", label: "Field below" },
@@ -61,7 +61,7 @@ export const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isA
 const NONE = { arg: "none" }, PLAIN = { arg: "plain" };
 const nonEmpty = (s) => typeof s === "string" && s !== "";
 const COMMANDS = {
-  "switch-mode": NONE, mode: { arg: ["type", "whistle"] }, on: NONE, off: NONE, settings: NONE,
+  "switch-mode": NONE, mode: { arg: ["type", "whistle"] }, on: NONE, off: NONE,
   field: PLAIN, focus: PLAIN, toggle: PLAIN, "toggle-keep-mode": PLAIN,
   "mappings-on": PLAIN, "mappings-off": PLAIN,
   // { "mod": "claude-hints", "keys": ["g", "q"] }: the keys in Herdr's key names.
@@ -343,7 +343,7 @@ function mergeKeys(base, over, ctx) {
 // The layers ([{ source, map, keys, mods }], lowest first; map/keys/mods as written, any may be
 // missing; the mods layer is { source: MODS, offers: [{ name, entry }] }, in layout order) as
 // one config: { map, keys: action -> keys, own: key -> action, problems,
-//   conflicts: mapping conflicts, for settings [{ seq, mods, own?: the own key's action }],
+//   conflicts: mapping conflicts, for whistle.config [{ seq, mods, own?: the own key's action }],
 //   overrides: keys a later layer maps over a mod's (or over a group holding mods' mappings), or
 //     over a conflict [{ seq, source, over: mods }],
 //   off: the mods switched off (names) }.
@@ -421,7 +421,7 @@ export function flatten(map, path = [], group = "") {
 }
 
 // whistle.json's text (null: no file) with a mod switched on or off in its "mods" section, for
-// settings to write: { text } | { problem } (a whistle.json that doesn't read is left alone).
+// whistle.mappings-on and -off to write: { text } | { problem } (a whistle.json that doesn't read is left alone).
 export function switchMod(text, name, on) {
   return edit(text, (json) => {
     if (json.mods != null && !isObject(json.mods)) return "whistle.json's mods isn't an object: fix it first";
@@ -431,7 +431,7 @@ export function switchMod(text, name, on) {
 }
 
 // whistle.json's text (null: no file) with a mod's mapping (as the mod wrote it) at the key
-// sequence seq, for settings' "keep <mod>'s": { text } | { problem }. Groups on the way that
+// sequence seq, for whistle.keep-mapping: { text } | { problem }. Groups on the way that
 // whistle.json doesn't have yet are added (no name: the one below keeps its title).
 export function keepMapping(text, seq, value) {
   return edit(text, (json) => {

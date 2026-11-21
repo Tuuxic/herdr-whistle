@@ -13,9 +13,9 @@ const world = ({ map = {}, keys, props, user } = {}) => ({
   ...(props ? { layout: withProps(props) } : {}),
   configFiles: { defaults: json({ keys: keys ?? TEST_DEFAULTS.keys, map }), user: user === undefined ? null : json(user) },
 });
-// Into WHISTLE, the bar holding the keyboard.
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
-const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }];
+// Into WHISTLE, the anchor holding the keyboard.
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
+const ran = (command, args = {}) => [{ run: command, args }, { focusAnchor: true }];
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 
 const SCENARIOS = [
@@ -137,7 +137,7 @@ const SCENARIOS = [
       map: { w: { name: "Panes", map: { m: { name: "More", map: { z: ["Zoom pane", "pane.zoom"] } } } } },
       user: { keys: { back: ["backspace"] } } }),
     steps: [...IN, { key: "w" }, { key: "m" },
-      { key: "backspace", handled: true, effects: [], bar: { label: "w m ⌫ is not mapped" }, model: { sequence: null,
+      { key: "backspace", handled: true, effects: [], raised: [{ text: "w m ⌫ is not mapped" }], model: { sequence: null,
         problems: [{ source: "whistle.json", detail: "keys › back: unknown action" }] } },
       { key: "w" }, { key: "escape", handled: true, model: { sequence: null } }],
   },

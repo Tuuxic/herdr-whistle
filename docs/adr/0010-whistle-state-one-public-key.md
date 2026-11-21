@@ -1,5 +1,7 @@
 # Whistle's state for other mods: one public key, the rest private unless declared
 
+Superseded in part by [ADR 0020](0020-whistle-publishes-facts-clients-show-them.md).
+
 Whistle wrote `shared("whistle.enabled")` for other mods' settings and `shared("whistle.sequence")`
 for its own hints window, and neither was documented. The keynav driver state
 `shared("keynav") = { v, active, pane }` (ADR 0009) also carried `pane`, which no field reads.

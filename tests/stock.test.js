@@ -1,15 +1,15 @@
 // Stock fields (ADR 0006): Herdr's own spaces, tabs and agents blocks are fields whistle drives
 // with Herdr's next/prev commands. They have no cursor: moving to an item opens it, and only
-// the bar shows which one is selected. The files block is not a field.
+// the whistle state says which one is selected. The files block is not a field.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
 import { STOCK } from "./worlds.js";
 
 const HOLD = 600;
-const IN_STOCK = { layout: STOCK, barFocused: true, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
+const IN_STOCK = { layout: STOCK, anchorFocused: true, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 const on = (field) => ({ mode: "whistle", field, recent: [field, "main"], pane: "p1" });
-const ran = (command) => [{ run: command, args: {} }, { focusBar: true }];
+const ran = (command) => [{ run: command, args: {} }, { focusAnchor: true }];
 
 // A move key on a stock field runs Herdr's command and holds the keyboard.
 const move = (field, key, command) => ({
@@ -34,8 +34,7 @@ const toTerminal = (key) => ({
   name: `${key} on the stock agents field goes on to the terminal, at the agent's pane`,
   world: { ...IN_STOCK, focused: { pane: "p2", terminal: "t2" } },
   model: on("agents"),
-  steps: [{ key, handled: true, effects: [], model: { mode: "whistle", field: "main", pane: "p2" },
-    bar: { label: "Terminal" } }],
+  steps: [{ key, handled: true, effects: [], model: { mode: "whistle", field: "main", pane: "p2" } }],
 });
 
 const SCENARIOS = [
@@ -51,10 +50,10 @@ const SCENARIOS = [
     name: "The bar names the stock field selected",
     world: IN_STOCK,
     model: on("agents"),
-    steps: [{ tick: 120, bar: { badge: "WHISTLE", label: "Agents" } },
-      { key: "ctrl-k", model: { field: "spaces" }, bar: { label: "Spaces" } },
+    steps: [{ tick: 120, state: { mode: "whistle", field: "agents" } },
+      { key: "ctrl-k", model: { field: "spaces" }, state: { field: "spaces" } },
       { key: "ctrl-l", model: { field: "main" } },
-      { key: "ctrl-k", model: { field: "tabs" }, bar: { label: "Tabs" } }],
+      { key: "ctrl-k", model: { field: "tabs" }, state: { field: "tabs" } }],
   },
   {
     name: "Ctrl+H/J/K/L move between stock fields and the terminal by the layout",

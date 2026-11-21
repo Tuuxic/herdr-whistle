@@ -1,7 +1,7 @@
 // The shipped defaults (Defaults for stock Herdr, issue #11): mappings.json in the 1.0 form,
 // every entry good, every action keyed; the default map grouped by noun, with terminal scroll
 // and find keys, and every mapping that makes a terminal ending in TYPE; ctrl-space the only
-// switch key in the shipped keys.json, beside two jump keys and the settings key.
+// switch key in the shipped keys.json, beside two jump keys.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
@@ -11,9 +11,9 @@ import texts from "./texts.js";
 
 const SHIPPED = texts["mods/whistle/mappings.json"];
 const world = { ...IN_TERMINAL, configFiles: { defaults: SHIPPED, user: null } };
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const FOCUS = { run: "pane.focus", args: { pane: "p1" } };
-const HOLD = { focusBar: true };
+const HOLD = { focusAnchor: true };
 
 // Keys pressed in WHISTLE on the shipped map; the last one's effects and mode.
 const press = (name, keys, effects, mode = "whistle") => ({
@@ -47,7 +47,7 @@ const SCENARIOS = [
     world,
     steps: [...IN,
       { key: "w", model: { sequence: ["w"] }, hints: { keys: "w", exit: "Esc cancels" } },
-      { key: "backspace", handled: true, effects: [], model: { sequence: null }, bar: { label: "w ⌫ is not mapped" } },
+      { key: "backspace", handled: true, effects: [], model: { sequence: null }, raised: [{ text: "w ⌫ is not mapped" }] },
       { key: "w" }, { key: "escape", handled: true, effects: [], model: { sequence: null }, hints: null }],
   },
 ];
@@ -70,9 +70,9 @@ export default suite("shipped defaults", (t) => {
 
   let keys = null;
   try { keys = JSON.parse(texts["keys.json"]); } catch (e) { t.fail("keys.json parses", String(e?.message ?? e)); }
-  t.check("the shipped keys.json binds ctrl-space, the switch key, the jump keys alt-a and alt-s (ids from Herdr's main layout), and alt-, for whistle's settings",
+  t.check("the shipped keys.json binds ctrl-space, the switch key, the jump keys alt-a and alt-s (ids from Herdr's main layout),",
     keys && { global: keys.global, terminal: keys.terminal ?? null },
-    { global: { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces", "alt-,": "whistle.settings" }, terminal: null });
+    { global: { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces" }, terminal: null });
   t.check("the shipped keys.json has no config problem", keysProblems(texts["keys.json"], "whistle"), []);
 
   for (const sc of SCENARIOS) t.scenario(sc, core);

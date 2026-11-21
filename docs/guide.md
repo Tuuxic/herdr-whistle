@@ -6,14 +6,19 @@ Whistle has two modes. In **TYPE** the keyboard belongs to the focused terminal 
 usual. In **WHISTLE** whistle holds it: keys move between fields and run mappings.
 
 `ctrl-space` is the switch key, both ways. Besides it, whistle ships only two jump keys for TYPE
-(`alt-a` and `alt-s`, below) and `alt-,` for [its settings](#settings): the rest of
+(`alt-a` and `alt-s`, below), and whistle-ui `alt-,` for [its settings](#settings): the rest of
 whistle's defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds them:
 
 ```json
 "global": { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces",
-            "alt-,": "whistle.settings" },
+            "alt-,": "whistle-ui.settings" },
 "mod:whistle": { "ctrl-space": "whistle.mode:type" }
 ```
+
+Whistle itself draws nothing: it runs in an invisible block, the **anchor**, and publishes what
+it does. **whistle-ui**, a mod shipped beside it, shows that: [the bar](#the-bar), [the
+hints](#hints) and [the settings](#settings). You can hide its bar, or replace any part of it
+([whistle-ui](contracts/whistle-ui.md)); whistle works the same.
 
 Ctrl+Space is taken elsewhere on some setups: terminal programs read it as NUL (Emacs uses it
 for set-mark), macOS uses it to switch input sources when you have more than one, and so do the
@@ -62,13 +67,13 @@ On macOS, Option+letter types characters (Option+A is å), so bind `ctrl-shift-a
         ] },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "bar": { "badge": "WHISTLE" } },
-    { "world": { "barFocused": true }, "command": "focus:spaces", "model": { "mode": "whistle", "field": "spaces" } }
+    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "state": { "mode": "whistle" } },
+    { "world": { "anchorFocused": true }, "command": "focus:spaces", "model": { "mode": "whistle", "field": "spaces" } }
   ]
 }
 ```
@@ -145,7 +150,7 @@ palette, settings, a rename), which takes it, and one that ends in TYPE.
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
@@ -155,10 +160,10 @@ palette, settings, a rename), which takes it, and one that ends in TYPE.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-n",
-      "effects": [{ "run": "tab.new", "args": {} }], "bar": { "badge": "TYPE" } },
+    { "world": { "anchorFocused": true }, "key": "ctrl-n",
+      "effects": [{ "run": "tab.new", "args": {} }], "state": { "mode": "type" } },
     { "world": { "focused": { "pane": "p2" } }, "tick": 120,
-      "effects": [{ "run": "pane.focus", "args": { "pane": "p2" } }], "bar": { "badge": "TYPE" } }
+      "effects": [{ "run": "pane.focus", "args": { "pane": "p2" } }], "state": { "mode": "type" } }
   ]
 }
 ```
@@ -209,7 +214,7 @@ goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "files", "type": "block", "content": { "mod": "files" } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
@@ -220,10 +225,10 @@ goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l",
+    { "world": { "anchorFocused": true }, "key": "ctrl-l",
       "hints": { "title": "Files", "items": [{ "key": "Enter", "label": "Go in", "group": false }] } },
-    { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusBar": true }] },
-    { "tick": 120, "bar": { "marker": null } }
+    { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusAnchor": true }] },
+    { "tick": 120, "problems": 0 }
   ]
 }
 ```
@@ -249,7 +254,7 @@ you used last there, else its terminal, else its first. Entering WHISTLE selects
   (`enter`) lands you in TYPE in what you picked, and `space` is Show: it brings up the space
   or agent while you stay in WHISTLE and keep moving (RECIPE.md, Pick and Show). The layout's
   pane header is copied as well (`pane-whistle`) and glows on the terminal whistle has
-  selected while in WHISTLE, since the bar holds the keyboard and Herdr's focus border can't
+  selected while in WHISTLE, since the anchor holds the keyboard and Herdr's focus border can't
   show it. Your own layout and mods are changed in place instead. Uninstall offers to undo it.
 
 | Block | Keys | Herdr command | Pick (`enter`) |
@@ -269,14 +274,14 @@ Whether they wrap around at the ends is up to Herdr.
         { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" } },
-    { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "ctrl-h", "state": { "field": "spaces" } },
+    { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -292,18 +297,18 @@ After integration the `spaces` block holds the clone, which announces itself thr
         { "id": "spaces", "type": "block", "content": { "mod": "spaces-whistle" } },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "shared": { "keynav.field:spaces-whistle {}": { "v": 3, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
+    { "world": { "anchorFocused": true }, "key": "ctrl-h", "state": { "field": "spaces" },
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "spaces-whistle {}" } }] },
-    { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
-    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-pick", "args": {} }, { "focusBar": true }] },
-    { "key": "r", "effects": [{ "run": "spaces-whistle.keynav-key-r", "args": {} }, { "focusBar": true }] }
+    { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusAnchor": true }] },
+    { "key": "enter", "effects": [{ "run": "spaces-whistle.keynav-pick", "args": {} }, { "focusAnchor": true }] },
+    { "key": "r", "effects": [{ "run": "spaces-whistle.keynav-key-r", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -353,22 +358,22 @@ writes a claim; don't bind it yourself.
 - Herdr stops adding new default shortcuts to a `keys.json` that was edited, so the first claim
   ends those upgrades.
 
-A claimed key acts as if pressed on the bar:
+A claimed key acts as if pressed in WHISTLE:
 
 ```json example A claimed key in WHISTLE acts as the key pressed
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "command": "key-i",
+    { "world": { "anchorFocused": true }, "command": "key-i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }],
-      "bar": { "badge": "TYPE" } }
+      "state": { "mode": "type" } }
   ]
 }
 ```
@@ -379,12 +384,9 @@ Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
 2. **The layout's anchor**: its `mappings` and `keys` props, for keys that suit that layout's
-   mods. Its other props (`mods`, `enabled`, `hints`, `nav`) and each bar's own (`bar`, its
-   spot's name, and
-   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with that
-   bar: `hintsAlignRight` is the px from the window's right edge to the bar block's outer edge,
-   its border included) are in [The layout's whistle block](contracts/layout-block.md). A
-   layout without an anchor keeps these props on its bar, which stands in for the anchor.
+   mods. Its other props (`mods`, `enabled`, `nav`) are in
+   [The layout's whistle block](contracts/layout-block.md). The props that place the bar and
+   the hints box are whistle-ui's ([whistle-ui](contracts/whistle-ui.md)).
 3. **Yours**: `whistle.json` in Herdr's home (`~/.config/herdr-app/whistle.json`). Nothing
    replaces it.
 
@@ -422,7 +424,7 @@ Each layer has two sections, kept apart:
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": {
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": {
         "mappings": { "n": ["Previous tab", "tab.prev"], "p": ["Previous tab", "tab.prev"] } } } }
     ] },
     "focused": { "pane": "p1" },
@@ -433,9 +435,9 @@ Each layer has two sections, kept apart:
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "n",
-      "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] },
-    { "key": "p", "effects": [{ "run": "tab.prev", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "n",
+      "effects": [{ "run": "space.next", "args": {} }, { "focusAnchor": true }] },
+    { "key": "p", "effects": [{ "run": "tab.prev", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -488,7 +490,7 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
@@ -497,15 +499,15 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
     }
   },
   "steps": [
-    { "tick": 120, "bar": { "marker": null } },
+    { "tick": 120, "problems": 0 },
     { "world": { "configFiles": {
         "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }",
         "user": "{ \"map\": { \"n\": [\"Next tab\", " } }, "tick": 1000,
       "model": { "problems": [{ "source": "whistle.json", "detail": "doesn't parse; whistle runs on its last good version" }] },
-      "bar": { "marker": "⚠ 1" } },
+      "problems": 1 },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "n",
-      "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "n",
+      "effects": [{ "run": "tab.next", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -515,29 +517,31 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
 `"enabled": false` in whistle.json (or in a layout's anchor; yours wins) switches WHISTLE
 off: the switch key types into the terminal as if whistle weren't there, and the bar shows
 "Whistle off". `whistle.off` and `whistle.on` (bind them in keys.json, or map them) write that
-setting for you; `whistle.settings` opens the settings. Every command whistle answers to is in
+setting for you; `alt-,` opens [the settings](#settings). Every command whistle answers to is in
 [Whistle's commands](contracts/commands.md).
 
 ## When whistle stands aside
 
 Sometimes whistle can't run safely, so it loads but stands aside (it is **inert**) and says why
 in one Herdr notification, and in the bar instead of a mode badge. The notification comes once,
-when whistle stands aside, so you learn why even with the bar hidden (in a layout with an
-anchor); it comes again only if the reason changes:
+when whistle stands aside, so you learn why even with the bar hidden; it comes again only if the
+reason changes:
 
 - **Herdr is older than whistle needs** (`mods/whistle/mod.json` says which, under `herdr`):
   "Whistle needs Herdr ≥ …". Update Herdr.
 - **Another copy of whistle runs**: two folders under `mods/` hold whistle (say an old one and
   `mods/whistle/`) and both are in the shown layout. The copy in `mods/whistle/` runs (else the
-  first folder by name); the others hide their bars and say "Another whistle runs, from
-  mods/whistle/". Delete the copies you don't want.
+  first folder by name); the others say "Another whistle runs, from mods/whistle/". Delete the
+  copies you don't want.
+- **Two whistle blocks with the same props**: whistle can't tell which one runs, so none does.
+  Keep one ([The layout's whistle block](contracts/layout-block.md)).
 
 ### A copy in another folder
 
 Herdr hands a `keys.json` action to the mod its prefix names, so a copy of whistle in another
 folder (say `mods/whistle-2/`, because another mod is already named `whistle`) answers only to
 `whistle-2.*`: its lines read `"ctrl-space": "whistle-2.switch-mode"`, and the same for the jump
-keys and the settings key. The installing agent writes them so. Switched off or standing aside,
+keys. The installing agent writes them so. Switched off or standing aside,
 the copy types those keys into the terminal, as the copy in `mods/whistle/` does with its own.
 
 While no line in `global` runs this copy's switch command (`whistle-2.switch-mode`), the running
@@ -561,7 +565,7 @@ it.
   "steps": [
     { "tick": 120, "model": { "problems": [{ "source": "keys.json",
         "detail": "global › ctrl-space runs whistle.switch-mode, but this copy is whistle-2: make it whistle-2.switch-mode" }] },
-      "bar": { "marker": "⚠ 1" } }
+      "problems": 1 }
   ]
 }
 ```
@@ -571,12 +575,12 @@ stands aside (and only when no other copy runs), and the switch key types into t
 [switching it off](#switching-whistle-off), it isn't your choice: it runs again by itself once
 the reason goes.
 
-```json example On a Herdr that's too old, the switch key types through, and a notification and the bar say why
+```json example On a Herdr that's too old, the switch key types through, and a notification and the whistle state say why
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "herdr": "0.1.0",
     "focused": { "pane": "p1", "terminal": "t1" },
@@ -584,8 +588,8 @@ the reason goes.
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "bar": { "badge": null },
-      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
+      "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }],
+      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null,
         "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0)", "fix": "Update Herdr." } } }
   ]
 }
@@ -596,8 +600,8 @@ the reason goes.
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "old-bar", "type": "block", "content": { "mod": "whistle-old" } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "old-anchor", "type": "block", "content": { "mod": "whistle-old" } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "folder": "whistle-old",
     "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" },
@@ -606,7 +610,7 @@ the reason goes.
   },
   "steps": [
     { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
+      "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "state": { "inert": { "problem": "Another whistle runs, from mods/whistle/", "fix": "Delete the copies you don't want." } } }
   ]
 }
 ```
@@ -619,10 +623,9 @@ changes:
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle-old", "props": { "anchor": true } } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "old-anchor", "type": "block", "content": { "mod": "whistle-old" } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
-    "props": { "anchor": true },
     "herdr": "0.1.0",
     "folder": "whistle-old",
     "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" }
@@ -639,50 +642,49 @@ changes:
 
 ## The bar
 
-Whistle's bar is a thin strip the layout places (a block of the `whistle` mod). It is an aid
-that shows the mode and what has the keyboard; whistle itself runs in the layout's **anchor**,
-an invisible whistle block (`anchor: true`, 0 px; the layout-block contract's
-[The anchor](contracts/layout-block.md#the-anchor)). Install puts both in your layout. So the
-bar is optional: hide it (a jump key such as `"alt-b": "whistle.toggle-keep-mode:whistle"`, or
-`herdr-app do layout.hide '{"id":"whistle"}'`) and the switch key, mappings, field keys, jump
-keys and the hints box work the same; only the badge, the label and flashes go unseen until
-you show it again. In a layout without an anchor, the bar stands in for it, and hiding it
-switches whistle off there until it shows again.
+whistle-ui's bar is a thin strip the layout places (a block of the `whistle-ui` mod). It is an
+aid that shows the mode and what has the keyboard; whistle itself runs in the layout's anchor,
+an invisible whistle block ([The layout's whistle block](contracts/layout-block.md)). Install
+puts both in your layout. So the bar is optional: hide it (a jump key such as
+`"alt-b": "whistle.toggle-keep-mode:whistle-bar"`, or
+`herdr-app do layout.hide '{"id":"whistle-bar"}'`) and the switch key, mappings, field keys,
+jump keys and the hints box work the same; only the badge, the label and flashes go unseen
+until you show it again.
 
 From the left:
 
 - **The mode badge**: `TYPE` or `WHISTLE`.
 - **What has the keyboard**: `Terminal`, in WHISTLE with the selected pane's title
   (`Terminal · build`), or the selected field's name (`Spaces`). A **flash** takes its place
-  until the next key: a key that isn't mapped (`w x is not mapped`), a verb that can't run, a
-  mapping conflict that just appeared.
+  for 2 s, or until the key sequence changes: a key that isn't mapped (`w x is not mapped`), a
+  verb that can't run, a mapping conflict that just appeared. Whistle publishes each of these as
+  an [event](contracts/events.md); the bar shows it.
 - **The marker**, at the right end while there are [config problems](#when-something-is-wrong):
   `⚠` and how many. Settings list them.
 
 Switched off, the bar shows "Whistle off" instead of a badge, and the marker still counts.
-Standing aside, it shows only [why](#when-whistle-stands-aside).
+Standing aside, it shows only [why](#when-whistle-stands-aside). What the bar shows comes from
+the whistle state and whistle's config:
 
-```json example Switched off, the bar says Whistle off and still counts config problems
+```json example Switched off, whistle says so and still lists its config problems
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"enabled\": false, \"keys\": { \"jump\": [\"x\"] } }" }
   },
   "steps": [
-    { "tick": 120, "bar": { "badge": null, "label": "Whistle off", "marker": "⚠ 1" } }
+    { "tick": 120, "state": { "enabled": false }, "problems": 1 }
   ]
 }
 ```
 
-A layout can offer more than one **spot** for the bar: a whistle block in each, each with its
-own `bar` name, all hidden but one. You show the one you want and hide the others (Herdr
-remembers it), or use the layout's own control if it has one; whistle never shows or hides a
-bar. The rules:
-[The layout's whistle block](contracts/layout-block.md#5-bar-names-a-spot-the-layout-shows-or-hides-it).
+A layout can place more than one whistle-ui bar, say one at the top and one at the bottom,
+each with props of its own, and hide all but one: you show the one you want (Herdr remembers
+it). The hints box docks on the first that shows.
 
 ## Hints
 
@@ -692,16 +694,17 @@ it: the sequence so far and the group's name on top, with the key that cancels t
 name with a `+`. The box follows the sequence into nested groups and goes away when it ends,
 whether a mapping runs, the cancel key ends it or a key isn't mapped. Outside a sequence, while
 a [field](#fields) that declares keys of its own is selected, the box lists those keys instead,
-under the field's name. `"hints": false` in your whistle.json (or the layout's anchor; yours
-wins) turns the box off. In a layout with an anchor, the box opens with every bar hidden too,
-at the window's bottom right.
+under the field's name. With every bar hidden, the box shows at the window's bottom right.
+`"hints": false` on a whistle-ui block turns the box off there
+([whistle-ui](contracts/whistle-ui.md)). Whistle publishes the keys whether or not a box shows
+them:
 
 ```json example Hints list the keys that can follow a group
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
@@ -711,7 +714,7 @@ at the window's bottom right.
   },
   "steps": [
     { "command": "switch-mode", "hints": null },
-    { "world": { "barFocused": true }, "key": "w",
+    { "world": { "anchorFocused": true }, "key": "w",
       "hints": { "keys": "w", "title": "Panes", "exit": "Esc cancels", "items": [
         { "key": "v", "label": "Split right", "group": false },
         { "key": "m", "label": "Move", "group": true }
@@ -723,9 +726,10 @@ at the window's bottom right.
 
 ## Settings
 
-`alt-,` opens them (`whistle.settings` in keys.json's `global`, next to Herdr's own
-`ctrl-,` for Herdr's settings; `ctrl-shift-,` on macOS, where Option types characters), in TYPE, in WHISTLE and while whistle is switched off; `,` in
-WHISTLE opens Herdr's. Whistle's settings list:
+`alt-,` opens them (`whistle-ui.settings` in keys.json's `global`, next to Herdr's own `ctrl-,`
+for Herdr's settings; `ctrl-shift-,` on macOS, where Option types characters), in TYPE, in
+WHISTLE and while whistle is switched off; `,` in WHISTLE opens Herdr's. The settings are
+whistle-ui's dialog over [whistle's config](contracts/config.md), and list:
 
 - **Problems**: every [config problem](#when-something-is-wrong), with its file (`mappings.json`,
   `layout`, `whistle.json` or `keys.json`) and what's wrong; the bar's marker counts them.
@@ -739,20 +743,21 @@ WHISTLE opens Herdr's. Whistle's settings list:
   one off writes `"mods": { "<mod>": false }` into your whistle.json (on again: `true`); a
   problem in what a mod offers is listed under it, and isn't counted in the bar's marker.
 
-A switch or a **Keep** button writes the whole whistle.json again in a standard layout (2-space
-indents): your entries and their key order stay, your own line breaks don't (JSON has no
-comments, so nothing else is lost). Settings never write a whistle.json that doesn't parse: fix
-it first. The bar picks up what
-they wrote on its next read of whistle.json, within a second, as it does for an edit by hand.
+A switch or a **Keep** button runs one of whistle's
+[settings commands](contracts/commands.md#settings-commands), and whistle writes the whole
+whistle.json again in a standard layout (2-space indents): your entries and their key order stay,
+your own line breaks don't (JSON has no comments, so nothing else is lost). Whistle never writes
+a whistle.json that doesn't parse: fix it first. Whistle picks up what it wrote on its next read
+of whistle.json, within a second, as it does for an edit by hand.
 
-```json example Settings list a conflict and switching a mod off settles it
+```json example Whistle's config lists a conflict, and switching a mod off settles it
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
       { "id": "alpha", "type": "block", "content": { "mod": "alpha" } },
       { "id": "beta", "type": "block", "content": { "mod": "beta" } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "modMappings": {
@@ -762,17 +767,17 @@ they wrote on its next read of whistle.json, within a second, as it does for an 
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }", "user": null }
   },
   "steps": [
-    { "tick": 120, "settings": {
+    { "tick": 120, "config": {
       "conflicts": [{ "keys": "g", "seq": ["g"], "mods": ["alpha", "beta"], "own": null,
         "text": "alpha and beta both want g",
         "keep": [{ "mod": "alpha", "value": ["Go", "alpha.go"] }, { "mod": "beta", "value": ["Go", "beta.go"] }] }],
       "mods": [{ "name": "alpha", "on": true, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
     { "world": { "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }",
         "user": "{ \"mods\": { \"alpha\": false } }" } }, "tick": 1000,
-      "settings": { "conflicts": [], "mods": [{ "name": "alpha", "on": false, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
+      "config": { "conflicts": [], "mods": [{ "name": "alpha", "on": false, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "g",
-      "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "g",
+      "effects": [{ "run": "beta.go", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -785,10 +790,10 @@ they wrote on its next read of whistle.json, within a second, as it does for an 
   OS or input method may take it (bind `ctrl-shift-space` instead, see
   [Modes and the switch key](#modes-and-the-switch-key)), or keys.json has no `global` line
   `"ctrl-space": "whistle.switch-mode"`.
-- **There's no bar**: the shown layout has no whistle block. Herdr's own layouts (`main`) never
-  show a new mod's bar; the agent that installed whistle makes a copy with the bar
-  (`main-whistle`) and switches to it. Ask it again, or add a block of the `whistle` mod to your
-  own layout.
+- **There's no bar**: the shown layout has no whistle-ui block, or no whistle block. Herdr's own
+  layouts (`main`) never show a new mod's blocks; the agent that installed whistle makes a copy
+  with whistle's anchor and whistle-ui's bar (`main-whistle`) and switches to it. Ask it again,
+  or add the blocks ([whistle-ui](contracts/whistle-ui.md)) to your own layout.
 - **A key does nothing in WHISTLE**: another `keys.json` section may bind it, and whistle
   [claims it](#whistle-edits-your-keysjson) only while keys.json parses and `keys.error` is
   absent. A mapping on a key two mods want counts for neither until you settle it in

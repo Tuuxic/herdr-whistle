@@ -1,5 +1,7 @@
 # Whistle leaves which bar shows to the layout
 
+Superseded in part by [ADR 0020](0020-whistle-publishes-facts-clients-show-them.md).
+
 With an anchor, bars are only views ([ADR 0018](0018-whistle-runs-in-an-invisible-anchor-bars-are-views.md)),
 but whistle still managed which bar showed: on every tick it showed the spot whistle.json's
 `bar` named and hid the others. So any bar something else hid (a

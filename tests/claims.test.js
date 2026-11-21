@@ -164,7 +164,8 @@ const SCENARIOS = [
   },
   {
     name: "A copy in another folder claims in its own section, with its own commands",
-    world: { ...world({ global: { "ctrl-space": "wh.switch-mode" } }), folder: "wh", copies: { wh: VERSION } },
+    world: { ...world({ global: { "ctrl-space": "wh.switch-mode" } }), folder: "wh", copies: { wh: VERSION },
+      layout: { id: "root", type: "column", children: [IN_TERMINAL.layout.children[0], { id: "anchor", type: "block", content: { mod: "wh" } }] } },
     steps: [{ tick: 120, effects: [{
       write: "keys.json",
       text: text({ global: { "ctrl-space": "wh.switch-mode" }, "mod:wh": {
@@ -176,14 +177,14 @@ const SCENARIOS = [
   {
     name: "Claims are made in TYPE as in WHISTLE",
     world: world(SHIPPED),
-    steps: [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120, effects: [WRITE] }],
+    steps: [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120, effects: [WRITE] }],
   },
   {
     name: "A claimed key's command in WHISTLE acts as the key",
     world: world(CLAIMED),
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
+      { world: { anchorFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
   {
@@ -191,7 +192,7 @@ const SCENARIOS = [
     world: world(CLAIMED),
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, command: "key-Enter", model: { mode: "type" } },
+      { world: { anchorFocused: true }, command: "key-Enter", model: { mode: "type" } },
     ],
   },
   {

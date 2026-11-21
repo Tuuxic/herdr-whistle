@@ -2,7 +2,7 @@
 
 For mod authors who want to tell people what just happened in whistle: a key that isn't mapped,
 a block that can't be selected, a command that failed, a new conflict. Each event has a stable
-kind, its data and a default English text; whistle's bar flashes the same text. Current
+kind, its data and a default English text; whistle-ui's bar flashes that text. Current
 version: **`v: 1`**.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder, keep the `seq`
@@ -28,7 +28,7 @@ Each event:
 |---|---|---|
 | `seq` | number | The event's number: 1 for the first, rising by 1 for as long as this whistle runs. |
 | `kind` | string | What happened: one of the kinds below. Stable. |
-| `text` | string | A default English text for it, as whistle's bar flashes it. |
+| `text` | string | A default English text for it, as whistle-ui's bar flashes it. |
 | other fields | | The kind's data (below). |
 
 | Kind | Data | When |
@@ -67,7 +67,7 @@ Whistle writes the feed once it runs (with no events) and again each time an eve
   "steps": [
     { "tick": 120, "shared": { "whistle.events": { "v": 1, "events": [] } } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "w", "unset": ["whistle.events"] },
+    { "world": { "anchorFocused": true }, "key": "w", "unset": ["whistle.events"] },
     { "key": "x", "shared": { "whistle.events": { "v": 1, "events": [
       { "seq": 1, "kind": "unmapped", "keys": ["w", "x"], "text": "w x is not mapped" }] } } }
   ]
@@ -148,7 +148,7 @@ A copy of whistle that stands aside writes nothing here.
 
 ### 6. `v` goes up only on a breaking change
 
-As for the [whistle state](state.md#8-v-goes-up-only-on-a-breaking-change): a field removed or
+As for the [whistle state](state.md#9-v-goes-up-only-on-a-breaking-change): a field removed or
 its meaning changed, or a kind renamed, is a break. New kinds and new fields are not.
 `whistle.js` reads `v: 1` only.
 

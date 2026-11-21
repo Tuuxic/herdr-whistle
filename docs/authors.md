@@ -8,7 +8,7 @@ contracts. Pick the one that fits your job.
 
 | You want to | Read | Copy |
 |---|---|---|
-| place whistle's bar in your layout, tune it for your layout's mods (mappings, `nav`, a switched-off layout, bar spots) | [The layout's whistle block](contracts/layout-block.md) | nothing |
+| run whistle in your layout, tune it for your layout's mods (mappings, `nav`, a switched-off layout) | [The layout's whistle block](contracts/layout-block.md) | nothing |
 | make your mod a **field**: whistle selects it, moves a cursor in it and sends it the keys it declares | [Keynav](contracts/keynav.md) | [`keynav.js`](../mods/whistle/keynav.js) |
 | give your mod's commands whistle keys (mappings and groups, added while your mod shows) | [Mod mappings](contracts/mod-mappings.md) | [`whistle.js`](../mods/whistle/whistle.js) |
 | know what whistle is doing: the mode, the key sequence, the terminal it has selected, why it stands aside | [Whistle state](contracts/state.md) | [`whistle.js`](../mods/whistle/whistle.js) |

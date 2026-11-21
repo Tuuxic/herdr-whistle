@@ -1,17 +1,16 @@
 // The stable command set (docs/contracts/commands.md): whistle.switch-mode and whistle.mode:type (modes
-// suite), whistle.on, whistle.off and whistle.settings, and the verbs whistle.field,
+// suite), whistle.on and whistle.off, and the verbs whistle.field,
 // whistle.focus and whistle.toggle run by mappings (jump keys: the jump keys suite).
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
-import { IN_TERMINAL, term, bar } from "./worlds.js";
+import { IN_TERMINAL, term, anchor } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
 const files = (u, map = {}) => ({ configFiles: { defaults: json({ ...TEST_DEFAULTS, map }), user: u } });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const TO_TYPE = { run: "pane.focus", args: { pane: "p1" } };
-const SETTINGS = { openOverlay: "settings", spec: { mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings" } } };
 
 // A terminal beside a sidebar (a stack of two terminals, "files" hidden behind "notes"), and
 // a hidden "log" terminal under them.
@@ -21,10 +20,10 @@ const LAYOUT = { id: "root", type: "column", children: [
     { id: "sidebar", type: "stack", active: "notes", children: [term("notes"), term("files")] },
   ] },
   { ...term("log"), hidden: true },
-  bar,
+  anchor,
 ] };
 const mapped = (map) => ({ ...IN_TERMINAL, layout: LAYOUT, ...files(null, map) });
-const HOLD = { focusBar: true };
+const HOLD = { focusAnchor: true };
 
 const SCENARIOS = [
   // whistle.on / whistle.off: whistle.json's enabled.
@@ -45,9 +44,9 @@ const SCENARIOS = [
       effects: [TO_TYPE, { write: "whistle.json", text: pretty({ enabled: false }), expected: null }] }],
   },
   {
-    name: "whistle.on with a whistle.json that doesn't parse only flashes",
+    name: "whistle.on with a whistle.json that doesn't parse only raises an event",
     world: { ...IN_TERMINAL, ...files("{ nope") },
-    steps: [{ command: "on", effects: [], bar: { label: "whistle.json doesn't parse; fix it first" } }],
+    steps: [{ command: "on", effects: [], raised: [{ text: "whistle.json doesn't parse; fix it first" }] }],
   },
   {
     name: "whistle.on works while whistle is switched off",
@@ -55,26 +54,17 @@ const SCENARIOS = [
     steps: [{ command: "on", effects: [{ write: "whistle.json", text: pretty({ enabled: true }), expected: json({ enabled: false }) }] }],
   },
   {
-    name: "A whistle.json write that fails flashes",
+    name: "A whistle.json write that fails raises an event",
     world: { ...IN_TERMINAL, ...files(null) },
-    steps: [{ command: "off" }, { wrote: "whistle.json", ok: false, error: "denied", bar: { label: "couldn't write whistle.json: denied" } }],
+    steps: [{ command: "off" }, { wrote: "whistle.json", ok: false, error: "denied", raised: [{ text: "couldn't write whistle.json: denied" }] }],
   },
 
-  // whistle.settings.
+  // Whistle opens no dialog (ADR 0020): whistle-ui.settings opens whistle-ui's.
   {
-    name: "whistle.settings opens the settings",
+    name: "whistle.settings is a command whistle doesn't know: it opens nothing and fails",
     world: IN_TERMINAL,
-    steps: [{ command: "settings", effects: [SETTINGS] }],
-  },
-  {
-    name: "whistle.settings in WHISTLE goes back to TYPE first",
-    world: IN_TERMINAL,
-    steps: [...IN, { command: "settings", effects: [TO_TYPE, SETTINGS], model: { mode: "type" } }],
-  },
-  {
-    name: "whistle.settings works while whistle is switched off",
-    world: { ...IN_TERMINAL, ...files(json({ enabled: false })) },
-    steps: [{ command: "settings", effects: [SETTINGS] }],
+    steps: [...IN, { command: "settings", effects: [], model: { mode: "whistle" },
+      raised: [{ kind: "command-failed", command: "whistle.settings", error: "unknown whistle command whistle.settings" }] }],
   },
 
   // whistle.field:<block>.
@@ -84,9 +74,9 @@ const SCENARIOS = [
     steps: [...IN, { key: "n", model: { field: "notes" }, effects: [], handled: true }],
   },
   {
-    name: "whistle.field on a block that doesn't show flashes",
+    name: "whistle.field on a block that doesn't show raises an event",
     world: mapped({ n: ["Log", "whistle.field:log"] }),
-    steps: [...IN, { key: "n", model: { field: "main" }, bar: { label: "log can't be selected now" } }],
+    steps: [...IN, { key: "n", model: { field: "main" }, raised: [{ text: "log can't be selected now" }] }],
   },
 
   // whistle.focus:<block>.
@@ -95,7 +85,7 @@ const SCENARIOS = [
     world: mapped({ g: ["Log", "whistle.focus:log"] }),
     steps: [...IN,
       { key: "g", effects: [{ run: "layout.show", args: { id: "log" } }, HOLD], model: { field: "main" } },
-      { world: { layout: { ...LAYOUT, children: [LAYOUT.children[0], term("log"), bar] } }, tick: 120, model: { field: "log" } }],
+      { world: { layout: { ...LAYOUT, children: [LAYOUT.children[0], term("log"), anchor] } }, tick: 120, model: { field: "log" } }],
   },
   {
     name: "whistle.focus selects a block behind another in a stack",
@@ -113,9 +103,9 @@ const SCENARIOS = [
     steps: [...IN, { key: "g" }, { tick: 2000, model: { field: "main", waitFor: null } }],
   },
   {
-    name: "whistle.focus on a block the layout doesn't have flashes",
+    name: "whistle.focus on a block the layout doesn't have raises an event",
     world: mapped({ g: ["Ghost", "whistle.focus:ghost"] }),
-    steps: [...IN, { key: "g", effects: [], bar: { label: "No ghost in this layout" } }],
+    steps: [...IN, { key: "g", effects: [], raised: [{ text: "No ghost in this layout" }] }],
   },
 
   // whistle.toggle:<block>.

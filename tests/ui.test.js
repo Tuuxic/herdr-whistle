@@ -16,7 +16,7 @@ const CORNER = { corner: true };
 const layout = ({ bar = {}, barHidden = false, extra = [] } = {}) => ({ id: "root", type: "column", children: [
   term("main"), ANCHOR, uiBlock("whistle-bar", bar, barHidden), ...extra, uiBlock("whistle-corner", CORNER)] });
 
-const STATE = { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false };
+const STATE = { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null, inert: null };
 const CONFIG = { v: 1, problems: [], mods: [], conflicts: [], overrides: [] };
 const EVENTS = (...events) => ({ v: 1, events });
 const ev = (seq, text, kind = "unmapped") => ({ seq, kind, text });
@@ -50,6 +50,8 @@ export default suite("whistle-ui", (t) => {
     barOf(pub({ whistle: whistling() }), { shared: { keynav: { v: 3, active: "files {}" }, "keynav.field:files {}": { v: 3, label: "Files", keys: {} } } }).label, "Files");
   t.check("WHISTLE on a keynav field with no label: its mod",
     barOf(pub({ whistle: whistling() }), { shared: { keynav: { v: 3, active: "files {}" } } }).label, "files");
+  t.check("WHISTLE on a stock field: its name, from the whistle state's field and its block's mod",
+    barOf(pub({ whistle: whistling({ field: "agents" }) }), { layout: layout({ extra: [{ id: "agents", type: "block", content: { mod: "agents" } }] }) }).label, "Agents");
   t.check("config problems: the marker counts them",
     barOf(pub({ config: { ...CONFIG, problems: [{ source: "layout", detail: "a" }, { source: "keys.json", detail: "b" }] } }), {}).marker, "⚠ 2");
   t.check("switched off: no badge, Whistle off",

@@ -1,8 +1,8 @@
 # Whistle state
 
 For mod authors who want to know what whistle is doing: whether it's in WHISTLE, the key
-sequence typed so far, the terminal pane it has selected, whether the terminal is the selected
-field, and why whistle stands aside if it does. Current version: **`v: 1`**.
+sequence typed so far, the terminal pane it has selected, which field is selected and whether
+it is the terminal, and why whistle stands aside if it does. Current version: **`v: 1`**.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder and call
 `readWhistle()` when you draw. It gives the fields below, or `null` while there's nothing to
@@ -27,10 +27,10 @@ const label = w?.mode === "whistle" ? "whistling" : "";
 | `sequence` | `null` \| `{ keys, group }` | The key sequence so far: `keys` a list of key names, `group` the name of the group it has reached. `null` outside a sequence. |
 | `pane` | string \| `null` | The terminal pane whistle has selected, `null` until it has selected one. |
 | `onTerminal` | boolean | Whether the terminal is the selected field: `true` only in WHISTLE with the terminal selected. |
-| `inert` | `{ problem, fix }`, missing while whistle runs | Why whistle stands aside, and what the person can do about it (rule 7). |
+| `field` | string \| `null` | The selected field's block id in WHISTLE (the terminal's, a keynav field's or a stock field's), `null` in TYPE (rule 7). |
+| `inert` | `null` \| `{ problem, fix }` | Why whistle stands aside, and what the person can do about it; `null` while whistle runs (rule 8). |
 
-Fields added later under `v: 1` are optional; ignore fields you don't know. `whistle.js`
-reads a missing `onTerminal` as `false` and a missing `inert` as `null`.
+Ignore fields you don't know: new ones may come under `v: 1`.
 
 ## Rules
 
@@ -44,9 +44,9 @@ that changes nothing writes nothing, so a change of value is a change of state.
 
 ```json example Whistle publishes its state once it runs, and not again until it changes
 {
-  "world": { "focused": { "pane": "p1", "onTerminal": true } },
+  "world": { "focused": { "pane": "p1", "onTerminal": true, "field": "main", "inert": null } },
   "steps": [
-    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false } },
+    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null } },
     { "tick": 120, "published": null }
   ]
 }
@@ -61,14 +61,14 @@ that changes nothing writes nothing, so a change of value is a change of state.
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } },
-    { "world": { "barFocused": true }, "command": "switch-mode",
-      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
+    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } },
+    { "world": { "anchorFocused": true }, "command": "switch-mode",
+      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false, "field": null, "inert": null } }
   ]
 }
 ```
@@ -78,14 +78,14 @@ that changes nothing writes nothing, so a change of value is a change of state.
 ```json example Switched off, enabled is false and mode is type
 {
   "world": {
-    "barFocused": true,
+    "anchorFocused": true,
     "layout": { "id": "root", "type": "column", "children": [
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
     ] }
   },
   "model": { "mode": "whistle" },
   "steps": [
-    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": false, "sequence": null, "pane": null, "onTerminal": false } }
+    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": false, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null } }
   ]
 }
 ```
@@ -102,7 +102,7 @@ sequence ends (a command runs, it's cancelled, or a key isn't mapped), `sequence
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
@@ -112,10 +112,10 @@ sequence ends (a command runs, it's cancelled, or a key isn't mapped), `sequence
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "w",
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": "p1", "onTerminal": true } },
+    { "world": { "anchorFocused": true }, "key": "w",
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } },
     { "key": "v",
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } }
   ]
 }
 ```
@@ -131,15 +131,15 @@ field is `onTerminal`'s to say (rule 6).
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "l", "published": null },
-    { "world": { "focused": { "pane": "p2", "onTerminal": true } }, "tick": 120,
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p2", "onTerminal": true } }
+    { "world": { "anchorFocused": true }, "key": "l", "published": null },
+    { "world": { "focused": { "pane": "p2", "onTerminal": true, "field": "main", "inert": null } }, "tick": 120,
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p2", "onTerminal": true, "field": "main", "inert": null } }
   ]
 }
 ```
@@ -161,13 +161,13 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false } },
-    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null } },
+    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } }
   ]
 }
 ```
@@ -180,17 +180,17 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "tree", "type": "block", "content": { "mod": "tree" } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "shared": { "keynav.field:tree {}": { "v": 3, "label": "Tree", "keys": {} } }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l",
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } },
+    { "world": { "anchorFocused": true }, "key": "ctrl-l",
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false, "field": "tree", "inert": null } },
     { "key": "ctrl-h",
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } }
   ]
 }
 ```
@@ -203,14 +203,14 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
         { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-h",
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
+    { "world": { "anchorFocused": true }, "key": "ctrl-h",
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false, "field": "spaces", "inert": null } }
   ]
 }
 ```
@@ -220,8 +220,8 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
   "world": { "focused": { "pane": "p1" } },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "command": "switch-mode",
-      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
+    { "world": { "anchorFocused": true }, "command": "switch-mode",
+      "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false, "field": null, "inert": null } }
   ]
 }
 ```
@@ -236,19 +236,46 @@ stock fields with Herdr's commands. So the terminal is whistle's own field, and 
 says when it is selected. See
 [ADR 0016](../adr/0016-the-terminal-is-whistles-own-field-whistle-state-says-when-it-is-selected.md).
 
-### 7. Only the running whistle writes it; with none running, `inert` says why
+### 7. `field` is the selected field's block id
+
+In WHISTLE, the block id of the selected field: the terminal's block, a keynav field's or a stock
+field's (Herdr's spaces, tabs or agents block). `null` in TYPE, while WHISTLE is switched off,
+and in WHISTLE with no field to select. A client can name a stock field from it, as keynav's
+`active` names only keynav fields.
+
+```json example field names the selected stock field, and is null in TYPE
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "body", "type": "row", "children": [
+        { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
+        { "id": "main", "type": "block", "content": { "pane": {} } }
+      ] },
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" }
+  },
+  "steps": [
+    { "command": "switch-mode", "state": { "field": "main" } },
+    { "world": { "anchorFocused": true }, "key": "ctrl-h", "state": { "field": "spaces", "onTerminal": false } },
+    { "command": "switch-mode", "state": { "mode": "type", "field": null } }
+  ]
+}
+```
+
+### 8. Only the running whistle writes it; with none running, `inert` says why
 
 A copy of whistle that stands aside while another copy runs writes nothing, so the state is
-always the running copy's. When no copy runs (on a Herdr older than whistle needs, every copy
-stands aside), the copy that would run writes the state once with `inert`: `problem` says why it
-stands aside and `fix` what the person can do, so any mod can show it. While whistle runs,
-`inert` is missing.
+always the running copy's. When no copy runs (on a Herdr older than whistle needs, or with
+whistle blocks that share their props, every copy stands aside), the copy that would run writes
+the state once with `inert`: `problem` says why it stands aside and `fix` what the person can do,
+so any mod can show it. While whistle runs, `inert` is `null`.
 
 ```json example A copy standing aside on an old Herdr publishes why, once
 {
-  "world": { "herdr": "0.1.14", "focused": { "pane": "p1", "onTerminal": true } },
+  "world": { "herdr": "0.1.14", "focused": { "pane": "p1", "onTerminal": true, "field": "main", "inert": null } },
   "steps": [
-    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
+    { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null,
       "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)", "fix": "Update Herdr." } } },
     { "command": "switch-mode", "published": null }
   ]
@@ -261,8 +288,8 @@ stands aside and `fix` what the person can do, so any mod can show it. While whi
     "folder": "whistle-2", "copies": { "whistle": "2.0.0", "whistle-2": "2.0.0" },
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } },
-      { "id": "bar-2", "type": "block", "content": { "mod": "whistle-2" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } },
+      { "id": "anchor-2", "type": "block", "content": { "mod": "whistle-2" } }
     ] }
   },
   "steps": [
@@ -271,7 +298,7 @@ stands aside and `fix` what the person can do, so any mod can show it. While whi
 }
 ```
 
-### 8. `v` goes up only on a breaking change
+### 9. `v` goes up only on a breaking change
 
 A field removed or its meaning changed is a break: `v` goes up and the change is announced in
 the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistle.js` reads
@@ -290,4 +317,4 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
 ## History
 
 - `v: 1` (whistle 1.0.0): first version.
-- whistle 2.0.0: the optional `inert` field.
+- whistle 2.0.0: `field` and `inert`.

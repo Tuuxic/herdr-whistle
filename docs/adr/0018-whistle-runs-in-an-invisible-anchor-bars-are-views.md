@@ -1,5 +1,7 @@
 # Whistle runs in an invisible anchor; bars are views
 
+Superseded in part by [ADR 0020](0020-whistle-publishes-facts-clients-show-them.md).
+
 Whistle held the keyboard through its bar, so hiding every bar rested whistle: the bar, meant
 as an aid, decided whether whistle worked. We decided that whistle runs in an anchor, a whistle
 block sized 0 px that draws nothing, and that bars only draw whistle state, so showing or

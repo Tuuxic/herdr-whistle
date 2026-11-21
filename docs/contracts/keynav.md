@@ -100,10 +100,10 @@ longer in the layout are ignored, so a field never has to clean up after itself.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
+    { "world": { "anchorFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
     { "world": { "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
-      "model": { "field": "files" }, "bar": { "label": "Files" } }
+      "model": { "field": "files" }, "state": { "field": "files" } }
   ]
 }
 ```
@@ -132,7 +132,7 @@ whether the terminal is selected, read `onTerminal` in whistle state (docs/contr
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l",
+    { "world": { "anchorFocused": true }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }] },
     { "command": "switch-mode",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "setShared": "keynav", "value": { "v": 3, "active": null } }] }
@@ -161,9 +161,9 @@ go to a space, go to an agent and type there, flip a setting.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l" },
-    { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }] },
-    { "key": "enter", "effects": [{ "run": "files.keynav-pick", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "ctrl-l" },
+    { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusAnchor": true }] },
+    { "key": "enter", "effects": [{ "run": "files.keynav-pick", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -194,9 +194,9 @@ again to change the keys at any time.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] },
+    { "world": { "anchorFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusAnchor": true }] },
     { "key": "ctrl-l", "hints": { "title": "Files", "items": [{ "key": "d", "label": "Delete", "group": false }] } },
-    { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusBar": true }] }
+    { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -224,8 +224,8 @@ field's like any declared key. A declared chord is always a config problem.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l" },
-    { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }],
+    { "world": { "anchorFocused": true }, "key": "ctrl-l" },
+    { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusAnchor": true }],
       "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, down's own key; it counts once you unbind down" }] } }
   ]
 }
@@ -248,7 +248,7 @@ field's like any declared key. A declared chord is always a config problem.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l" },
+    { "world": { "anchorFocused": true }, "key": "ctrl-l" },
     { "key": "x", "effects": [], "handled": false }
   ]
 }
@@ -276,12 +276,12 @@ was selected.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l" },
-    { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
+    { "world": { "anchorFocused": true }, "key": "ctrl-l" },
+    { "world": { "anchorFocused": false, "focused": { "pane": "p2" }, "shared": {
         "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} },
         "keynav.request:files {}": { "after": "terminal", "at": 50 } } },
       "tick": 120,
-      "effects": [{ "focusBar": true }, { "setShared": "keynav", "value": { "v": 3, "active": null } }],
+      "effects": [{ "focusAnchor": true }, { "setShared": "keynav", "value": { "v": 3, "active": null } }],
       "model": { "mode": "whistle", "field": "main", "pane": "p2" } }
   ]
 }
@@ -307,14 +307,14 @@ the driver selects the terminal and names no field.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l" },
+    { "world": { "anchorFocused": true }, "key": "ctrl-l" },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
       ] } },
       "tick": 120,
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": null } }],
-      "model": { "field": "main" }, "bar": { "label": "Terminal" } }
+      "model": { "field": "main" } }
   ]
 }
 ```
@@ -339,8 +339,8 @@ speak: the block isn't a field, and nothing reaches it. Whistle speaks `v: 3`.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [],
-      "model": { "field": "main" }, "bar": { "marker": null } }
+    { "world": { "anchorFocused": true }, "key": "ctrl-l", "effects": [],
+      "model": { "field": "main" }, "problems": 0 }
   ]
 }
 ```
