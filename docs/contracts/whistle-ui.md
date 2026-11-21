@@ -114,8 +114,10 @@ focus. In WHISTLE it names the terminal's selected pane, the selected keynav fie
 ### 4. Each event flashes once, for 2 s or until the key sequence changes
 
 A bar shows the text of each event that came since it last drew, in place of its label; several
-at once show together. A copy remembers the last event's `seq` it handled. A new copy (Herdr
-makes one when the layout changes) flashes none of the events already in the feed.
+at once show together. A copy remembers the last event's `seq` it handled and keeps it in
+`whistle-ui.seen`, so a new copy (Herdr makes one when the layout changes) goes on from there.
+With nothing kept yet, a new copy flashes none of the events already in the feed. When the
+newest `seq` is lower than the one kept, whistle started again and every event is new.
 
 ```json ui-example A new event flashes its text
 {
@@ -213,6 +215,13 @@ Each part reads only the public keys, so you can drop any of them and draw your 
   `whistle.config` and run the settings commands.
 - **All of it**: leave whistle-ui out of the layout and keys.json. Whistle runs the same.
 
+whistle-ui keeps two private shared keys of its own, which no other mod reads or writes:
+
+- `whistle-ui.overlay:<name>`: the id of the overlay open under `<name>` (`hints` or
+  `settings`), so any copy can close or replace it.
+- `whistle-ui.seen`: the `seq` of the last event a copy handled, so a new copy flashes each
+  event once.
+
 `mods/whistle-ui/` is a reference: `ui.js` is the pure core the examples above test, `read.js`
 copies `whistle.js`'s readers, and `main.js` is the shell that feeds it Herdr.
 
@@ -220,7 +229,3 @@ copies `whistle.js`'s readers, and `main.js` is the shell that feeds it Herdr.
 
 Stable: the props above, the corner block, and the `whistle-ui.settings` command. How the bar,
 hints box and dialog look may change in any release.
-
-## History
-
-- whistle 2.0.0: whistle-ui is new.

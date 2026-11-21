@@ -70,6 +70,15 @@ export default suite("whistle-ui", (t) => {
   t.check("a new copy flashes none of the events already there, and handles them",
     (({ bar, last }) => ({ label: bar.label, last }))(ui(pub({ events: EVENTS(ev(3, "old"), ev(4, "older")) }), world({ last: null })).model),
     { label: "Terminal", last: 4 });
+  const SEEN = "whistle-ui.seen";
+  const raised = ui(pub({ events: EVENTS(ev(3, "old"), ev(4, "raised while the layout changed")) }), world({ last: null, shared: { [SEEN]: 3 } }));
+  t.check("a new copy flashes the events after the last one any copy handled",
+    [raised.model.bar.label, raised.model.last], ["raised while the layout changed", 4]);
+  t.check("a copy that handles events keeps the last seq for the next copy", raised.effects, [{ seen: 4 }]);
+  t.check("a new copy after whistle started again (seqs gone back): every event in the feed is new",
+    ui(pub({ events: EVENTS(ev(1, "again")) }), world({ last: null, shared: { [SEEN]: 9 } })).model.bar.label, "again");
+  t.check("nothing new handled: the kept seq stays as it is",
+    ui(pub({ events: EVENTS(ev(4, "x")) }), world({ last: 4, shared: { [SEEN]: 4 } })).effects, []);
   const flashed = ui(pub({ events: one }), world()).model;
   t.check("a new event flashes its text", flashed.bar.label, "`x` is not mapped");
   t.check("the flash lasts FLASH_MS", flashed.flash.until, 10000 + FLASH_MS);

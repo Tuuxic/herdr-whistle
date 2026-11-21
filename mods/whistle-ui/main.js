@@ -16,7 +16,7 @@
 
 import { View, div } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, openOverlay, closeOverlay, props } from "herdr";
-import { ui, command, isCorner } from "./ui.js";
+import { ui, command, isCorner, SEEN } from "./ui.js";
 import { hintsOf, configOf } from "./read.js";
 import { renderBar } from "./bar.js";
 import { renderHints } from "./hints.js";
@@ -63,7 +63,7 @@ export default class WhistleUi extends View {
     return {
       folder: FOLDER, props: call(() => props() ?? {}) ?? {}, size: this.size, viewport: this.viewport ?? null,
       layout: layout(), focused: focused(), panes: panes(), now: Date.now(),
-      shared: { keynav, ...(entry ? { [entry]: shared(entry) ?? null } : {}) },
+      shared: { keynav, ...(entry ? { [entry]: shared(entry) ?? null } : {}), [SEEN]: shared(SEEN) ?? null },
       ...this.kept,
     };
   }
@@ -76,6 +76,7 @@ export default class WhistleUi extends View {
   // One effect (ui.js lists the set).
   carry(e) {
     if ("run" in e) call(() => run(e.run, {}));
+    else if ("seen" in e) setShared(SEEN, e.seen);
     else if ("openOverlay" in e) {
       this.closeOverlay(e.openOverlay);
       const id = call(() => openOverlay(e.spec));

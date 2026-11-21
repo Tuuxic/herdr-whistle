@@ -11,7 +11,8 @@
 //          size: its drawn size { width, height } | null (not measured), viewport: the window's
 //          drawable size | null, layout: Herdr's layout tree, focused: { pane, terminal } | null,
 //          panes: [{ pane, title, program }], shared: { keynav: shared("keynav"),
-//          "keynav.field:<active>": that field's entry }, now: ms,
+//          "keynav.field:<active>": that field's entry, "whistle-ui.seen": the seq of the last
+//          event any copy handled }, now: ms,
 //          and what this copy kept from its last call (the model's fields): last: the seq of
 //          the last event it handled (null: none read yet, a new copy), flash: the bar's flash
 //          { text, until, sequence } | null, box: the hints box it opened, as JSON (null: none;
@@ -21,7 +22,7 @@
 //          block; last, flash, box: to hand back in the next world }
 //
 // effects: { openOverlay: name, spec } (closing the one open under that name first),
-//          { closeOverlay: name }, { run: "<command>" }.
+//          { closeOverlay: name }, { run: "<command>" }, { seen: seq } (written to SEEN).
 
 import { readState, hintsOf, eventsSince, configOf } from "./read.js";
 import { hintsBox } from "./box.js";
@@ -118,12 +119,18 @@ function bar(state, config, flash, world) {
 
 const sequenceOf = (state) => JSON.stringify(state?.sequence?.keys ?? null);
 
+// The private shared key holding the seq of the last event a copy handled, so a new copy
+// (Herdr makes one on every layout change) goes on from there.
+export const SEEN = "whistle-ui.seen";
+
 // The flash after this call: the new events' texts, else the one kept while it lasts and the key
-// sequence hasn't changed. A new copy (last null) handles the events already there unshown.
+// sequence hasn't changed. A new copy (last null) goes on from SEEN; with none kept, it handles
+// the events already there unshown. When seqs go back (whistle started again), every event is new.
 function flashed(published, state, world) {
-  const fresh = world.last == null;
-  const { events, last } = eventsSince(published.events, fresh ? Infinity : world.last);
-  if (fresh) return { last: last === Infinity ? 0 : last, flash: null };
+  const seen = world.shared?.[SEEN];
+  const from = world.last ?? (Number.isInteger(seen) ? seen : null);
+  const { events, last } = eventsSince(published.events, from ?? Infinity);
+  if (from == null) return { last: last === Infinity ? 0 : last, flash: null };
   const sequence = sequenceOf(state);
   if (events.length) return { last, flash: { text: events.map((e) => e.text).join(" · "), until: world.now + FLASH_MS, sequence } };
   const f = world.flash;
@@ -147,6 +154,8 @@ export function ui(published, world) {
   const spec = box(published, state, world);
   const sent = spec ? JSON.stringify(spec) : null;
   const effects = [];
+  // Any copy that handled events keeps where it got to, for the next new copy.
+  if (last !== (world.shared?.[SEEN] ?? 0)) effects.push({ seen: last });
   // Only the lead closes a box: another copy's close would close the lead's (the shell finds
   // the box open under the name, whichever copy opened it).
   if (spec && sent !== world.box) effects.push({ openOverlay: HINTS, spec });
