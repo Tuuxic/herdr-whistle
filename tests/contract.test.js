@@ -250,6 +250,13 @@ const SCENARIOS = [
     ],
   },
   {
+    name: "A new inert copy doesn't raise whistle-inert again when the whistle state already says that reason",
+    world: { herdr: "0.1.0", focused: { pane: "p1" }, state: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null,
+      inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." } } },
+    steps: [{ tick: 120, raised: [] }, { tick: 120, raised: [] },
+      { world: { herdr: "0.0.1" }, tick: 120, raised: [{ kind: "whistle-inert", problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.0.1)` }] }],
+  },
+  {
     name: "A copy inert while another copy runs writes no state",
     world: { folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
       layout: { id: "root", type: "column", children: [term("main"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },

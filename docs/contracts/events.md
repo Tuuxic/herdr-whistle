@@ -284,7 +284,9 @@ The running copy writes the feed and pushes. With **no copy running** (on a Herd
 whistle needs, or with whistle blocks that share their props), the copy that would run raises
 `whistle-inert` and writes the feed, under the same rule as the whistle state's `inert`
 ([state.md](state.md#8-only-the-running-whistle-writes-it-with-none-running-inert-says-why)):
-once, and again only when the reason changes. It pushes nothing, but keeps the subscriptions:
+once, and again only when the reason changes; a new copy (Herdr makes one whenever the layout
+changes) doesn't raise it again while the whistle state's `inert` already says that reason. It
+pushes nothing, but keeps the subscriptions:
 `whistle.subscribe` and `whistle.unsubscribe` change them whether whistle runs or not, so a mod
 that subscribes while whistle stands aside gets its pushes once whistle runs. A copy standing
 aside for another copy writes nothing, subscriptions included: they are the running copy's to

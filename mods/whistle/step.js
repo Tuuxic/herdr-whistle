@@ -695,10 +695,12 @@ function publish(out, world, before) {
 // An inert copy's step, only from the copy that would run (inert.js runningCopy): while another
 // copy runs, that copy's state and feed stand. With none running: whistle-inert once per reason,
 // the feed if it changed, and the whistle state, saying why it is inert, when it changed. It
-// pushes nothing.
+// pushes nothing. As for the notification (told), whistle-inert isn't raised again when the
+// whistle state already says that reason: an earlier copy, or a twin block's, raised it.
 function inertPublished(out, world, why) {
   if (runningCopy(world) !== folderOf(world)) return out;
-  const model = out.model.inertRaised === why.problem ? out.model
+  const said = out.model.inertRaised === why.problem || world.state?.inert?.problem === why.problem;
+  const model = said ? { ...out.model, inertRaised: why.problem }
     : raised({ ...out.model, inertRaised: why.problem }, { kind: "whistle-inert", problem: why.problem, fix: why.fix, text: why.problem });
   const fed = writePublic({ ...out, model }, { events: { v: 1, events: model.events ?? [] } });
   return published(fed, state(fed.model, world));
