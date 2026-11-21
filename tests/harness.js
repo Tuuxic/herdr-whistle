@@ -10,22 +10,25 @@
 //     world: { layout, focused, panes, barFocused, now },   // over DEFAULT_WORLD
 //     model: { ... },                                       // optional, over start()
 //     steps: [
-//       // One input each: { command: "whistle" }, { key: "ctrl-l" }, { tick: 120 } (the
+//       // One input each: { command: "switch-mode" }, { key: "ctrl-l" }, { tick: 120 } (the
 //       // clock moves on by 120 ms, then a tick), { wrote: path, ok, error } (a write's
 //       // outcome) or { ran: command, error } (a run that failed). `world` first changes the
 //       // world (shallow, before the input).
-//       { world: { barFocused: true }, command: "whistle",
+//       { world: { barFocused: true }, command: "switch-mode",
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
-//                                          // from whistle state (`published` checks it)
+//                                          // from whistle state (`published` checks it),
+//                                          // the public keys whistle.hints, .events, .config,
 //                                          // the views' models, the bar's included
 //                                          // (`shared` checks them) and
 //                                          // the hints window (`hintsWindow` checks it) and
 //                                          // notifications (`notified` checks them)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
-//         shared: { "whistle.hints": null }, // what these private shared keys were set to
+//         shared: { "whistle.hints": null }, // what these shared keys were set to
 //                                          // in this step; a key given as undefined: not set
+//         unset: ["whistle.hints"],        // these shared keys weren't set in this step
+//                                          // (`shared` with undefined, as JSON can say it)
 //         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
 //         notified: [{ title, body, level }],  // exactly these Herdr notifications posted
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
@@ -64,10 +67,11 @@ export const DEFAULT_WORLD = {
 export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
-// The shared key whistle state is published under (docs/contracts/state.md), and the private
-// keys the views' models go in (step.js VIEWS): set on most steps, so `effects` leaves them out.
+// The shared key whistle state is published under (docs/contracts/state.md), the public keys
+// beside it (step.js PUBLIC) and the private keys the views' models go in (step.js VIEWS): set
+// on most steps, so `effects` leaves them out.
 const STATE = "whistle";
-const VIEW_KEYS = ["whistle.hints", "whistle.settings"];
+const VIEW_KEYS = ["whistle.hints", "whistle.events", "whistle.config", "whistle.hintsbox", "whistle.settings"];
 // The bar's model goes in a key per folder (step.js barKey), and so does the reason an inert
 // whistle told (toldKey): `shared` checks them, `effects` leaves them out.
 const isBarKey = (k) => typeof k === "string" && (k.startsWith("whistle.bar:") || k.startsWith("whistle.told:"));
@@ -127,7 +131,8 @@ export function runScenario(sc, core) {
         const want = s.published === null ? [] : [s.published];
         if (show(got) !== show(want)) fails.push(`${at}: published ${show(got)}, want ${show(want)}`);
       }
-      for (const [k, want] of Object.entries(s.shared ?? {})) {
+      const wants = { ...s.shared, ...Object.fromEntries((s.unset ?? []).map((k) => [k, undefined])) };
+      for (const [k, want] of Object.entries(wants)) {
         const set = out.effects.filter((e) => e?.setShared === k);
         const got = set.length ? set.at(-1).value : undefined;
         if (set.length > 1 || show(got) !== show(want)) fails.push(`${at}: shared ${k} set to ${show(set.map((e) => e.value))}, want ${want === undefined ? "not set" : show(want)}`);

@@ -5,7 +5,7 @@
 //     (not read from the RECIPE): spaces and tabs n/r/x, Show on Space for spaces and agents
 //     (issue #43), files/changes none. Show's label is the glossary's name.
 //   - Pick into TYPE (issue #43, ADR 0017): on spaces and agents, pick runs the block's Herdr
-//     command, then whistle.type only when whistle is there (shared("whistle")); Show holds,
+//     command, then whistle.mode:type only when whistle is there (shared("whistle")); Show holds,
 //     never goes to the terminal. Aside is gone (#38).
 //   - Every Herdr command RECIPE names, in that table or as `herdr-app do <command>`, is one of
 //     Herdr's `commands()` (live, from the Herdr running the check).
@@ -14,7 +14,7 @@
 //   | Block | Key | Label | Herdr command |   one row per key; a block with no declared keys has
 //   one row with "none" in Key and empty Label and command.
 // Pick's table is tagged `<!-- table integrate-pick -->`:
-//   | Block | Herdr command | Then |   Then: `whistle.type` when whistle is there.
+//   | Block | Herdr command | Then |   Then: `whistle.mode:type` when whistle is there.
 //
 // The anchor (issue #52, ADR 0018): the blocks Install adds are one fenced block tagged
 // ```json whistle-blocks``` (a JSON array). Put in a layout, block.js (the layout-block contract)
@@ -46,8 +46,8 @@ const WANT = [
 ];
 
 const PICK = [
-  "spaces · space.select · whistle.type",
-  "agents · agent.focus · whistle.type",
+  "spaces · space.select · whistle.mode:type",
+  "agents · agent.focus · whistle.mode:type",
 ];
 
 const rows = () => taggedRows(recipe, "integrate-keys");

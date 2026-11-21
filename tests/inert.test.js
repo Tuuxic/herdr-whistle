@@ -6,8 +6,8 @@ import * as core from "./step.js";
 import { IN_TERMINAL, term, bar } from "./worlds.js";
 import { VERSION } from "./version.js";
 
-// Herdr's key bindings (keys()): Ctrl+Space bound to whistle.whistle everywhere.
-const KEYS = [{ section: "global", keys: "ctrl-space", action: "whistle.whistle" }];
+// Herdr's key bindings (keys()): Ctrl+Space bound to whistle.switch-mode everywhere.
+const KEYS = [{ section: "global", keys: "ctrl-space", action: "whistle.switch-mode" }];
 const OLD = { ...IN_TERMINAL, keys: KEYS, herdr: "0.1.14" };
 
 // Two copies of whistle, each with a bar: mods/whistle/ and a renamed mods/whistle-2/.
@@ -20,7 +20,7 @@ const TWO = {
 // Herdr hands the copy in mods/whistle-2/ only the lines named after its folder.
 // mods/whistle-2/'s anchor (ADR 0018).
 const ANCHOR2 = { id: "anchor2", type: "block", content: { mod: "whistle-2", props: { anchor: true } } };
-const RENAMED = {...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
+const RENAMED = {...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.switch-mode" }] };
 
 // The notification an inert whistle posts on a Herdr that's too old (0.1.14).
 const TOLD_OLD = { title: "Whistle stands aside", body: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14). Update Herdr.", level: "error" };
@@ -31,9 +31,9 @@ const SCENARIOS = [
     name: "Inert again after running, whistle posts its notification again",
     world: OLD,
     steps: [
-      { command: "type", notified: [TOLD_OLD] },
-      { world: { herdr: "0.1.15" }, command: "type", notified: [] },
-      { world: { herdr: "0.1.14" }, command: "type", notified: [TOLD_OLD] },
+      { command: "mode:type", notified: [TOLD_OLD] },
+      { world: { herdr: "0.1.15" }, command: "mode:type", notified: [] },
+      { world: { herdr: "0.1.14" }, command: "mode:type", notified: [TOLD_OLD] },
     ],
   },
   {
@@ -41,14 +41,14 @@ const SCENARIOS = [
     // lives in a private shared key of the folder, so a new copy doesn't post it again.
     name: "Inert, a new copy doesn't post the notification an earlier copy of its folder posted",
     world: { ...OLD, told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" },
-    steps: [{ command: "type", notified: [] }],
+    steps: [{ command: "mode:type", notified: [] }],
   },
   {
     name: "Inert, whistle records the reason it told in its folder's private key, and clears it once it runs",
     world: OLD,
     steps: [
-      { command: "type", shared: { "whistle.told:whistle": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
-      { world: { herdr: "0.1.15", told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" }, command: "type", shared: { "whistle.told:whistle": null } },
+      { command: "mode:type", shared: { "whistle.told:whistle": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
+      { world: { herdr: "0.1.15", told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" }, command: "mode:type", shared: { "whistle.told:whistle": null } },
     ],
   },
   {
@@ -56,20 +56,20 @@ const SCENARIOS = [
     name: "Inert, a hidden spot's copy posts no notification",
     world: { ...OLD, props: { bar: "Top" },
       layout: { id: "root", type: "column", children: [spotBlock("top", "Top", true), term("main"), spotBlock("bottom", "Bottom", false)] } },
-    steps: [{ command: "type", notified: [] }],
+    steps: [{ command: "mode:type", notified: [] }],
   },
   {
     name: "Inert, a bar's copy in a layout with an anchor posts no notification: the anchor's does",
     world: { ...OLD, props: { bar: "Bottom" },
       layout: { id: "root", type: "column", children: [term("main"), spotBlock("bottom", "Bottom", false),
         { id: "anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } }] } },
-    steps: [{ command: "type", notified: [] }, { world: { props: { anchor: true } }, command: "type", notified: [TOLD_OLD] }],
+    steps: [{ command: "mode:type", notified: [] }, { world: { props: { anchor: true } }, command: "mode:type", notified: [TOLD_OLD] }],
   },
   {
     name: "On a Herdr older than the minimum, Ctrl+Space types through and whistle stays in TYPE",
     world: OLD,
     steps: [
-      { command: "whistle", model: { mode: "type" },
+      { command: "switch-mode", model: { mode: "type" },
         effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
         bar: { badge: null, problem: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
     ],
@@ -99,41 +99,41 @@ const SCENARIOS = [
   },
   {
     name: "Inert, the switch key types through as it is bound in a terminal",
-    world: { ...OLD, keys: [...KEYS, { section: "terminal", keys: "ctrl-shift-space", action: "whistle.whistle" }] },
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-shift-space", terminal: "t1" }] }],
+    world: { ...OLD, keys: [...KEYS, { section: "terminal", keys: "ctrl-shift-space", action: "whistle.switch-mode" }] },
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-shift-space", terminal: "t1" }] }],
   },
   {
     name: "Inert, a layout's binding of the switch key comes before the global one",
-    world: { ...OLD, keys: [...KEYS, { section: "layout:main", keys: "ctrl-alt-space", action: "whistle.whistle" }] },
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-alt-space", terminal: "t1" }] }],
+    world: { ...OLD, keys: [...KEYS, { section: "layout:main", keys: "ctrl-alt-space", action: "whistle.switch-mode" }] },
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-alt-space", terminal: "t1" }] }],
   },
   {
     name: "Inert, with no terminal focused, the switch key goes nowhere",
     world: { ...OLD, focused: null },
-    steps: [{ command: "whistle", effects: [], model: { mode: "type" } }],
+    steps: [{ command: "switch-mode", effects: [], model: { mode: "type" } }],
   },
   {
     name: "Whistle is inert when it can't read Herdr's version",
     world: { ...OLD, herdr: null },
-    steps: [{ command: "whistle", model: { mode: "type" }, bar: { badge: null, problem: "Whistle needs Herdr ≥ 0.1.15" } }],
+    steps: [{ command: "switch-mode", model: { mode: "type" }, bar: { badge: null, problem: "Whistle needs Herdr ≥ 0.1.15" } }],
   },
   {
     name: "On a Herdr newer than the minimum, whistle runs",
     world: { ...OLD, herdr: "0.2.0" },
-    steps: [{ command: "whistle", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
+    steps: [{ command: "switch-mode", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
   },
   {
     name: "A renamed copy is inert while the copy in mods/whistle/ runs, and says so",
     world: RENAMED,
     steps: [
-      { command: "whistle", model: { mode: "type" }, effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
+      { command: "switch-mode", model: { mode: "type" }, effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
         bar: { badge: null, problem: "Another whistle runs, from mods/whistle/" } },
     ],
   },
   {
     name: "The copy in mods/whistle/ runs beside a renamed copy",
     world: TWO,
-    steps: [{ command: "whistle", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
+    steps: [{ command: "switch-mode", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
   },
   {
     name: "Of renamed copies only, the first folder by name runs",
@@ -142,12 +142,12 @@ const SCENARIOS = [
       layout: { id: "root", type: "column", children: [term("main"), bar2, { ...bar2, id: "bar3", content: { mod: "whistle-3" } }] },
       copies: { "whistle-3": "1.0.0", "whistle-2": "1.0.0", "whistle": "1.0.0" },
     },
-    steps: [{ command: "whistle", model: { mode: "type" }, bar: { problem: "Another whistle runs, from mods/whistle-2/" } }],
+    steps: [{ command: "switch-mode", model: { mode: "type" }, bar: { problem: "Another whistle runs, from mods/whistle-2/" } }],
   },
   {
     name: "A copy announced but not in the shown layout doesn't count",
     world: { ...RENAMED, layout: { id: "root", type: "column", children: [term("main"), bar2] } },
-    steps: [{ command: "whistle", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
+    steps: [{ command: "switch-mode", model: { mode: "whistle" }, bar: { badge: "WHISTLE" } }],
   },
   {
     name: "A copy announces its folder in whistle.copies when it isn't there yet",
@@ -206,7 +206,7 @@ const SCENARIOS = [
     name: "In WHISTLE, a copy that goes inert hands the keyboard back and leaves WHISTLE",
     world: { ...IN_TERMINAL, keys: KEYS },
     steps: [
-      { command: "whistle", model: { mode: "whistle" } },
+      { command: "switch-mode", model: { mode: "whistle" } },
       { world: { barFocused: true, herdr: "0.1.0" }, tick: 120, model: { mode: "type" },
         effects: [{ run: "pane.focus", args: { pane: "p1" } }] },
     ],

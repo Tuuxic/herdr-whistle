@@ -4,6 +4,88 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v2.0.0 (unreleased)
+
+### Upgrading
+
+1. **Renamed commands (breaking)**: `whistle.whistle` is now `whistle.switch-mode`, and
+   `whistle.type` is now `whistle.mode:type`. The old names are gone: whistle treats them as
+   unknown commands, lists each keys.json line that still names one as a config problem, and
+   does nothing when one runs. In the person's keys.json, replace `whistle.whistle` with
+   `whistle.switch-mode` (in `global`, by default on `ctrl-space`) and `whistle.type` with
+   `whistle.mode:type` (in `mod:whistle`, by default on `ctrl-space`), keeping their keys. Do
+   the same in any mapping (whistle.json, a layout's whistle block) that runs them.
+2. **Keynav v3 only (breaking)**: whistle drives keynav v3 fields only. A mod whose
+   `keynav.js` is on v2 or v1 is no longer a field, and settings no longer ask it to update.
+   For each such mod in `whistle-integration.md`, replace its `keynav.js` with whistle's and
+   change its `open` move to `pick` (Integrate's "How a mod becomes a field").
+3. **`open` is no longer read as `pick` (breaking)**: a `keys` section that sets `open` now
+   sets an unknown action, listed as a config problem. In whistle.json and in a layout's
+   whistle block, rename `open` to `pick`.
+4. whistle.json's `bar` is no longer listed as a config problem: whistle ignores it, like any
+   key it doesn't know. Nothing to do; you may remove it.
+
+### You
+
+- **Changed**: the switch key's command is `whistle.switch-mode`, and the key that leaves
+  WHISTLE runs `whistle.mode:type` (see Upgrading). The keys stay the same.
+- **New**: `whistle.mode:whistle` goes to WHISTLE (and stays there), for a key that should only
+  ever enter it.
+- **New**: whistle-ui, a separate mod shipped with whistle: whistle's bar, hints box and
+  settings dialog, drawn from what whistle publishes. Its bar shows the mode, where the keyboard
+  is, a `⚠ n` count of config problems, "Whistle off", why whistle stands aside, and a 2 s flash
+  for each event. Its hints box docks on the first bar that shows, or sits at the window's bottom
+  right with no bar shown. `alt-,` runs `whistle-ui.settings`, which goes back to TYPE and opens
+  its settings dialog ([whistle-ui.md](docs/contracts/whistle-ui.md)).
+- **Changed**: `open` in your whistle.json's `keys` is no longer read as `pick`; it's an
+  unknown action, listed in settings. Rename it to `pick`.
+- **Changed**: whistle.json's `bar` is no longer listed in settings; whistle ignores it.
+- **Changed**: a mod still on keynav v2 or v1 is no longer a field, and settings no longer
+  mention it.
+
+### Layout authors
+
+- **Changed**: a mapping that runs `whistle.whistle` or `whistle.type` is a config problem; run
+  `whistle.switch-mode` or `whistle.mode:type` instead.
+- **New**: whistle-ui's blocks: bars, and a 0 px corner block (`corner: true`) that shows the
+  hints box when no bar shows. Props `hints`, `hintsAlignRight`, `hintsAlignBorder` and
+  `hintsGap` ([whistle-ui.md](docs/contracts/whistle-ui.md#blocks-and-props)).
+- **Changed**: `open` in the whistle block's `keys` is an unknown action; use `pick`.
+
+### Mod authors
+
+- **Breaking**: commands are spelled `whistle.<command>[:<argument>]`, with at most one argument
+  whose kind each command declares (none, plain, or JSON where it needs several values).
+  `whistle.whistle` became `whistle.switch-mode` and `whistle.type` became `whistle.mode:type`;
+  `whistle.mode:whistle` is new. A command whistle doesn't know, or one with the wrong argument,
+  raises a `command-failed` event ([commands.md](docs/contracts/commands.md#spelling)). From
+  Windows PowerShell 5.1, pass a JSON argument with `herdr-app do --% "…"`.
+- **New**: three public keys, each with its contract page and `whistle.js` reader:
+  `whistle.hints`, the hint items whether or not whistle's hints box is on
+  ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the last 8 events,
+  each with a stable kind, its data and a default English text, numbered by `seq`
+  ([events.md](docs/contracts/events.md), `readEvents(last)`); `whistle.config`, what the
+  settings show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy
+  writes them, and only when they change.
+- **New**: the whistle state's optional `inert` field, `{ problem, fix }`. A copy standing
+  aside on an old Herdr, with no other copy running, now writes the state with it (it wrote
+  nothing before) ([state.md](docs/contracts/state.md), rule 7). `readState` gives `inert`,
+  `null` while whistle runs.
+- **New**: the settings commands, `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and
+  `whistle.keep-mapping:{"mod":"<mod>","keys":[…]}`: whistle writes whistle.json itself
+  ([commands.md](docs/contracts/commands.md#settings-commands)).
+- **New**: whistle-ui (`mods/whistle-ui/`) is a reference client: it uses only the public keys
+  and commands, and any part of it can be replaced ([whistle-ui.md](docs/contracts/whistle-ui.md#replacing-a-part)).
+- The private key that held the hints box's view model under the name `whistle.hints` moved;
+  `whistle.hints` is now the public key above.
+
+### Keynav authors
+
+- **Breaking**: whistle drives keynav v3 only. An entry in v2 is no longer a field: whistle no
+  longer sends it `<mod>.keynav-open` or reads v2's `{ to }` and `{ hold }` requests, and
+  settings no longer ask it to update. A v1 copy is no longer named in settings either. Copy
+  whistle's current `keynav.js` (v3). The keynav checker no longer has the `no v1` rule.
+
 ## v1.3.0 (2026-11-21)
 
 ### Upgrading

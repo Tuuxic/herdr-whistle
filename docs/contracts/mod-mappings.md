@@ -53,7 +53,7 @@ your mod leaves the layout is ignored, not deleted.
     "modMappings": { "mymod": { "v": 1, "map": { "r": ["Refresh", "mymod.refresh"] } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "r",
       "effects": [{ "run": "mymod.refresh", "args": {} }, { "focusBar": true }] },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
@@ -92,7 +92,7 @@ the title of the mod first in layout order.
   "steps": [
     { "tick": 120, "bar": { "label": "g: 2 mods want it, see settings" },
       "model": { "conflicts": [{ "seq": ["g"], "mods": ["alpha", "beta"] }] } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "tick": 120, "bar": { "label": "Terminal" } },
     { "key": "g", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
   ]
@@ -118,7 +118,7 @@ taken an own key's action away, its key is free.
   },
   "steps": [
     { "tick": 120, "bar": { "label": "i: alpha wants an own key, see settings" } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }], "bar": { "badge": "TYPE" } }
   ]
@@ -151,7 +151,7 @@ section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's
   },
   "steps": [
     { "tick": 120, "model": { "conflicts": [] } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "g",
       "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
   ]
@@ -204,7 +204,7 @@ appears. It isn't one of the person's config problems, so the bar's marker doesn
   "steps": [
     { "tick": 120, "bar": { "label": "alpha's mappings have a problem, see settings", "marker": null },
       "settings": { "mods": [{ "name": "alpha", "on": true, "problems": ["map › x: should be [label, command] or a group { name, map }"] }] } },
-    { "command": "whistle", "bar": { "label": "Terminal" } },
+    { "command": "switch-mode", "bar": { "label": "Terminal" } },
     { "world": { "barFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusBar": true }] }
   ]
 }

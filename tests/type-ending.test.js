@@ -10,7 +10,7 @@ import { IN_TERMINAL } from "./worlds.js";
 const HOLD = 600;
 const defaults = (map) => ({ configFiles: { defaults: JSON.stringify({ keys: { type: ["i"] }, map }), user: null } });
 const world = (map) => ({ ...IN_TERMINAL, ...defaults(map) });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 
 const SCENARIOS = [
   {

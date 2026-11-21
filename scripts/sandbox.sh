@@ -3,11 +3,13 @@
 # home (~/.config/herdr-app). Herdr picks its home from HERDR_APP_HOME; every command here sets it.
 #
 #   scripts/sandbox.sh reset [--whistle]  delete the sandbox, make a fresh home and open its window;
-#                                         --whistle also copies this checkout's whistle in, merges
-#                                         its keys.json and shows it in a layout `whistle-sandbox`
+#                                         --whistle also copies this checkout's whistle and
+#                                         whistle-ui in, merges their keys.json and shows them in a
+#                                         layout `whistle-sandbox`
 #   scripts/sandbox.sh open               open the sandbox window (the home must exist)
 #   scripts/sandbox.sh close              close the sandbox window this script opened
-#   scripts/sandbox.sh sync               copy this checkout's mods/whistle/ into the sandbox again
+#   scripts/sandbox.sh sync               copy this checkout's mods/whistle/ and mods/whistle-ui/
+#                                         into the sandbox again
 #   scripts/sandbox.sh agent [task]       start claude here with the sandbox as Herdr's home;
 #                                         with no task, it installs whistle by RECIPE.md
 #   scripts/sandbox.sh status             herdr-app status of the sandbox window
@@ -59,13 +61,15 @@ close_window() {
 }
 
 copy_whistle() {
-  rm -rf "${box:?}/mods/whistle"
   mkdir -p "$box/mods"
-  cp -r "$repo/mods/whistle" "$box/mods/whistle"
-  echo "Copied $repo/mods/whistle into the sandbox."
+  for m in whistle whistle-ui; do
+    rm -rf "${box:?}/mods/$m"
+    cp -r "$repo/mods/$m" "$box/mods/$m"
+    echo "Copied $repo/mods/$m into the sandbox."
+  done
 }
 
-# Adds each key of the repo's keys.json to the sandbox's, section by section; a key the sandbox
+# Adds each key of a keys.json ($1) to the sandbox's, section by section; a key the sandbox
 # already binds keeps its binding (and is named). Like Install step 5, without asking.
 merge_keys() {
   node -e '
@@ -82,13 +86,14 @@ merge_keys() {
       }
     }
     fs.writeFileSync(to, JSON.stringify(keys, null, 2) + "\n");
-  ' "$(native "$repo/keys.json")" "$(native "$box/keys.json")"
-  echo "Merged the repo's keys.json into the sandbox's."
+  ' "$(native "$1")" "$(native "$box/keys.json")"
+  echo "Merged $1 into the sandbox's keys.json."
 }
 
 # Herdr docks a new mod by itself only once its welcome is done, so the bar gets a layout: a clone
-# of Herdr's main (block ids unchanged, so the shipped jump keys find agents and spaces) with a
-# whistle anchor and bar under the status bar, as RECIPE.md's Install adds them.
+# of Herdr's main (block ids unchanged, so the shipped jump keys find agents and spaces) with
+# whistle's anchor (its own hints box off) and whistle-ui's bar and 0 px corner block under the
+# status bar.
 show_whistle() {
   home_env
   herdr-app do layout.clone '{"name":"main","as":"whistle-sandbox"}' >/dev/null
@@ -98,12 +103,14 @@ show_whistle() {
     const find = (n) => n.id === "work" ? n : (n.children || []).map(find).find(Boolean);
     const work = find(l) || l;
     work.children.push({ id: "whistle-anchor", type: "block", size: { px: 0 }, resizable: false,
-      content: { mod: "whistle", props: { anchor: true } } });
-    work.children.push({ id: "whistle", type: "block", size: { px: 22 }, resizable: false,
-      background: "chrome", content: { mod: "whistle" } });
+      content: { mod: "whistle", props: { anchor: true, hints: false } } });
+    work.children.push({ id: "whistle-bar", type: "block", size: { px: 22 }, resizable: false,
+      background: "chrome", content: { mod: "whistle-ui" } });
+    work.children.push({ id: "whistle-corner", type: "block", size: { px: 0 }, resizable: false,
+      content: { mod: "whistle-ui", props: { corner: true } } });
     fs.writeFileSync(f, JSON.stringify(l, null, 2) + "\n");
   ' "$(native "$box/layouts/whistle-sandbox.json")"
-  echo "Showing layout whistle-sandbox (Herdr's main with whistle's bar)."
+  echo "Showing layout whistle-sandbox (Herdr's main with whistle's anchor and whistle-ui)."
 }
 
 case "${1:-}" in
@@ -119,7 +126,8 @@ case "${1:-}" in
     open_window
     # Herdr writes its own keys.json and stock mods on the first start; whistle goes in after.
     for _ in $(seq 1 30); do [ -f "$box/keys.json" ] && break; sleep 1; done
-    if [ "${2:-}" = "--whistle" ]; then copy_whistle; merge_keys; show_whistle; fi
+    # whistle-ui's keys go in first: its alt-, wins over whistle's.
+    if [ "${2:-}" = "--whistle" ]; then copy_whistle; merge_keys "$repo/mods/whistle-ui/keys.json"; merge_keys "$repo/keys.json"; show_whistle; fi
     ;;
   open) open_window ;;
   close) close_window ;;
@@ -134,5 +142,5 @@ $task"
     ;;
   status) home_env; herdr-app status ;;
   path) echo "$box" ;;
-  *) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

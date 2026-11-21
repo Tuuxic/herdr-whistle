@@ -4,8 +4,8 @@
 // reads Herdr into `world`, calls step on each command, key press and tick, carries out the
 // effects it returns and feeds write outcomes back. It decides nothing itself.
 //
-// Herdr's keys.json runs whistle's commands: "whistle" (ctrl-space: TYPE <-> WHISTLE) and
-// "type" (back to TYPE). In WHISTLE the bar holds the keyboard and its key presses go to step.
+// Herdr's keys.json runs whistle's commands: "switch-mode" (ctrl-space: TYPE <-> WHISTLE) and
+// "mode:type" (back to TYPE). In WHISTLE the bar holds the keyboard and its key presses go to step.
 // Keys whistle claims in keys.json's mod:whistle section come back as "key-<key>" commands,
 // and jump keys as "<verb>:<block>" (alt-a: "focus:agents").
 // Its config comes from mappings.json (this folder) and whistle.json (Herdr's home), read on
@@ -103,10 +103,10 @@ export default class Whistle extends View {
     this.configFiles = { defaults, user };
   }
 
-  // The shared state keynav needs (docs/contracts/keynav.md): the driver entry, old v1
-  // announcements, and each shown mod block's entry and request slot.
+  // The shared state keynav needs (docs/contracts/keynav.md): the driver entry and
+  // each shown mod block's entry and request slot.
   keynavShared(tree) {
-    const out = { keynav: shared("keynav") ?? null, "keynav.fields": shared("keynav.fields") ?? null };
+    const out = { keynav: shared("keynav") ?? null };
     for (const b of modBlocks(tree)) {
       for (const k of [entryKey(b.key), requestKey(b.key)]) if (!(k in out)) out[k] = shared(k) ?? null;
     }

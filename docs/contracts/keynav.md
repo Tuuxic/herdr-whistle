@@ -33,7 +33,7 @@ Keynav carries only what every kind of field shares ([ADR 0017](../adr/0017-keyn
 - **Declared keys**: everything your field does on its own, such as Space to show an item or
   `d` to delete one.
 - **The driver's public commands and state**: anything driver-specific. A field whose pick
-  should land in whistle's TYPE runs `whistle.type` after picking (docs/contracts/commands.md);
+  should land in whistle's TYPE runs `whistle.mode:type` after picking (docs/contracts/commands.md);
   in TYPE it does nothing, so the field needs no check of the mode.
 
 Keynav never grows a request or a move for one driver's behaviour, and a request never names
@@ -99,7 +99,7 @@ longer in the layout are ignored, so a field never has to clean up after itself.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
     { "world": { "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
@@ -131,10 +131,10 @@ whether the terminal is selected, read `onTerminal` in whistle state (docs/contr
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }] },
-    { "command": "whistle",
+    { "command": "switch-mode",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "setShared": "keynav", "value": { "v": 3, "active": null } }] }
   ]
 }
@@ -160,7 +160,7 @@ go to a space, go to an agent and type there, flip a setting.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }] },
     { "key": "enter", "effects": [{ "run": "files.keynav-pick", "args": {} }, { "focusBar": true }] }
@@ -193,7 +193,7 @@ again to change the keys at any time.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] },
     { "key": "ctrl-l", "hints": { "title": "Files", "items": [{ "key": "d", "label": "Delete", "group": false }] } },
     { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusBar": true }] }
@@ -223,7 +223,7 @@ field's like any declared key. A declared chord is always a config problem.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "j": "Jump" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }],
       "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, down's own key; it counts once you unbind down" }] } }
@@ -247,7 +247,7 @@ field's like any declared key. A declared chord is always a config problem.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "x", "effects": [], "handled": false }
   ]
@@ -275,7 +275,7 @@ was selected.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
         "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} },
@@ -306,7 +306,7 @@ the driver selects the terminal and names no field.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
@@ -322,12 +322,9 @@ the driver selects the terminal and names no field.
 ### 9. `v` goes up only on a breaking change
 
 New optional fields come under the same `v`. A driver skips an entry whose `v` it doesn't
-speak. Whistle still drives a field on keynav v2 as v2 says (see History): it sends pick as
-`<mod>.keynav-open` and reads `{ to: "terminal", at }` and `{ hold: true, at }`, and its
-settings ask the field to update its `keynav.js`. The driver's entry says `v: 3`; a v2 copy
-reads only its `active`, so it still sees itself selected.
+speak: the block isn't a field, and nothing reaches it. Whistle speaks `v: 3`.
 
-```json example A field on keynav v2 is still driven, and settings say to update it
+```json example An entry in a v whistle doesn't speak isn't a field
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -341,41 +338,9 @@ reads only its `active`, so it still sees itself selected.
     "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "ctrl-l",
-      "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
-      "model": { "field": "files", "fieldProblems": [{ "source": "keynav", "detail": "files speaks keynav v2: whistle still drives it, but update its keynav.js to v3" }] } },
-    { "key": "enter", "effects": [{ "run": "files.keynav-open", "args": {} }, { "focusBar": true }] },
-    { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
-        "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} },
-        "keynav.request:files {}": { "to": "terminal", "at": 50 } } },
-      "tick": 120,
-      "effects": [{ "focusBar": true }, { "setShared": "keynav", "value": { "v": 3, "active": null } }],
-      "model": { "mode": "whistle", "field": "main", "pane": "p2" } }
-  ]
-}
-```
-
-A copy still announcing keynav v1 (`shared("keynav.fields")`) isn't a field, and whistle's
-settings say to update its `keynav.js`.
-
-```json example A copy on keynav v1 isn't a field, and settings say to update it
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top", "type": "row", "children": [
-        { "id": "main", "type": "block", "content": { "pane": {} } },
-        { "id": "files", "type": "block", "content": { "mod": "files" } }
-      ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
-    ] },
-    "focused": { "pane": "p1" },
-    "shared": { "keynav.fields": { "files {}": { "v": 1, "mod": "files", "props": {}, "label": "Files" } } }
-  },
-  "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [],
-      "model": { "field": "main", "fieldProblems": [{ "source": "keynav", "detail": "files speaks keynav v1, which whistle no longer drives; update its keynav.js" }] } }
+      "model": { "field": "main" }, "bar": { "marker": null } }
   ]
 }
 ```
@@ -406,12 +371,11 @@ keynav.js breaks 1 rule of keynav v3:
 | `field key` | The field key's form: folder, a space, props as JSON with object keys sorted at every depth (objects inside arrays too) and no spaces. |
 | `entry` | `announce` writes `{ v: 3, label, keys }` to the field's entry and returns its field key. |
 | `announce again` | Announcing again changes the label and the declared keys. |
-| `no v1` | Nothing goes to v1's `keynav.fields` or `keynav.request`. |
 | `active` | `isActive` follows `shared("keynav").active`, for this field only. |
-| `moves` | `keynav-up`, `-down`, `-left`, `-right` and `-pick` read as moves, nothing else does (v2's `-open` included). |
+| `moves` | `keynav-up`, `-down`, `-left`, `-right` and `-pick` read as moves, nothing else does. |
 | `declared keys` | `keynav-key-<key>` reads as the key, spelled as written. |
-| `terminal request` | `toTerminal` writes `{ after: "terminal", at }` to the field's request slot, `at` in ms, and nothing else (not v2's `to`). |
-| `hold request` | `keepKeys` writes `{ after: "hold", at }` to the field's request slot (not v2's `hold`). |
+| `terminal request` | `toTerminal` writes `{ after: "terminal", at }` to the field's request slot, `at` in ms, and nothing else. |
+| `hold request` | `keepKeys` writes `{ after: "hold", at }` to the field's request slot, and nothing else. |
 | `entered` | `entered` is true once each time the field becomes active. |
 
 `HERDR_APP=<path>` picks the `herdr-app` to run, such as the minimum Herdr your mod supports.
@@ -432,11 +396,5 @@ running.
 
 ## History
 
-- `v: 3` (whistle 1.1.0): the move open became **pick** (`<mod>.keynav-pick`), and requests
-  took one shape, `{ after: "terminal" | "hold", at }`, in place of `{ to: "terminal", at }`
-  and `{ hold: true, at }` ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)).
-  Whistle still drives v2 fields as v2 says, and its settings ask them to update.
-- `v: 2` (whistle 1.0.0): an entry and a request slot per field, declared keys; `pane` left
-  the driver's entry (it's in whistle's state now). Breaks v1: `keynav.fields`,
-  `keynav.request` and `keynav-key-<char>` for every character are gone.
-- `v: 1` (before 1.0.0): one shared `keynav.fields` object and one request slot.
+- `v: 3` (whistle 1.1.0): the version this page describes
+  ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)).

@@ -52,6 +52,48 @@ export const MODS = "mods";
 
 export const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
+// Whistle's commands (docs/contracts/commands.md): "whistle.<command>" or
+// "whistle.<command>:<argument>", the argument everything after the first colon. Herdr hands a
+// mod's command over as one string and never its args (#58), so each command takes at most one
+// argument and declares its kind: none, plain (the string as it is: a block, a mod), one of a few
+// words, or JSON (where a command needs several values). A plain argument is never parsed as
+// JSON. The names and their arguments live here only.
+const NONE = { arg: "none" }, PLAIN = { arg: "plain" };
+const nonEmpty = (s) => typeof s === "string" && s !== "";
+const COMMANDS = {
+  "switch-mode": NONE, mode: { arg: ["type", "whistle"] }, on: NONE, off: NONE, settings: NONE,
+  field: PLAIN, focus: PLAIN, toggle: PLAIN, "toggle-keep-mode": PLAIN,
+  "mappings-on": PLAIN, "mappings-off": PLAIN,
+  // { "mod": "claude-hints", "keys": ["g", "q"] }: the keys in Herdr's key names.
+  "keep-mapping": { arg: "json", valid: (v) => isObject(v) && nonEmpty(v.mod) && Array.isArray(v.keys) && v.keys.length > 0 && v.keys.every(nonEmpty) },
+};
+
+// A command as Herdr hands it over (no "whistle." before it): { name, arg: undefined (none) |
+// the plain string | the JSON value } | null: no whistle command (an unknown name, or an
+// argument that isn't the kind the command takes: missing, extra, a word it doesn't know, JSON
+// that doesn't parse or lacks a field).
+export function parseCommand(c) {
+  if (typeof c !== "string") return null;
+  const colon = c.indexOf(":");
+  const name = colon < 0 ? c : c.slice(0, colon), raw = colon < 0 ? null : c.slice(colon + 1);
+  const spec = Object.prototype.hasOwnProperty.call(COMMANDS, name) ? COMMANDS[name] : null;
+  if (!spec) return null;
+  if (spec.arg === "none") return raw === null ? { name } : null;
+  if (!raw) return null;
+  if (Array.isArray(spec.arg)) return spec.arg.includes(raw) ? { name, arg: raw } : null;
+  if (spec.arg === "plain") return { name, arg: raw };
+  let v;
+  try { v = JSON.parse(raw); } catch { return null; }
+  return spec.valid(v) ? { name, arg: v } : null;
+}
+
+// The settings commands as a client runs them, after "whistle.": switchMod("alpha", false) is
+// "mappings-off:alpha", keep("alpha", ["g", "d"]) is 'keep-mapping:{"mod":"alpha","keys":["g","d"]}'.
+export const settingsCommandFor = {
+  switchMod: (mod, on) => `${on ? "mappings-on" : "mappings-off"}:${mod}`,
+  keep: (mod, keys) => `keep-mapping:${JSON.stringify({ mod, keys })}`,
+};
+
 // One file's text against its last good version (good: { text, json } | null):
 // { good, missing } | { good, broken: why } | { good: the new version }. A text of undefined
 // is a file not read yet: { good, unread }.
@@ -90,9 +132,8 @@ function command(written, args, commands) {
   return { run: written, args: args ?? {} };
 }
 
-// Whistle's own commands a mapping can run (docs/contracts/commands.md): those that need a
-// block ("whistle.field:<block>") and those that don't.
-export const VERBS = ["whistle", "type", "on", "off", "settings"];
+// The verbs: whistle's commands that act on a block ("whistle.field:<block>"), which a mapping
+// may also give as args ({ "block": "<block>" }).
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
 // The verb a jump key may add to keep the mode it was pressed in (ADR 0014).
 export const KEEP_MODE = "toggle-keep-mode";
@@ -101,16 +142,18 @@ export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
 // The block verb a jump verb runs: toggle-keep-mode runs as toggle.
 export const runsAs = (verb) => (verb === KEEP_MODE ? "toggle" : verb);
 
-// A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
-// | a reason it's bad.
+// A whistle.<command> mapping's command as written: { run: "whistle.<verb>", args: { block } }
+// for a verb, { run: as written, args: {} } for any other command (parseCommand) | a reason
+// it's bad.
 function whistleCommand(written, args) {
   const { verb: name, block: arg } = verbAndBlock(written);
   const v = name.slice("whistle.".length);
-  if (VERBS.includes(v)) return { run: name, args: {} };
-  if (!JUMP_VERBS.includes(v)) return `unknown whistle command ${name}`;
-  const block = arg ?? args?.block;
-  if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
-  return { run: `whistle.${runsAs(v)}`, args: { block } };
+  if (JUMP_VERBS.includes(v)) {
+    const block = arg ?? args?.block;
+    if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
+    return { run: `whistle.${runsAs(v)}`, args: { block } };
+  }
+  return parseCommand(written.slice("whistle.".length)) ? { run: written, args: {} } : `unknown whistle command ${written}`;
 }
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
@@ -119,17 +162,17 @@ function whistleCommand(written, args) {
 // doesn't parse is the claims' problem, not listed here.
 // Also a switch key in global that names another folder's switch command while none names this
 // copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)
-// never gets "whistle.whistle" (issue #35). Whistle only reads global; it never writes it.
+// never gets "whistle.switch-mode" (issue #35). Whistle only reads global; it never writes it.
 export function keysProblems(text, folder) {
   let all;
   try { all = JSON.parse(text ?? "null"); } catch { return []; }
   if (!isObject(all)) return [];
   const out = [];
   const global = isObject(all.global) ? Object.entries(all.global) : [];
-  if (!global.some(([, a]) => a === `${folder}.whistle`)) {
+  if (!global.some(([, a]) => a === `${folder}.switch-mode`)) {
     for (const [key, action] of global) {
-      if (typeof action !== "string" || !/^[^.]+\.whistle$/.test(action)) continue;
-      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.whistle` });
+      if (typeof action !== "string" || !/^[^.]+\.switch-mode$/.test(action)) continue;
+      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.switch-mode` });
     }
   }
   for (const [section, keys] of Object.entries(all)) {
@@ -137,9 +180,8 @@ export function keysProblems(text, folder) {
     for (const [key, action] of Object.entries(keys)) {
       if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
       const c = action.slice(folder.length + 1);
-      const { verb, block } = verbAndBlock(c);
-      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb)) continue;
-      const why = block === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
+      if (c.startsWith("key-") || parseCommand(c)) continue;
+      const why = JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
       out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
     }
   }
@@ -281,27 +323,10 @@ function badEntry(entry) {
   return null;
 }
 
-// Own-key actions whistle no longer has: a layer that sets one is ignored and listed, with why.
-const GONE = {
-  back: "whistle has no back key any more; it's ignored (Escape ends a key sequence)",
-};
-
-// Own-key actions renamed, old name -> new: a layer that sets the old name is honoured as the
-// new one (unless it sets the new one too, which wins) and listed as a config problem.
-const RENAMED = { open: "pick" };
-
 // A layer's own keys over the merged ones below: action by action.
 function mergeKeys(base, over, ctx) {
   const out = { ...base };
-  const actions = {};
   for (const [action, v] of Object.entries(over)) {
-    const now = RENAMED[action];
-    if (!now) { actions[action] = v; continue; }
-    ctx.problem(`keys › ${action} is now ${JSON.stringify(now)}: rename it`);
-    if (!Object.hasOwn(over, now)) actions[now] = v;
-  }
-  for (const [action, v] of Object.entries(actions)) {
-    if (Object.hasOwn(GONE, action)) { ctx.problem(`keys › ${action}: ${GONE[action]}`); continue; }
     if (!ACTIONS[action]) { ctx.problem(`keys › ${action}: unknown action`); continue; }
     if (v === null) { delete out[action]; continue; }
     if (!Array.isArray(v)) { ctx.problem(`keys › ${action}: should be a list of keys`); continue; }
