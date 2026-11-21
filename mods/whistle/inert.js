@@ -1,4 +1,4 @@
-// Inert (ADR 0012): whistle loaded but standing aside, because it can't run safely. Pure: it
+// Inert (ADR 0002): whistle loaded but standing aside, because it can't run safely. Pure: it
 // reads only the world it is given.
 //
 //   - Herdr too old: world.herdr (updates().app.version) is older than MIN_HERDR, or unknown.

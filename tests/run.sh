@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs whistle's tests on Herdr's own engine: builds a throwaway test mod in a fresh temp folder
-# and loads it with `herdr-app check` (ADR 0013), once per suite. A failing case throws, so the
+# and loads it with `herdr-app check` (ADR 0003), once per suite. A failing case throws, so the
 # check fails and lists every failure. Exits non-zero on failure.
 #
 # One check per suite: `check` interrupts a mod whose loading runs longer than about half a

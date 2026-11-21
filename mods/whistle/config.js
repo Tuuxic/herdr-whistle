@@ -1,10 +1,10 @@
-// Whistle's config (ADR 0004, ADR 0007): the config layers, each over the one before:
+// Whistle's config (ADR 0010, ADR 0011): the config layers, each over the one before:
 //   1. the defaults: mappings.json in whistle's folder (an update replaces it)
 //   2. the layout's whistle block: its "mappings" and "keys" props
 //   3. whistle.json in Herdr's home: the person's own; nothing replaces it
 //   (between 1 and 2: mod mappings, from shared("whistle.mappings"), while each mod is in the layout)
 //
-// Mods' offers (ADR 0007, ADR 0008) and a "mods" section switching mods off: see compose.
+// Mods' offers (ADR 0011, ADR 0012) and a "mods" section switching mods off: see compose.
 //
 // Two sections, apart: "map" (mappings: key -> [label, command, args?, "type"?], or a group
 // { name, map } whose keys follow) and "keys" (own keys: action -> list of keys). A key set to
@@ -108,7 +108,7 @@ export function readFile(good, text) {
 }
 
 // A command as written, "<verb>" or "<verb>:<block>": { verb, block: everything after the
-// first colon (ADR 0014) | null }. A Herdr command's "<name>:<arg>" splits the same way.
+// first colon (ADR 0007) | null }. A Herdr command's "<name>:<arg>" splits the same way.
 export function verbAndBlock(written) {
   const colon = written.indexOf(":");
   return colon > 0 ? { verb: written.slice(0, colon), block: written.slice(colon + 1) } : { verb: written, block: null };
@@ -135,7 +135,7 @@ function command(written, args, commands) {
 // The verbs: whistle's commands that act on a block ("whistle.field:<block>"), which a mapping
 // may also give as args ({ "block": "<block>" }).
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
-// The verb a jump key may add to keep the mode it was pressed in (ADR 0014).
+// The verb a jump key may add to keep the mode it was pressed in (ADR 0007).
 export const KEEP_MODE = "toggle-keep-mode";
 // The verbs a jump key (keys.json "whistle.<verb>:<block>") may run.
 export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
@@ -158,7 +158,7 @@ function whistleCommand(written, args) {
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
 // config problems: a command whistle doesn't answer to, such as a jump key with an unknown verb
-// (ADR 0014). A block the layout lacks is not one (pressed, it flashes). A keys.json that
+// (ADR 0007). A block the layout lacks is not one (pressed, it flashes). A keys.json that
 // doesn't parse is the claims' problem, not listed here.
 // Also a switch key in global that names another folder's switch command while none names this
 // copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)
@@ -251,7 +251,7 @@ function mergeMap(base, over, ctx, path) {
 // The mods' offers ([{ name, map }], in layout order) over the merged map below: a key one mod
 // offers is added (a group merged into the one below); groups that several mods offer on one
 // key merge key by key, titled by the first; any other key two mods offer, or a mod offers on
-// an own key (outside a key sequence), is a mapping conflict and counts for neither (ADR 0008).
+// an own key (outside a key sequence), is a mapping conflict and counts for neither (ADR 0012).
 // Add-only: a mod can't take a key away.
 function mergeOffers(base, offers, ctx, path) {
   const out = { ...base };

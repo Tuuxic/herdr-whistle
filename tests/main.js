@@ -1,5 +1,5 @@
 // The test mod: imports the suites of this check (suites.js, which tests/run.sh writes: one
-// suite per check, ADR 0013) and throws one Error listing every failure, grouped by suite, so
+// suite per check, ADR 0003) and throws one Error listing every failure, grouped by suite, so
 // `herdr-app check` fails with all of them. tests/run.sh copies it next to the core's modules (a mod can't import from
 // outside its own folder).
 

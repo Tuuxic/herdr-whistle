@@ -1,4 +1,4 @@
-// Mod mappings (issue #6, ADR 0007) and mapping conflicts (issue #7, ADR 0008): mods offer
+// Mod mappings (issue #6, ADR 0011) and mapping conflicts (issue #7, ADR 0012): mods offer
 // add-only mappings in shared("whistle.mappings") under their name, as the layer between the
 // defaults and the layout, counting only while the mod has a block in the shown layout. Two mods
 // on one key, or a mod on an own key, count for neither until a higher layer maps the key or a

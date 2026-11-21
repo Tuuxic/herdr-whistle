@@ -234,7 +234,7 @@ can't tell you the terminal is selected. That's on purpose: keynav is how a *mod
 Herdr's own pane, not a mod; whistle drives it itself with Herdr's pane commands, as it drives
 stock fields with Herdr's commands. So the terminal is whistle's own field, and whistle state
 says when it is selected. See
-[ADR 0016](../adr/0016-the-terminal-is-whistles-own-field-whistle-state-says-when-it-is-selected.md).
+[ADR 0015](../adr/0015-the-terminal-is-whistles-own-field.md).
 
 ### 7. `field` is the selected field's block id
 

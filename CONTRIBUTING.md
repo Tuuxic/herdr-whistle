@@ -5,14 +5,14 @@ why: [docs/adr/](docs/adr). Specs and tickets are GitHub issues.
 
 ## The repo
 
-The repo is laid out like a Herdr home ([ADR 0005](docs/adr/0005-repo-laid-out-like-a-herdr-home.md)):
+The repo is laid out like a Herdr home ([ADR 0001](docs/adr/0001-repo-laid-out-like-a-herdr-home.md)):
 `mods/whistle/` is the mod as it ships and `keys.json` holds the lines it adds. The rest stays
 outside the mod: the docs (`README.md`, [docs/guide.md](docs/guide.md),
 [docs/authors.md](docs/authors.md), the contracts in [docs/contracts/](docs/contracts),
 [RECIPE.md](RECIPE.md) for installing agents), the keynav checker in
 [kit/keynav-checker/](kit/keynav-checker), the tests in `tests/` and the scripts in `scripts/`.
 
-In `mods/whistle/` ([ADR 0011](docs/adr/0011-pure-step-core-behind-one-effects-shell.md)):
+In `mods/whistle/` ([ADR 0004](docs/adr/0004-pure-step-core-behind-one-effects-shell.md)):
 
 - **The core**, pure and synchronous, imports nothing from Herdr: `step.js` (`step(model,
   input, world) -> { model, effects, handled }`), with `fields.js` (fields from the layout:
@@ -20,7 +20,7 @@ In `mods/whistle/` ([ADR 0011](docs/adr/0011-pure-step-core-behind-one-effects-s
   from mappings), `keymap.js` (what a key does), `claims.js` (claimed keys in keys.json),
   `block.js` (the layout's whistle blocks, each the anchor), `inert.js`, `keynames.js`,
   `facts.js` (the hint items and config whistle publishes) and `version.js`. Whistle decides no
-  looks ([ADR 0020](docs/adr/0020-whistle-publishes-facts-clients-show-them.md)).
+  looks ([ADR 0006](docs/adr/0006-whistle-publishes-facts-clients-show-them.md)).
 - **The shell**, `main.js`: reads Herdr into `world`, feeds `step` its inputs (commands, keys,
   ticks, write results) and carries out the effects. `anchor.js` is the anchor's block, which
   draws nothing and holds the keyboard.
@@ -42,7 +42,7 @@ bash tests/run.sh
 ```
 
 It needs only `herdr-app` on the PATH (`HERDR_APP` picks another). Tests run on Herdr's own
-engine through `herdr-app check` ([ADR 0013](docs/adr/0013-tests-run-on-herdr-app-check-with-spec-examples-as-fixtures.md)):
+engine through `herdr-app check` ([ADR 0003](docs/adr/0003-tests-run-on-herdr-app-check-with-spec-examples-as-fixtures.md)):
 `run.sh` builds a throwaway test mod per suite (`tests/*.test.js`) and checks each; a failing
 case fails the check and lists every failure. `check` stops a mod whose loading runs longer
 than about half a second, so `run.sh` prints each suite's time; split a suite that nears it.
@@ -89,7 +89,7 @@ Windows).
 
 ## How work lands
 
-`main` is the release ([ADR 0012](docs/adr/0012-main-is-the-release-whistle-carries-its-own-version.md)):
+`main` is the release ([ADR 0002](docs/adr/0002-main-is-the-release-whistle-carries-its-own-version.md)):
 what people install from herdr.dev. Work lands on the long-lived `next` branch, one slice at a
 time: a slice is vertical (core, shell, scenarios and its docs together) and branches from
 `next`, and merges back once `run.sh` passes. A slice that changes a public

@@ -1,7 +1,7 @@
 # Changelog
 
 Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com), semver over
-every public surface: ADR 0012). Agents relay these entries when they update whistle
+every public surface: ADR 0002). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
 ## v2.0.0 (unreleased)
@@ -275,7 +275,7 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   Copy the new `mods/whistle/keynav.js`: its functions keep their names, `move` reads `pick`,
   and `toTerminal` and `keepKeys` write the new shape. Moves carry only what every field
   shares; anything one field does goes in its declared keys, and a field whose pick should
-  land in TYPE runs `whistle.type` itself (ADR 0017).
+  land in TYPE runs `whistle.type` itself (ADR 0014).
 - Whistle still drives v2 fields as before (`keynav-open`, `{ to }` and `{ hold }`), and its
   settings ask them to update their `keynav.js`. v1 stays unsupported.
 - The keynav checker checks keynav v3, and names the rule a copy breaks that still reads
@@ -401,7 +401,7 @@ From a whistle older than 1.0 (a copy without `mods/whistle/version.js`):
   field, `false` otherwise (TYPE, switched off, a keynav or stock field selected). Keynav's
   `active` is `null` for both the terminal and a stock field, so read `onTerminal` to mark the
   selected terminal: `mode === "whistle" && onTerminal && pane === <your pane>`. The terminal
-  is whistle's own field, never a keynav field (ADR 0016). `readWhistle()` gives it.
+  is whistle's own field, never a keynav field (ADR 0015). `readWhistle()` gives it.
 
 ### Keynav authors
 

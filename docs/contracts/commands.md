@@ -74,7 +74,7 @@ takes you to a field:
 
 - Spelling: `whistle.<verb>:<block>`, with one of the four verbs above. Everything after the
   first colon is the block id, exactly as written, colons included: `whistle.field:test:stay`
-  names block `test:stay` (ADR 0014).
+  names block `test:stay` (ADR 0007).
 - A jump key runs its verb and goes to WHISTLE, from TYPE or WHISTLE. Only `toggle-keep-mode`
   keeps the mode it was pressed in. There is no `field-keep-mode` or `focus-keep-mode`
   (selecting a field needs WHISTLE): they are unknown commands.
@@ -441,7 +441,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
 ## Stable and may change
 
 - Stable: every command and verb above, its argument's kind, the jump-key spelling
-  `whistle.<verb>:<block>` (ADR 0014), and the settings commands' spellings.
+  `whistle.<verb>:<block>` (ADR 0007), and the settings commands' spellings.
 - `whistle.key-<key>` is the form whistle writes for the keys it claims in keys.json
   (see the guide). It may change; don't bind it yourself.
 

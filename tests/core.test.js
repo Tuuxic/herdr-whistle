@@ -1,5 +1,5 @@
-// The core's own rules: it imports nothing from Herdr (ADR 0011, ADR 0013), and version.js
-// agrees with mod.json (ADR 0012).
+// The core's own rules: it imports nothing from Herdr (ADR 0004, ADR 0003), and version.js
+// agrees with mod.json (ADR 0002).
 
 import { suite } from "./harness.js";
 import { VERSION, MIN_HERDR, HOME } from "./version.js";

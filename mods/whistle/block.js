@@ -1,7 +1,7 @@
 // The layout's whistle block (docs/contracts/layout-block.md), a public contract: the props a
 // layout gives whistle's blocks, read and checked. Pure: it reads only the layout it is given.
 //
-// Every whistle block is the anchor (ADR 0018, ADR 0020): the block whistle runs in, which holds
+// Every whistle block is the anchor (ADR 0005): the block whistle runs in, which holds
 // the layout's config layer. The first in layout order runs; the others are extra, listed and left
 // out. Blocks with the same props can't be told apart (a copy knows its block only by its props),
 // so whistle is inert (inert.js). With no whistle block in the layout, nothing runs.

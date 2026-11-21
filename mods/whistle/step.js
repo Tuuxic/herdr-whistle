@@ -1,9 +1,9 @@
-// Whistle's core (ADR 0011): step(model, input, world) -> { model, effects, handled }.
+// Whistle's core (ADR 0004): step(model, input, world) -> { model, effects, handled }.
 // Pure and synchronous: it imports nothing from `herdr`, never awaits, and never changes the
 // model it is given. main.js (the shell) reads Herdr into `world`, calls step, and carries out
 // the effects.
 //
-// Whistle decides no looks (ADR 0020): it publishes facts (the whistle state and the public keys
+// Whistle decides no looks (ADR 0006): it publishes facts (the whistle state and the public keys
 // PUBLIC) and takes commands; clients such as whistle-ui show them.
 //
 // model: { mode: "type" | "whistle", field: block id | null, recent: block ids (the field used
@@ -33,7 +33,7 @@
 //                                          run()): "mode:type", 'keep-mapping:{"mod":…}'
 //                                          (config.js parseCommand)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
-//        { command: "<verb>:<block>" }     a jump key (ADR 0014): "whistle.focus:agents"
+//        { command: "<verb>:<block>" }     a jump key (ADR 0007): "whistle.focus:agents"
 //        { key: "ctrl-l" }                 a key pressed on the anchor in WHISTLE (keynames.js)
 //        { tick: true }                    the shell's timer; world.now and world.anchorFocused
 //                                          say what changed (a click away, a late focus)
@@ -307,7 +307,7 @@ function whistleMapping(model, world, v, block) {
 }
 
 
-// A jump key (ADR 0014): "<verb>:<block>", everything after the first colon the block's id, as
+// A jump key (ADR 0007): "<verb>:<block>", everything after the first colon the block's id, as
 // Herdr hands over "whistle.<verb>:<block>" from keys.json. It runs its verb and goes to
 // WHISTLE from either mode (ending a key sequence); toggle-keep-mode keeps the mode. A verb
 // that can't run raises an event, in the mode it was pressed in.
@@ -518,7 +518,7 @@ function boundKey(world, action) {
   return found[0]?.keys ?? null;
 }
 
-// A jump key's command ("<verb>:<block>", ADR 0014) as Herdr hands it over.
+// A jump key's command ("<verb>:<block>", ADR 0007) as Herdr hands it over.
 function isJump(c) {
   if (typeof c !== "string") return false;
   const { verb, block } = verbAndBlock(c);
@@ -588,10 +588,10 @@ function told(out, world, why) {
 // The shared key the whistle state goes in (docs/contracts/state.md).
 export const STATE = "whistle";
 
-// The whistle state (ADR 0010): { v: 1, mode, enabled, sequence: null | { keys, group },
+// The whistle state (ADR 0006): { v: 1, mode, enabled, sequence: null | { keys, group },
 // pane, onTerminal, field, inert }. mode is "type" while WHISTLE is switched off; group is the
 // name of the group the sequence has reached; onTerminal says the terminal is the selected field
-// in WHISTLE (ADR 0016: keynav's active can't say it); field is the selected field's block id in
+// in WHISTLE (ADR 0015: keynav's active can't say it); field is the selected field's block id in
 // WHISTLE, else null; inert is why whistle stands aside ({ problem, fix }), else null.
 export function state(model, world) {
   const enabled = model.enabled !== false;
@@ -610,7 +610,7 @@ export function state(model, world) {
   };
 }
 
-// The public keys clients read beside the whistle state (ADR 0020; each its own page in
+// The public keys clients read beside the whistle state (ADR 0006; each its own page in
 // docs/contracts/): the hint items, the event feed and the config.
 export const PUBLIC = { hints: "whistle.hints", events: "whistle.events", config: "whistle.config" };
 

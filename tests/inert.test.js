@@ -1,4 +1,4 @@
-// Inert (ADR 0012): whistle stands aside on a Herdr older than MIN_HERDR, when another copy of
+// Inert (ADR 0002): whistle stands aside on a Herdr older than MIN_HERDR, when another copy of
 // whistle runs, or when whistle blocks share their props (block.test.js); the whistle state and
 // one Herdr notification say why.
 

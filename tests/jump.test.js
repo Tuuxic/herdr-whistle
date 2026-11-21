@@ -1,4 +1,4 @@
-// Jump keys (ADR 0014, docs/contracts/commands.md "Jump keys"): a keys.json line
+// Jump keys (ADR 0007, docs/contracts/commands.md "Jump keys"): a keys.json line
 // "whistle.<verb>:<block>" runs a verb on a block from either mode and goes to WHISTLE.
 // Herdr hands the command over as the text after "whistle.", so the scenarios send
 // { command: "focus:agents" }.
@@ -11,7 +11,7 @@ const json = (v) => JSON.stringify(v);
 const IN_STOCK = { layout: STOCK, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const HOLD = { focusAnchor: true };
-// Blocks whose ids hold colons: "test" and "test:stay" (ADR 0014's example).
+// Blocks whose ids hold colons: "test" and "test:stay" (ADR 0007's example).
 const COLONS = { id: "root", type: "column", children: [
   { id: "top", type: "row", children: [term("main"), term("test"), term("test:stay")] }, anchor] };
 // Herdr's stock layout with a hidden "log" terminal under it.

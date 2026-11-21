@@ -1,5 +1,5 @@
 // The layout's whistle block (docs/contracts/layout-block.md): every whistle block is the anchor
-// (ADR 0018, ADR 0020). Its props `mappings`, `keys`, `mods`, `enabled` and `nav`; a bad or
+// (ADR 0005). Its props `mappings`, `keys`, `mods`, `enabled` and `nav`; a bad or
 // unknown prop is skipped and listed as a config problem (source "layout"). The first block runs
 // whistle, the others are listed and left out; blocks with the same props make whistle inert.
 

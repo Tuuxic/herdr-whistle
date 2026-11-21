@@ -85,7 +85,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
   terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.mode:type`),
   `i` or Enter go back to TYPE in the selected pane. A click anywhere else ends WHISTLE; a
   click on whistle's block enters it.
-- **Jump keys** (ADR 0014): a keys.json line `whistle.<verb>:<block>` (verbs `field`, `focus`,
+- **Jump keys** (ADR 0007): a keys.json line `whistle.<verb>:<block>` (verbs `field`, `focus`,
   `toggle`, `toggle-keep-mode`; everything after the first colon is the block id, colons
   included) runs the verb from either mode and goes to WHISTLE; `toggle-keep-mode` keeps the
   mode. In WHISTLE it ends a key sequence first. A verb that can't run (no such block, a hidden
@@ -97,7 +97,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
 - **Moving** (the default own keys): `ctrl-h/j/k/l` select the field in that direction (for
   now, terminal blocks); `h/j/k/l` and the arrows move between the selected terminal's split
   panes.
-- **Config** (ADR 0004): layers, each over the one before: `mods/whistle/mappings.json` (the
+- **Config** (ADR 0010): layers, each over the one before: `mods/whistle/mappings.json` (the
   defaults), the layout's whistle block, the anchor (`mappings` and `keys` props), and
   `whistle.json` in Herdr's home. `map`: key → `[label, command,
   args?, "type"?]` or a group `{ name, map }` (nested; groups merge key by key); `keys`: own-key
@@ -114,7 +114,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
   `model.problems` (`problems(model)` adds keys.json's). A command Herdr refuses shows Herdr's
   own error message; whistle stays in its mode. keys.json isn't written while whistle's files aren't read yet, either doesn't
   parse, or mappings.json is missing.
-- **Claimed keys** (ADR 0001): whistle keeps its keys in keys.json's `mod:whistle` section
+- **Claimed keys** (ADR 0009): whistle keeps its keys in keys.json's `mod:whistle` section
   (`mod:<folder>` for a renamed copy) as `"<key>": "whistle.key-<key>"`: every chord among its
   own keys, and any other own key the `global` section or the shown layout's section binds.
   Keys compare by canonical name (`keynames.js` `canonicalKey`: cmd/win/super are one
@@ -134,12 +134,12 @@ text) takes the label for 2 s, or until the key sequence changes. A command
 - **Copies**: each copy announces its folder in `shared("whistle.copies")`. Of this copy
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
   runs, else the first folder by name. The others are inert.
-- **The anchor** (ADR 0018, ADR 0020): every whistle block is the anchor, 0 px, drawing
+- **The anchor** (ADR 0005): every whistle block is the anchor, 0 px, drawing
   nothing; each block is a copy, told apart by its props (`props()`). The first in layout order
   runs whistle; the others are config problems and their copies act on nothing. Blocks with
   the same props make whistle inert. A layout with no whistle block runs no whistle
   (docs/contracts/layout-block.md).
-- **Clients** (ADR 0020): whistle decides no looks. It draws no bar, hints or dialog, keeps no
+- **Clients** (ADR 0006): whistle decides no looks. It draws no bar, hints or dialog, keeps no
   flash, and opens no overlay. whistle-ui reads the public keys and draws them; it docks the
   hints box on its first shown bar, else its corner block shows it at the window's bottom right.
 - **Whistle state and the public keys**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
@@ -195,7 +195,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
   answers only to `whistle-2.*`, and switched off or inert it types those keys through. While no
   `global` line runs this copy's switch command (`whistle-2.switch-mode`), the running copy lists
   each one that runs another folder's (`whistle.switch-mode`) as a `keys.json` config problem. Whistle
-  only reads `global`; it never writes it (ADR 0001).
+  only reads `global`; it never writes it (ADR 0009).
 - `run()` returns `null` on a command Herdr refuses, and Herdr shows its own error toast; it
   doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then whistle
   raises a `command-failed` event).
@@ -270,7 +270,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
 7. **Make sure whistle shows, after asking.** Whistle runs in its block, the **anchor**, sized
    0 px, which draws nothing; whistle-ui shows its mode in the **bar**, which is only an aid
    and can be hidden, and its **corner block** (0 px) shows the hints when no bar shows
-   (ADR 0020). The blocks, in this order, along the layout's bottom (on `main`: the last
+   (ADR 0006). The blocks, in this order, along the layout's bottom (on `main`: the last
    children of the `work` column):
 
    ```json whistle-blocks
@@ -313,7 +313,7 @@ text) takes the label for 2 s, or until the key sequence changes. A command
 
 ## Integrate
 
-**Integration** (ADR 0015) makes the blocks of the person's shown layout into keynav fields,
+**Integration** (ADR 0017) makes the blocks of the person's shown layout into keynav fields,
 with a look for the selected field and a cursor that moves without showing anything. It is
 instructions for you, not part of whistle: whistle's code doesn't change, whistle ships no
 clones and never reads the record, and a keynav mod works the same without whistle. Herdr's
@@ -492,7 +492,7 @@ field table names only Herdr's own mods, so it never applies to the clone.
 ### Pick and Show
 
 The glossary's names, used in the hints too: Enter is **Pick** (whistle's hint says `pick`),
-and Space is **Show**, a declared key labelled `Show`. Where each behaviour goes is ADR 0017's
+and Space is **Show**, a declared key labelled `Show`. Where each behaviour goes is ADR 0014's
 line: the moves are only what every field shares, a field's own behaviour is a declared key,
 and anything whistle-specific goes through whistle's public commands
 (docs/contracts/commands.md).
