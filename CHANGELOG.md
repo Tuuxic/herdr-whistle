@@ -4,7 +4,7 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
-## v1.3.0 (unreleased)
+## v1.3.0 (2026-11-21)
 
 ### Upgrading
 
