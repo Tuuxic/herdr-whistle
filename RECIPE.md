@@ -132,7 +132,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   `layout.hide` (only bars that were showing), and show them again once they run.
 - **Anchor and bar spots** (ADR 0018): each whistle block in a layout is a copy, told apart by
   its props (`props()`). In a layout with an anchor (`anchor: true`, 0 px), the first anchor
-  runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
+  (of those whose props no other anchor shares) runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
   Without an anchor, a bar stands in for it, and a copy whose block is hidden rests: TYPE, no
   claims, no state, no spot moves; only the shown spot's copy runs
   (docs/contracts/layout-block.md, rule 6).
@@ -140,7 +140,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
   two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
   and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
-  sizes the shell measures) and closes the hints window, as effects. Settings
+  sizes the shell measures) and closes the hints window, as effects. Each bar's copy
+  publishes its drawn size in `whistle.barsize:<folder>:<bar>`, so the anchor, which draws no
+  bar, docks the box on the bar that shows, or on the picked spot's last size with every bar
+  hidden. Settings
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.
@@ -282,6 +285,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    them; Herdr's own: as below). Otherwise whistle won't show: on Herdr's own layouts
    (read-only; `main` for most new users) Herdr never places a new mod's block, not after the
    welcome and not after a restart.
+
+   **Move the layout's config onto the anchor** as you add it next to an existing bar: in a
+   layout with an anchor, whistle reads `mappings`, `keys`, `mods`, `enabled`, `hints` and
+   `nav` from the anchor alone and skips them on a bar (docs/contracts/layout-block.md, rule
+   14). So move each of these props to the anchor from the first whistle block, in layout
+   order, that has it (the one whistle read it from), and take them off every bar; `bar` and
+   the `hints*` place props stay on the bars. Whistle then works exactly as before.
    - **Herdr's own layout** (in `installed.json` as `layout:<name>`): ask, for example "Herdr's
      standard window layout can't show whistle's bar by itself. I can make your own copy of
      the layout with the bar at the bottom and switch to it; everything else stays as it is.
@@ -358,8 +368,10 @@ Then, without asking more:
    person's own now. Taken by something else, pick another free name and say so afterwards.
    The person's own layout is changed in place. **The anchor**: if the layout has whistle's
    bar but no whistle block with `anchor: true`, add the anchor from [Install](#install)
-   step 7 just before the bar, and leave the bar where it is; a layout without whistle's bar
-   gets both blocks. Tell the person afterwards that the bar can now be hidden without
+   step 7 just before the bar, and leave the bar where it is, and move the bar's config onto
+   it as Install step 7 says: move `mappings`, `keys`, `mods`, `enabled`, `hints` and `nav`
+   to the anchor from the first whistle block that has each, and take them off every bar. A
+   layout without whistle's bar gets both blocks. Tell the person afterwards that the bar can now be hidden without
    switching whistle off.
 2. **The mods.** For each block to adapt: Herdr's mods and third-party mods are cloned,
    `herdr-app do mod.clone '{"name":"<mod>","as":"<mod>-whistle"}'`, and the block's

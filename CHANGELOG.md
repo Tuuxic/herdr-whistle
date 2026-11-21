@@ -11,7 +11,10 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 1. **The anchor**: for each of the person's layouts that has whistle's bar but no whistle
    block with `anchor: true`, offer to add the anchor (RECIPE.md, Install step 7), by its
    result: "the bar becomes optional: you can hide it and whistle keeps working". Yes: add it
-   just before the bar, as Integrate does. Herdr's own layouts are never edited.
+   just before the bar, as Integrate does, and move the bar's `mappings`, `keys`, `mods`,
+   `enabled`, `hints` and `nav` to the anchor (each from the first whistle block that has it),
+   taking them off every bar, so whistle works exactly as before. Herdr's own layouts are
+   never edited.
 
 ### You
 
@@ -24,8 +27,13 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   the selected field and the key sequence; a bar shown again shows the current state.
   whistle.json's `bar` still picks which spot shows. Layouts without an anchor work as before:
   hiding their bar rests whistle.
+- **New**: when whistle stands aside (inert: Herdr too old, or another copy runs), one Herdr
+  notification says why, so you learn it with the bar hidden too. It comes again only if the
+  reason changes; the bar still says why as well (docs/guide.md, When whistle stands aside).
 - **New**: with every bar hidden, the hints box still opens inside a group, docked where the
-  picked bar spot would sit, or at the window's bottom right in a layout with no bar spot.
+  picked bar spot would sit (at the size that spot had when it last showed), or at the
+  window's bottom right in a layout with no bar spot. With a bar shown, the box docks on it
+  in a layout with an anchor too.
 
 ### Layout authors
 
@@ -34,7 +42,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
   spot's copy rests now holds only for layouts without an anchor.
 - **New**: a layout with more than one anchor keeps working: the first in layout order runs
-  whistle, and each other anchor stands aside and is listed as a config problem in settings.
+  whistle, and each other anchor is left out and listed as a config problem in settings.
+  Anchors with the same props can't tell which comes first, so all of them are left out, a
+  bar stands in, and settings list them; keep one.
 - **Changed**: in a layout with an anchor, the layout's config layer (`mappings`, `keys`,
   `mods`, `enabled`, `hints`, `nav`) is read from the anchor alone; on a bar these props are
   skipped and listed as a config problem. Bars keep `bar` and the hints' place props
