@@ -1,4 +1,4 @@
-// Spec examples as fixtures (ADR 0013): every tagged example block in the spec .md files
+// Spec examples as fixtures (ADR 0003): every tagged example block in the spec .md files
 // (texts.js, written by tests/run.sh) runs through step as a scenario. Also the reader itself.
 
 import { suite, examples } from "./harness.js";

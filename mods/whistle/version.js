@@ -1,4 +1,4 @@
-// Whistle's version and the oldest Herdr it runs on (ADR 0012). mod.json repeats both for
+// Whistle's version and the oldest Herdr it runs on (ADR 0002). mod.json repeats both for
 // people and agents (a mod can't import JSON); a test fails if they drift apart. Bump them
 // together with CHANGELOG.md at a release.
 

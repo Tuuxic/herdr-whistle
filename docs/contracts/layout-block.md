@@ -125,7 +125,7 @@ whistle-ui's `hints`, go on the client's own blocks.
 
 ### 5. Whistle runs in its block, the anchor, which draws nothing
 
-Every whistle block is the anchor (ADR 0018, ADR 0020). Whistle runs in it: it holds the
+Every whistle block is the anchor (ADR 0005). Whistle runs in it: it holds the
 keyboard in WHISTLE, takes whistle's commands, jump keys and claimed keys, and publishes the
 whistle state and its other public keys. It draws nothing, so size it 0 px. Whatever shows
 whistle is a client's, so hiding or showing a client's bar changes what you see, never what

@@ -15,3 +15,4 @@ work in WHISTLE).
 - Whistle owns only entries of exactly its own form; anything else in `mod:whistle` is the
   person's and wins. It never writes while keys.error exists or its config failed to load,
   and it puts the old text back if Herdr rejects the new one.
+- Whistle only reads keys.json's other sections; it never writes them.

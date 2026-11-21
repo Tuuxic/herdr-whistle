@@ -1,4 +1,4 @@
-// The anchor (ADR 0018): a 0 px block that draws nothing, only holds the keyboard for whistle in
+// The anchor (ADR 0005): a 0 px block that draws nothing, only holds the keyboard for whistle in
 // WHISTLE (handle) and passes the keys pressed there on (onKey). Clients draw the rest.
 
 import { div } from "gpui-kit";

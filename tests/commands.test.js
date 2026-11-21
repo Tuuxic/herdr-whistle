@@ -59,7 +59,7 @@ const SCENARIOS = [
     steps: [{ command: "off" }, { wrote: "whistle.json", ok: false, error: "denied", raised: [{ text: "couldn't write whistle.json: denied" }] }],
   },
 
-  // Whistle opens no dialog (ADR 0020): whistle-ui.settings opens whistle-ui's.
+  // Whistle opens no dialog (ADR 0006): whistle-ui.settings opens whistle-ui's.
   {
     name: "whistle.settings is a command whistle doesn't know: it opens nothing and fails",
     world: IN_TERMINAL,

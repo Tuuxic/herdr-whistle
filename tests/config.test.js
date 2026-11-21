@@ -1,4 +1,4 @@
-// Config layers (ADR 0004, ADR 0007): the defaults (mappings.json), the layout's whistle block
+// Config layers (ADR 0010, ADR 0011): the defaults (mappings.json), the layout's whistle block
 // and whistle.json, each over the one before; mappings ("map") and own keys ("keys") apart.
 
 import { suite, TEST_DEFAULTS } from "./harness.js";

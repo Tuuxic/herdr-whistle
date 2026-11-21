@@ -1,5 +1,5 @@
-// Whistle state (ADR 0010, docs/contracts/state.md): shared("whistle") = { v: 1, mode, enabled,
-// sequence, pane, onTerminal, field, inert } (onTerminal: ADR 0016), published as an effect when it changes and only
+// Whistle state (ADR 0006, docs/contracts/state.md): shared("whistle") = { v: 1, mode, enabled,
+// sequence, pane, onTerminal, field, inert } (onTerminal: ADR 0015), published as an effect when it changes and only
 // then; an inert copy publishes why (inert), and only when no other copy runs. Also the copyable reader in whistle.js.
 
 import { suite, DEFAULT_WORLD } from "./harness.js";

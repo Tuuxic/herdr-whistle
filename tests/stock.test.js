@@ -1,4 +1,4 @@
-// Stock fields (ADR 0006): Herdr's own spaces, tabs and agents blocks are fields whistle drives
+// Stock fields (ADR 0016): Herdr's own spaces, tabs and agents blocks are fields whistle drives
 // with Herdr's next/prev commands. They have no cursor: moving to an item opens it, and only
 // the whistle state says which one is selected. The files block is not a field.
 

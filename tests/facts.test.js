@@ -1,4 +1,4 @@
-// The facts whistle publishes beside its state (ADR 0020, facts.js): the hint items
+// The facts whistle publishes beside its state (ADR 0006, facts.js): the hint items
 // (whistle.hints) list the choices of the current key sequence; the config (whistle.config)
 // lists config problems, mapping conflicts and labelled overrides, and the mods whose mappings
 // can be switched off (issue #7, issue #10). Clients show them; whistle draws nothing.
@@ -130,7 +130,7 @@ const SCENARIOS = [
 ];
 
 // Switching a mod off (whistle.mappings-off writes whistle.json through config.js's switchMod),
-// and whistle picks the new text up on its next read (ADR 0011).
+// and whistle picks the new text up on its next read (ADR 0004).
 const MINE = { map: { n: ["Next tab", "tab.next"] } };
 const switched = switchMod(json(MINE), "alpha", false);
 const CONFLICT = { mods: ["alpha", "beta"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }), beta: entry({ g: ["Go", "beta.go"] }) } };

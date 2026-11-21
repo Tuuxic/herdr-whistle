@@ -1,4 +1,4 @@
-# Whistle's tests and the mod check on Herdr's own engine (ADR 0013), on the latest Herdr and
+# Whistle's tests and the mod check on Herdr's own engine (ADR 0003), on the latest Herdr and
 # on the minimum whistle declares in mods/whistle/version.js. Linux and macOS must pass;
 # Windows runs but doesn't block until it's shown to work.
 name: tests

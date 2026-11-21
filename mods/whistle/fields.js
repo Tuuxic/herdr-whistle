@@ -4,7 +4,7 @@
 // A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys }
 // for a keynav field. Kinds:
 //   - the terminal: each block that shows a pane;
-//   - stock fields: a block of one of Herdr's own spaces, tabs or agents mods (ADR 0006);
+//   - stock fields: a block of one of Herdr's own spaces, tabs or agents mods (ADR 0016);
 //   - keynav (docs/contracts/keynav.md): any other mod's block whose entry
 //     shared("keynav.field:<fieldKey>") says v 3. `shared` is the shared state the shell read
 //     ({ "<shared key>": value }); stale entries for blocks not in the layout never count.
@@ -15,7 +15,7 @@ export const TERMINAL = "terminal";
 export const STOCK = "stock";
 export const KEYNAV = "keynav";
 
-// The stock fields: Herdr's own mods, each to the Herdr commands its moves run (ADR 0006).
+// The stock fields: Herdr's own mods, each to the Herdr commands its moves run (ADR 0016).
 // This is the one place whistle names a mod, and only Herdr's own; no config adds to it. A
 // direction left out does nothing. `pick: "terminal"`: pick (and the move into the item's
 // content, `right`) goes on to the terminal field; otherwise pick stays (the item is already

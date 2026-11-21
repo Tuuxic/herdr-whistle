@@ -1,7 +1,7 @@
 // Layouts and worlds the scenarios share.
 
 export const term = (id) => ({ id, type: "block", content: { tab: "active", pane: {} } });
-// Whistle's block, the anchor (ADR 0018): every whistle block is one.
+// Whistle's block, the anchor (ADR 0005): every whistle block is one.
 export const anchor = { id: "anchor", type: "block", content: { mod: "whistle" } };
 
 // One terminal over the anchor: the usual layout.

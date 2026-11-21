@@ -1,6 +1,6 @@
 // Whistle: a keyboard mode for Herdr, borrowed from vim.
 //
-// This is the shell (ADR 0011). Whistle's behaviour lives in the pure core, step.js; the shell
+// This is the shell (ADR 0004). Whistle's behaviour lives in the pure core, step.js; the shell
 // reads Herdr into `world`, calls step on each command, key press and tick, carries out the
 // effects it returns and feeds write outcomes back. It decides nothing itself.
 //
@@ -11,7 +11,7 @@
 // Its config comes from mappings.json (this folder) and whistle.json (Herdr's home), read on
 // the same poll as keys.json; the core keeps each file's last good version.
 //
-// Every whistle block is the anchor (ADR 0018, ADR 0020), sized 0 px: it draws nothing and holds
+// Every whistle block is the anchor (ADR 0005), sized 0 px: it draws nothing and holds
 // the keyboard in WHISTLE. Whistle draws no bar, hints or settings: it publishes facts in public
 // shared keys (docs/contracts/) and clients such as whistle-ui show them.
 

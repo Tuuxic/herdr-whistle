@@ -42,7 +42,7 @@
 //
 // Whatever a scenario checks, a step that sets a private shared key of whistle's (any
 // "whistle.<name>" but the public keys and whistle.copies) or opens or closes an overlay fails:
-// whistle draws nothing and keeps no view state (ADR 0020).
+// whistle draws nothing and keeps no view state (ADR 0006).
 //   }
 
 import { VERSION, MIN_HERDR } from "./version.js";

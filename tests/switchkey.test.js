@@ -1,7 +1,7 @@
 // The switch key of a renamed copy (issue #35): Herdr hands a keys.json action to the mod its
 // prefix names, so a copy in mods/whistle-2/ answers only to "whistle-2.*". When the global key
 // bound to the switch command names another folder, the running copy lists a config problem
-// (source keys.json). Whistle only reads global; it never writes it (ADR 0001).
+// (source keys.json). Whistle only reads global; it never writes it (ADR 0009).
 
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";

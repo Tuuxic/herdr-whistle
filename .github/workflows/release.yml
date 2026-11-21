@@ -1,4 +1,4 @@
-# The release (ADR 0012): `main` is the release, so a push to `main` (merging the pull request
+# The release (ADR 0002): `main` is the release, so a push to `main` (merging the pull request
 # next -> main) tags it. It reads VERSION from mods/whistle/version.js; if the tag v<VERSION>
 # doesn't exist yet, it tags this commit, pushes the tag, and makes a GitHub release named after
 # it whose notes are that version's CHANGELOG.md entry. When the tag exists it does nothing.

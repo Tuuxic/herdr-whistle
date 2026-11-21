@@ -26,7 +26,7 @@ Whistle needs nothing from your mod beyond this, and your mod works the same wit
 
 ## What goes where
 
-Keynav carries only what every kind of field shares ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)):
+Keynav carries only what every kind of field shares ([ADR 0014](../adr/0014-keynav-moves-only-what-every-field-shares.md)):
 
 - **Moves**: up, down, left, right and **pick** (act on the item under the cursor: what that
   does is your field's to decide). The terminal and stock fields have them too.
@@ -115,7 +115,7 @@ longer in the layout are ignored, so a field never has to clean up after itself.
 changes. Draw your cursor while `active` is your key. It is `null` while the terminal or a stock
 field is selected too, because those are the driver's own fields, not keynav fields: to know
 whether the terminal is selected, read `onTerminal` in whistle state (docs/contracts/state.md;
-[ADR 0016](../adr/0016-the-terminal-is-whistles-own-field-whistle-state-says-when-it-is-selected.md)).
+[ADR 0015](../adr/0015-the-terminal-is-whistles-own-field.md)).
 
 ```json example Back to TYPE, keynav names no field
 {
@@ -397,4 +397,4 @@ running.
 ## History
 
 - `v: 3` (whistle 1.1.0): the version this page describes
-  ([ADR 0017](../adr/0017-keynav-moves-only-what-every-field-shares.md)).
+  ([ADR 0013](../adr/0013-keynav-fields-join-by-protocol.md)).

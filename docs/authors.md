@@ -47,7 +47,7 @@ It covers the helper, not your view: see [Checking your field](contracts/keynav.
 ## Versions and breaks
 
 Whistle's version follows semver over all nine contracts and both helpers
-([ADR 0012](adr/0012-main-is-the-release-whistle-carries-its-own-version.md)). Keynav, mod
+([ADR 0002](adr/0002-main-is-the-release-whistle-carries-its-own-version.md)). Keynav, mod
 mappings, whistle state, hints, events and config carry their own `v`, which goes up only on a breaking change; a
 reader ignores fields it doesn't know. Every change for you is in the
 [CHANGELOG](../CHANGELOG.md) under **Layout authors**, **Mod authors** or **Keynav authors**,

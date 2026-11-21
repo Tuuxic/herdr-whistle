@@ -1,4 +1,4 @@
-// Claimed keys (ADR 0001): whistle keeps its keys in keys.json's mod:whistle section, as
+// Claimed keys (ADR 0009): whistle keeps its keys in keys.json's mod:whistle section, as
 // "<key>": "whistle.key-<key>", by write effects; the write's outcome comes back as an input.
 
 import { suite } from "./harness.js";

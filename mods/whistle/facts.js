@@ -1,4 +1,4 @@
-// The facts whistle publishes beside its state (ADR 0020): the hint items (whistle.hints) and the
+// The facts whistle publishes beside its state (ADR 0006): the hint items (whistle.hints) and the
 // config (whistle.config), worked out from the core's model. Pure. Clients decide how to show
 // them; nothing here is about looks.
 
@@ -26,7 +26,7 @@ const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 // sequence has reached a group, its keys:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
 //   in the group's order, exit: what ends it ("Esc cancels") | null }.
-// Outside a sequence, the selected keynav field's declared keys (ADR 0009), if it has any that
+// Outside a sequence, the selected keynav field's declared keys (ADR 0013), if it has any that
 // count: { keys: "", title: the field's label, items: [{ key, label: the field's, group: false }],
 // exit: null }.
 export function hints(model, world) {
@@ -69,7 +69,7 @@ export function offered(world, mod, seq) {
   return v;
 }
 
-// A mapping conflict as whistle.config gives it (ADR 0008): { keys, seq, mods, own: the own
+// A mapping conflict as whistle.config gives it (ADR 0012): { keys, seq, mods, own: the own
 // key's action | null, text, keep: each mod's mapping there as written [{ mod, value }], for
 // whistle.keep-mapping }.
 function conflict(c, world) {

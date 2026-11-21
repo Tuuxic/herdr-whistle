@@ -1,10 +1,10 @@
-// RECIPE's Integrate section (Integration, issue #32, ADR 0015): instructions for the installing
+// RECIPE's Integrate section (Integration, issue #32, ADR 0017): instructions for the installing
 // agent, so these checks are on the text, against Herdr itself.
 //
 //   - The declared keys RECIPE gives for Herdr's blocks are the ticket's list, written out here
 //     (not read from the RECIPE): spaces and tabs n/r/x, Show on Space for spaces and agents
 //     (issue #43), files/changes none. Show's label is the glossary's name.
-//   - Pick into TYPE (issue #43, ADR 0017): on spaces and agents, pick runs the block's Herdr
+//   - Pick into TYPE (issue #43, ADR 0014): on spaces and agents, pick runs the block's Herdr
 //     command, then whistle.mode:type only when whistle is there (shared("whistle")); Show holds,
 //     never goes to the terminal. Aside is gone (#38).
 //   - Every Herdr command RECIPE names, in that table or as `herdr-app do <command>`, is one of
@@ -16,7 +16,7 @@
 // Pick's table is tagged `<!-- table integrate-pick -->`:
 //   | Block | Herdr command | Then |   Then: `whistle.mode:type` when whistle is there.
 //
-// The blocks (ADR 0018, ADR 0020): the blocks Install adds are one fenced block tagged
+// The blocks (ADR 0005, ADR 0006): the blocks Install adds are one fenced block tagged
 // ```json whistle-blocks``` (a JSON array): whistle's anchor (0 px) and whistle-ui's bar and
 // corner block (0 px). Put in a layout, block.js (the layout-block contract) must read the
 // anchor as the one whistle block, which runs, with no config problem. Integrate adds the same
@@ -82,7 +82,7 @@ export default suite("integrate", (t) => {
   t.check("Show never goes to the terminal", /\bnever[^.]*`\{ after: "terminal" \}`/.test(section), true);
   t.check("RECIPE offers no Aside", /\bAside\b|shift-space|Shift\+Space/.test(recipe ?? ""), false);
 
-  // The blocks Install adds (ADR 0020).
+  // The blocks Install adds (ADR 0006).
   const added = whistleBlocks(recipeSection("Install"));
   const layout = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } }, ...added] };
   const anchor = added.find((b) => b.content?.mod === "whistle");

@@ -1,5 +1,5 @@
 // whistle-ui's core: ui(published, world) -> { model, effects }, and command(c, published,
-// world) -> effects. Pure and synchronous like whistle's (ADR 0011): it imports nothing from
+// world) -> effects. Pure and synchronous like whistle's (ADR 0004): it imports nothing from
 // Herdr, and main.js (the shell) reads Herdr into its arguments and carries out the effects.
 // It reads only whistle's public contract (docs/contracts/), never whistle's own modules.
 //
