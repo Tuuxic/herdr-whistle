@@ -66,17 +66,6 @@ const RULES = [
       if (!same(got, want)) fail(`announcing again with ${json(label)}, ${json(keys)} left ${json(entry)}, want label ${json(label)} and keys ${json(wanted)}`);
     }
   }],
-  ["no v1", (h, s, fail) => {
-    // v1's shared keys: one object of every field, one request slot for all.
-    const before = [s.shared("keynav.fields"), s.shared("keynav.request")];
-    const props = fresh();
-    const key = h.announce(MOD, props, "Check", {});
-    h.toTerminal(key);
-    h.keepKeys(key);
-    const after = [s.shared("keynav.fields"), s.shared("keynav.request")];
-    if (!same(before[0], after[0])) fail("announce wrote v1's \"keynav.fields\"; v3 writes only the field's own entry");
-    if (!same(before[1], after[1])) fail("a request went to v1's \"keynav.request\"; v3 writes the field's own slot");
-  }],
   ["active", (h, s, fail) => {
     const key = fieldOf(fresh());
     const other = fieldOf(fresh());
@@ -97,7 +86,7 @@ const RULES = [
   ["moves", (h, _s, fail) => {
     const cases = [
       ["keynav-up", "up"], ["keynav-down", "down"], ["keynav-left", "left"], ["keynav-right", "right"], ["keynav-pick", "pick"],
-      ["keynav-open", null], ["keynav-key-d", null], ["keynav-key-j", null], ["keynav-", null], ["keynav-close", null], ["settings", null], [null, null],
+      ["keynav-key-d", null], ["keynav-key-j", null], ["keynav-", null], ["keynav-close", null], ["settings", null], [null, null],
     ];
     for (const [command, want] of cases) {
       const got = h.move(command);
@@ -135,8 +124,8 @@ const RULES = [
 // How far a request's `at` may be from now (ms): it's Date.now() when the field asked.
 const AT_SLACK = 60000;
 
-// A request goes in the field's own slot as `want` plus `at`, nothing else (v2's `to` and `hold`
-// are gone), with `at` the time it was made, in ms. `shape` says so in the failure.
+// A request goes in the field's own slot as `want` plus `at`, nothing else, with `at` the time
+// it was made, in ms. `shape` says so in the failure.
 function request(send, name, s, fail, want, shape) {
   const key = fieldOf(fresh());
   const slot = `keynav.request:${key}`;

@@ -103,10 +103,10 @@ export default class Whistle extends View {
     this.configFiles = { defaults, user };
   }
 
-  // The shared state keynav needs (docs/contracts/keynav.md): the driver entry, old v1
-  // announcements, and each shown mod block's entry and request slot.
+  // The shared state keynav needs (docs/contracts/keynav.md): the driver entry and
+  // each shown mod block's entry and request slot.
   keynavShared(tree) {
-    const out = { keynav: shared("keynav") ?? null, "keynav.fields": shared("keynav.fields") ?? null };
+    const out = { keynav: shared("keynav") ?? null };
     for (const b of modBlocks(tree)) {
       for (const k of [entryKey(b.key), requestKey(b.key)]) if (!(k in out)) out[k] = shared(k) ?? null;
     }

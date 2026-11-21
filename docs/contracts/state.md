@@ -185,7 +185,7 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:tree {}": { "v": 2, "label": "Tree", "keys": {} } }
+    "shared": { "keynav.field:tree {}": { "v": 3, "label": "Tree", "keys": {} } }
   },
   "steps": [
     { "command": "switch-mode" },

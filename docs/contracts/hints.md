@@ -78,7 +78,7 @@ selected and no sequence is under way: `keys` is `""` and `title` the field's la
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:tree {}": { "v": 2, "label": "Tree", "keys": { "r": "Rename" } } }
+    "shared": { "keynav.field:tree {}": { "v": 3, "label": "Tree", "keys": { "r": "Rename" } } }
   },
   "steps": [
     { "command": "switch-mode" },
