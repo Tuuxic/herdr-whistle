@@ -33,10 +33,11 @@
 //          a hints window an earlier copy may have left open (Herdr makes a new copy when the
 //          layout changes), true when a copy starts, so its first step closes it }
 //
-// input: { command: "whistle" | "type" }  a whistle.<command> from Herdr (keys.json)
+// input: { command: "switch-mode" }      a whistle.<command>[:<argument>] from Herdr (keys.json,
+//                                          run()): "mode:type", 'keep-mapping:{"mod":…}'
+//                                          (config.js parseCommand)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
 //        { command: "<verb>:<block>" }     a jump key (ADR 0014): "whistle.focus:agents"
-//        { command: "mappings:<mod>:on" }  a settings command (config.js settingsCommand)
 //        { key: "ctrl-l" }                 a key pressed on the bar in WHISTLE (keynames.js)
 //        { tick: true }                    the shell's timer; world.now and world.barFocused
 //                                          say what changed (a click away, a late focus)
@@ -87,7 +88,7 @@
 import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
-import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, settingsCommand, switchMod, keepMapping, MOD_NAME } from "./config.js";
+import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, parseCommand, switchMod, keepMapping } from "./config.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, resting, viewing, dock, spotName, isAnchor } from "./block.js";
 import { inert, announce, ownBars, runningCopy, COPIES } from "./inert.js";
@@ -173,9 +174,6 @@ const conflictId = (c) => JSON.stringify([c.seq, c.mods]);
 // What the bar flashes for a new problem in a mod's offered mappings (issue #10).
 const modProblemFlash = (p) => `${p.source}'s mappings have a problem, see settings`;
 const problemId = (p) => JSON.stringify([p.source, p.detail]);
-// The problem listed for a mod offering mappings under a name whistle doesn't take (config.js
-// MOD_NAME), under that name.
-const BAD_NAME = "offers mappings under a name with characters other than letters, digits, \".\", \"_\" and \"-\": whistle skips them";
 
 // The model with its config brought in line with the world: the files (each run on its last
 // good version while it doesn't parse), the mods' mappings (those of mods in the shown layout),
@@ -187,12 +185,9 @@ function configured(model, world) {
   const block = blockProps(world.layout, folder);
   const props = block.props;
   const offered = world.modMappings ?? {};
-  const offering = modsShown(world).filter((name) => offered[name] !== undefined);
-  // A mod offering under a name MOD_NAME doesn't take is skipped, and listed under its name.
-  const badNames = offering.filter((name) => !MOD_NAME.test(name));
-  const offers = offering.filter((name) => MOD_NAME.test(name)).map((name) => ({ name, entry: offered[name] }));
+  const offers = modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, entry: offered[name] }));
   const sig = JSON.stringify([texts.defaults, texts.user, props, block.problems,
-    offers, badNames, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
+    offers, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
   const defaults = readFile(files.defaults, texts.defaults), user = readFile(files.user, texts.user);
@@ -212,10 +207,9 @@ function configured(model, world) {
   // Broken (or not read yet): keys.json isn't written until every source reads.
   const before = new Set((model.conflicts ?? []).map(conflictId));
   const fresh = composed.conflicts.filter((x) => !before.has(conflictId(x)));
-  const modProblems = [...badNames.map((name) => ({ source: name, detail: BAD_NAME })), ...composed.problems];
-  const fromMods = new Set(offering);
-  const known = new Set((model.problems ?? []).filter((p) => fromMods.has(p.source)).map(problemId));
-  const freshModProblems = modProblems.filter((p) => fromMods.has(p.source) && !known.has(problemId(p)));
+  const offering = new Set(offers.map((o) => o.name));
+  const known = new Set((model.problems ?? []).filter((p) => offering.has(p.source)).map(problemId));
+  const freshModProblems = composed.problems.filter((p) => offering.has(p.source) && !known.has(problemId(p)));
   const broken = Boolean(defaults.unread || defaults.missing || defaults.broken || user.unread || user.broken);
   // Each new conflict and mod problem is an event; the bar flashes the first.
   const events = [
@@ -233,7 +227,7 @@ function configured(model, world) {
       ...fileProblems,
       ...block.problems.map((detail) => ({ source: LAYOUT, detail })),
       ...chosen.problems.map((detail) => ({ source: USER, detail })),
-      ...modProblems,
+      ...composed.problems,
       ...keysProblems(world.keysFile?.text, folder),
     ],
     conflicts: composed.conflicts,
@@ -361,17 +355,18 @@ function userWrite(model, world, change) {
 const setUser = (model, world, key, value) => userWrite(model, world, (text) => ({
   text: `${JSON.stringify({ ...(text === null ? {} : JSON.parse(text)), [key]: value }, null, 2)}\n` }));
 
-// A settings command (config.js settingsCommand: { mod, on } | { mod, keys }) as a write of
-// whistle.json (docs/contracts/commands.md). Keeping a mapping writes the mod's mapping there as
-// the mod wrote it; a mod that maps nothing there, or a name no mod can have, raises
-// command-failed. It works whether whistle is on or off.
-function settingsChange(model, world, c, s) {
-  const failed = (error) => ({ model: flashed(model, { kind: "command-failed", command: `${folderOf(world)}.${c}`, error, text: error }), effects: [] });
-  if (!MOD_NAME.test(s.mod)) return failed(`${s.mod || "no mod"} isn't a mod name`);
-  if ("on" in s) return userWrite(model, world, (text) => switchMod(text, s.mod, s.on));
-  const keys = s.keys.map((k) => canonicalKey(k, world.platform ?? null));
-  const value = keys.length ? offered(world, s.mod, keys) : undefined;
-  if (value === undefined) return failed(`${s.mod} maps nothing at ${keys.map(keyLabel).join(" ")}`.trimEnd());
+// A command that failed, as the command-failed event it raises (c: as Herdr hands it over).
+const failed = (model, world, c, error) => ({ model: flashed(model, { kind: "command-failed", command: `${folderOf(world)}.${c}`, error, text: error }), effects: [] });
+
+// A command whistle doesn't know (config.js parseCommand), its argument included: it fails.
+const unknown = (model, world, c) => failed(model, world, c, `unknown whistle command ${folderOf(world)}.${c}`);
+
+// whistle.keep-mapping:{ mod, keys } as a write of whistle.json (docs/contracts/commands.md):
+// the mod's mapping at those keys, as the mod wrote it. A mod that maps nothing there fails.
+function keepMod(model, world, c, { mod, keys: written }) {
+  const keys = written.map((k) => canonicalKey(k, world.platform ?? null));
+  const value = keys.every(Boolean) ? offered(world, mod, keys) : undefined;
+  if (value === undefined) return failed(model, world, c, `${mod} maps nothing at ${written.join(" ")}`);
   return userWrite(model, world, (text) => keepMapping(text, keys, value));
 }
 
@@ -386,14 +381,26 @@ function leaving(model, world, out) {
 const SETTINGS = (world) => ({ openOverlay: "settings",
   spec: { mod: folderOf(world), kind: "dialog", width: 640, height: 0.8, props: { part: "settings" } } });
 
-// whistle.on, whistle.off, whistle.settings: they work whether whistle is on or off.
+// The commands that work whether whistle is on or off: on, off, settings and the settings
+// commands (config.js parseCommand names).
+const ANY_TIME = ["on", "off", "settings", "mappings-on", "mappings-off", "keep-mapping"];
+
+// One of whistle's commands but the verbs (docs/contracts/commands.md), as Herdr hands it over
+// ("switch-mode", "mode:type", 'keep-mapping:{"mod":…}'). One it doesn't know fails.
 function command(model, world, c) {
-  if (c === "on") return setUser(model, world, "enabled", true);
-  if (c === "off") return leaving(model, world, (m) => setUser(m, world, "enabled", false));
-  if (c === "settings") return leaving(model, world, (m) => ({ model: m, effects: [SETTINGS(world)] }));
-  if (c === "whistle") return model.mode === "whistle" ? type(model, world) : whistle(model, world);
-  if (c === "type") return model.mode === "whistle" ? type(model, world) : { model, effects: [] };
-  return { model, effects: [] };
+  const p = parseCommand(c);
+  const none = { model, effects: [] };
+  const inWhistle = model.mode === "whistle";
+  switch (p?.name) {
+    case "on": return setUser(model, world, "enabled", true);
+    case "off": return leaving(model, world, (m) => setUser(m, world, "enabled", false));
+    case "settings": return leaving(model, world, (m) => ({ model: m, effects: [SETTINGS(world)] }));
+    case "switch-mode": return inWhistle ? type(model, world) : whistle(model, world);
+    case "mode": return p.arg === "type" ? (inWhistle ? type(model, world) : none) : (inWhistle ? none : whistle(model, world));
+    case "mappings-on": case "mappings-off": return userWrite(model, world, (text) => switchMod(text, p.arg, p.name === "mappings-on"));
+    case "keep-mapping": return keepMod(model, world, c, p.arg);
+    default: return unknown(model, world, c);
+  }
 }
 
 // A move on a stock field: Herdr's command for that way, if it has one, then the bar holds the
@@ -557,17 +564,20 @@ function isJump(c) {
   return block !== null && JUMP_VERBS.includes(verb);
 }
 
-// Inert or switched off: no WHISTLE, and the switch key and jump keys type through into the
-// focused terminal; every key and command goes on.
+// The commands that go to WHISTLE: inert or switched off, their keys type through.
+const TO_WHISTLE = ["switch-mode", "mode:whistle"];
+
+// Inert or switched off: no WHISTLE, and the switch key, mode:whistle and jump keys type
+// through into the focused terminal; every key and command goes on.
 function standAside(model, input, world) {
   if (model.mode === "whistle") return { ...type(model, world), handled: false };
   const m = { ...model, mode: "type", holdUntil: 0 };
-  if (input.command === "whistle" || isJump(input.command)) return typeThrough(m, world, input.command);
+  if (TO_WHISTLE.includes(input.command) || isJump(input.command)) return typeThrough(m, world, input.command);
   return { model: m, effects: [], handled: false };
 }
 
 // The key bound to <folder>.<command> typed through into the focused terminal, as if whistle
-// weren't there: Herdr hands a copy the lines named after its folder (whistle-2.whistle).
+// weren't there: Herdr hands a copy the lines named after its folder (whistle-2.switch-mode).
 function typeThrough(model, world, command) {
   const k = boundKey(world, `${folderOf(world)}.${command}`), t = world.focused?.terminal;
   return { model, effects: k && t ? [{ typeKey: k, terminal: t }] : [] };
@@ -803,16 +813,18 @@ function running(model, input, world) {
   if ("command" in input && model.flash) model = { ...model, flash: null, flashUntil: 0 };
   model = configured(model, world);
   const none = { model, effects: [] };
-  if (["on", "off", "settings"].includes(input.command)) return command(model, world, input.command);
-  const change = settingsCommand(input.command);
-  if (change) return settingsChange(model, world, input.command, change);
+  const c = input.command;
+  const named = typeof c === "string" && !c.startsWith("key-") && !isJump(c);
+  // A command whistle doesn't know fails, whether whistle is on or off.
+  if (named && !parseCommand(c)) return unknown(model, world, c);
+  if (named && ANY_TIME.includes(parseCommand(c).name)) return command(model, world, c);
   // Switched off: standing aside, but still keeping its claims.
   if (model.enabled === false) {
     if (input.tick && model.mode !== "whistle") return claimsTick(model, world);
     return standAside(model, input, world);
   }
   const pressed = (name) => (model.mode === "whistle" && name ? key(model, world, name) : { ...none, handled: false });
-  if (input.command === "whistle" || input.command === "type") return command(model, world, input.command);
+  if (named) return command(model, world, c);
   if (isJump(input.command)) return jump(model, world, input.command);
   if (typeof input.command === "string" && input.command.startsWith("key-"))
     return pressed(canonicalKey(input.command.slice(4), world.platform));

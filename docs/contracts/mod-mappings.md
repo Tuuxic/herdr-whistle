@@ -18,8 +18,8 @@ below, not the helper: writing the entry yourself works the same.
 ## Shape
 
 `shared("whistle.mappings")` is `{ [mod]: { v: 1, map } }`: one entry per mod, under the
-mod's name (its folder, the name its blocks carry in the layout), made of letters, digits, `.`,
-`_` and `-` only (rule 7). Write only your own entry and keep the others.
+mod's name (its folder, the name its blocks carry in the layout). Write only your own entry and
+keep the others.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -53,7 +53,7 @@ your mod leaves the layout is ignored, not deleted.
     "modMappings": { "mymod": { "v": 1, "map": { "r": ["Refresh", "mymod.refresh"] } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "r",
       "effects": [{ "run": "mymod.refresh", "args": {} }, { "focusBar": true }] },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
@@ -92,7 +92,7 @@ the title of the mod first in layout order.
   "steps": [
     { "tick": 120, "bar": { "label": "g: 2 mods want it, see settings" },
       "model": { "conflicts": [{ "seq": ["g"], "mods": ["alpha", "beta"] }] } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "tick": 120, "bar": { "label": "Terminal" } },
     { "key": "g", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
   ]
@@ -118,7 +118,7 @@ taken an own key's action away, its key is free.
   },
   "steps": [
     { "tick": 120, "bar": { "label": "i: alpha wants an own key, see settings" } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }], "bar": { "badge": "TYPE" } }
   ]
@@ -151,7 +151,7 @@ section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's
   },
   "steps": [
     { "tick": 120, "model": { "conflicts": [] } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "g",
       "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
   ]
@@ -204,38 +204,8 @@ appears. It isn't one of the person's config problems, so the bar's marker doesn
   "steps": [
     { "tick": 120, "bar": { "label": "alpha's mappings have a problem, see settings", "marker": null },
       "settings": { "mods": [{ "name": "alpha", "on": true, "problems": ["map › x: should be [label, command] or a group { name, map }"] }] } },
-    { "command": "whistle", "bar": { "label": "Terminal" } },
+    { "command": "switch-mode", "bar": { "label": "Terminal" } },
     { "world": { "barFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusBar": true }] }
-  ]
-}
-```
-
-### 7. A mod name is letters, digits, `.`, `_` and `-` only
-
-Whistle takes mappings only from a mod whose name (the key of its entry, its folder) is made of
-letters, digits, `.`, `_` and `-`: `[A-Za-z0-9._-]+`. That keeps whistle's
-[settings commands](commands.md#settings-commands), which carry a mod's name in theirs, free of
-escaping. An entry under any other name is skipped whole; whistle lists it as a config problem
-under that name, and the bar flashes once when it first appears (a `mod-problem-new`
-[event](events.md)). Rename the folder to fix it.
-
-```json example A mod offering under a name with a space is skipped and listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "notes", "type": "block", "content": { "mod": "my notes" } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
-    ] },
-    "focused": { "pane": "p1" },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }", "user": null },
-    "modMappings": { "my notes": { "v": 1, "map": { "g": ["Go", "notes.go"] } } }
-  },
-  "steps": [
-    { "tick": 120, "bar": { "label": "my notes's mappings have a problem, see settings" },
-      "settings": { "mods": [], "problems": [{ "source": "my notes", "detail": "offers mappings under a name with characters other than letters, digits, \".\", \"_\" and \"-\": whistle skips them" }] } },
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "g", "effects": [] }
   ]
 }
 ```

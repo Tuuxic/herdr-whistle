@@ -23,7 +23,7 @@ const WITH_KEYNAV = {
   shared: { [`keynav.field:${FILES_KEY}`]: { v: 2, label: "Files", keys: {} } },
 };
 // In WHISTLE with the bar holding the keyboard, the state already published.
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 
 const SCENARIOS = [
   {
@@ -40,15 +40,15 @@ const SCENARIOS = [
     name: "The mode changing is published, with the selected pane",
     world: WORLD,
     steps: [
-      { command: "whistle", published: WHISTLE },
+      { command: "switch-mode", published: WHISTLE },
       { world: { barFocused: true }, tick: 120, published: null },
-      { command: "whistle", published: state({ pane: "p1" }) },
+      { command: "switch-mode", published: state({ pane: "p1" }) },
     ],
   },
   {
     name: "onTerminal is true on entering WHISTLE on the terminal",
     world: WORLD,
-    steps: [{ tick: 120, published: state() }, { command: "whistle", published: WHISTLE }],
+    steps: [{ tick: 120, published: state() }, { command: "switch-mode", published: WHISTLE }],
   },
   {
     name: "onTerminal is false while a keynav field is selected, and true again back on the terminal",
@@ -67,7 +67,7 @@ const SCENARIOS = [
   {
     name: "onTerminal is false in TYPE",
     world: WORLD,
-    steps: [...IN, { command: "whistle", published: state({ pane: "p1" }) }],
+    steps: [...IN, { command: "switch-mode", published: state({ pane: "p1" }) }],
   },
   {
     name: "Moving between stock fields leaves onTerminal false and publishes nothing",
@@ -132,7 +132,7 @@ const SCENARIOS = [
     world: { ...WORLD, herdr: "0.1.14" },
     steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false,
       inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.14)`, fix: "Update Herdr." } } },
-    { command: "whistle", published: null }],
+    { command: "switch-mode", published: null }],
   },
 ];
 

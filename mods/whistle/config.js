@@ -52,38 +52,46 @@ export const MODS = "mods";
 
 export const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 
-// The settings commands (spec #57): a mod's mappings switched on or off, and one mod's mapping
-// kept at a key sequence, which whistle writes into whistle.json itself. Herdr hands a command
-// no args, so the target is in the name (as a verb's block is): "mappings:<mod>:on|off" and
-// "keep-mapping:<mod>:<keys>", the keys Herdr's key names joined by one space. A mod name never
-// holds ":" or a space (MOD_NAME), so nothing needs escaping. The names live here only.
-const SETTINGS_VERBS = { switchMod: "mappings", keep: "keep-mapping" };
+// Whistle's commands (docs/contracts/commands.md): "whistle.<command>" or
+// "whistle.<command>:<argument>", the argument everything after the first colon. Herdr hands a
+// mod's command over as one string and never its args (#58), so each command takes at most one
+// argument and declares its kind: none, plain (the string as it is: a block, a mod), one of a few
+// words, or JSON (where a command needs several values). A plain argument is never parsed as
+// JSON. The names and their arguments live here only.
+const NONE = { arg: "none" }, PLAIN = { arg: "plain" };
+const nonEmpty = (s) => typeof s === "string" && s !== "";
+const COMMANDS = {
+  "switch-mode": NONE, mode: { arg: ["type", "whistle"] }, on: NONE, off: NONE, settings: NONE,
+  field: PLAIN, focus: PLAIN, toggle: PLAIN, "toggle-keep-mode": PLAIN,
+  "mappings-on": PLAIN, "mappings-off": PLAIN,
+  // { "mod": "claude-hints", "keys": ["g", "q"] }: the keys in Herdr's key names.
+  "keep-mapping": { arg: "json", valid: (v) => isObject(v) && nonEmpty(v.mod) && Array.isArray(v.keys) && v.keys.length > 0 && v.keys.every(nonEmpty) },
+};
 
-// The names a mod may offer mappings under (docs/contracts/mod-mappings.md).
-export const MOD_NAME = /^[A-Za-z0-9._-]+$/;
-
-// A settings command as Herdr hands it over (no "whistle." before it): { mod, on } (switch a
-// mod: the mod up to the last colon, then "on" or "off"), { mod, keys } (keep its mapping: the
-// mod up to the first colon, the rest the keys) | null when it is no settings command.
-export function settingsCommand(c) {
+// A command as Herdr hands it over (no "whistle." before it): { name, arg: undefined (none) |
+// the plain string | the JSON value } | null: no whistle command (an unknown name, or an
+// argument that isn't the kind the command takes: missing, extra, a word it doesn't know, JSON
+// that doesn't parse or lacks a field).
+export function parseCommand(c) {
   if (typeof c !== "string") return null;
   const colon = c.indexOf(":");
-  if (colon <= 0) return null;
-  const verb = c.slice(0, colon), target = c.slice(colon + 1);
-  if (verb === SETTINGS_VERBS.switchMod) {
-    const last = target.lastIndexOf(":"), state = target.slice(last + 1);
-    return last > 0 && (state === "on" || state === "off") ? { mod: target.slice(0, last), on: state === "on" } : null;
-  }
-  if (verb !== SETTINGS_VERBS.keep) return null;
-  const at = target.indexOf(":");
-  return { mod: at < 0 ? target : target.slice(0, at), keys: at < 0 ? [] : target.slice(at + 1).split(" ").filter(Boolean) };
+  const name = colon < 0 ? c : c.slice(0, colon), raw = colon < 0 ? null : c.slice(colon + 1);
+  const spec = Object.prototype.hasOwnProperty.call(COMMANDS, name) ? COMMANDS[name] : null;
+  if (!spec) return null;
+  if (spec.arg === "none") return raw === null ? { name } : null;
+  if (!raw) return null;
+  if (Array.isArray(spec.arg)) return spec.arg.includes(raw) ? { name, arg: raw } : null;
+  if (spec.arg === "plain") return { name, arg: raw };
+  let v;
+  try { v = JSON.parse(raw); } catch { return null; }
+  return spec.valid(v) ? { name, arg: v } : null;
 }
 
 // The settings commands as a client runs them, after "whistle.": switchMod("alpha", false) is
-// "mappings:alpha:off", keep("alpha", ["g", "d"]) is "keep-mapping:alpha:g d".
+// "mappings-off:alpha", keep("alpha", ["g", "d"]) is 'keep-mapping:{"mod":"alpha","keys":["g","d"]}'.
 export const settingsCommandFor = {
-  switchMod: (mod, on) => `${SETTINGS_VERBS.switchMod}:${mod}:${on ? "on" : "off"}`,
-  keep: (mod, keys) => `${SETTINGS_VERBS.keep}:${mod}:${keys.join(" ")}`,
+  switchMod: (mod, on) => `${on ? "mappings-on" : "mappings-off"}:${mod}`,
+  keep: (mod, keys) => `keep-mapping:${JSON.stringify({ mod, keys })}`,
 };
 
 // One file's text against its last good version (good: { text, json } | null):
@@ -124,9 +132,8 @@ function command(written, args, commands) {
   return { run: written, args: args ?? {} };
 }
 
-// Whistle's own commands a mapping can run (docs/contracts/commands.md): those that need a
-// block ("whistle.field:<block>") and those that don't.
-export const VERBS = ["whistle", "type", "on", "off", "settings"];
+// The verbs: whistle's commands that act on a block ("whistle.field:<block>"), which a mapping
+// may also give as args ({ "block": "<block>" }).
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
 // The verb a jump key may add to keep the mode it was pressed in (ADR 0014).
 export const KEEP_MODE = "toggle-keep-mode";
@@ -135,16 +142,18 @@ export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
 // The block verb a jump verb runs: toggle-keep-mode runs as toggle.
 export const runsAs = (verb) => (verb === KEEP_MODE ? "toggle" : verb);
 
-// A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
-// | a reason it's bad.
+// A whistle.<command> mapping's command as written: { run: "whistle.<verb>", args: { block } }
+// for a verb, { run: as written, args: {} } for any other command (parseCommand) | a reason
+// it's bad.
 function whistleCommand(written, args) {
   const { verb: name, block: arg } = verbAndBlock(written);
   const v = name.slice("whistle.".length);
-  if (VERBS.includes(v)) return { run: name, args: {} };
-  if (!JUMP_VERBS.includes(v)) return `unknown whistle command ${name}`;
-  const block = arg ?? args?.block;
-  if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
-  return { run: `whistle.${runsAs(v)}`, args: { block } };
+  if (JUMP_VERBS.includes(v)) {
+    const block = arg ?? args?.block;
+    if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
+    return { run: `whistle.${runsAs(v)}`, args: { block } };
+  }
+  return parseCommand(written.slice("whistle.".length)) ? { run: written, args: {} } : `unknown whistle command ${written}`;
 }
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
@@ -153,17 +162,17 @@ function whistleCommand(written, args) {
 // doesn't parse is the claims' problem, not listed here.
 // Also a switch key in global that names another folder's switch command while none names this
 // copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)
-// never gets "whistle.whistle" (issue #35). Whistle only reads global; it never writes it.
+// never gets "whistle.switch-mode" (issue #35). Whistle only reads global; it never writes it.
 export function keysProblems(text, folder) {
   let all;
   try { all = JSON.parse(text ?? "null"); } catch { return []; }
   if (!isObject(all)) return [];
   const out = [];
   const global = isObject(all.global) ? Object.entries(all.global) : [];
-  if (!global.some(([, a]) => a === `${folder}.whistle`)) {
+  if (!global.some(([, a]) => a === `${folder}.switch-mode`)) {
     for (const [key, action] of global) {
-      if (typeof action !== "string" || !/^[^.]+\.whistle$/.test(action)) continue;
-      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.whistle` });
+      if (typeof action !== "string" || !/^[^.]+\.switch-mode$/.test(action)) continue;
+      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.switch-mode` });
     }
   }
   for (const [section, keys] of Object.entries(all)) {
@@ -171,9 +180,8 @@ export function keysProblems(text, folder) {
     for (const [key, action] of Object.entries(keys)) {
       if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
       const c = action.slice(folder.length + 1);
-      const { verb, block } = verbAndBlock(c);
-      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb) || settingsCommand(c)) continue;
-      const why = block === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
+      if (c.startsWith("key-") || parseCommand(c)) continue;
+      const why = JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
       out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
     }
   }

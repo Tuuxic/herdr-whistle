@@ -1,4 +1,4 @@
-// Whistle's public contract for clients (spec #57, 1.4.0): the keys whistle.hints,
+// Whistle's public contract for clients (spec #57, 2.0.0): the keys whistle.hints,
 // whistle.events and whistle.config, the whistle state's inert field, and the settings
 // commands. Each key is written by the running copy only, and only when it changes.
 
@@ -9,11 +9,12 @@ import { settingsCommandFor } from "./config.js";
 import { VERSION, MIN_HERDR } from "./version.js";
 import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
 
-// The problem listed for a mod offering mappings under a name whistle doesn't take.
-const BAD_NAME = "offers mappings under a name with characters other than letters, digits, \".\", \"_\" and \"-\": whistle skips them";
+// The event a command whistle doesn't know raises when run (c: as Herdr hands it over).
+const UNKNOWN = (seq, c) => ({ seq, kind: "command-failed", command: `whistle.${c}`,
+  error: `unknown whistle command whistle.${c}`, text: `unknown whistle command whistle.${c}` });
 
 const json = (v) => JSON.stringify(v);
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const block = (mod) => ({ id: mod, type: "block", content: { mod } });
 const entry = (map) => ({ v: 1, map });
 // A world in a terminal: the mods shown, their entries, the defaults' map, the layout's whistle
@@ -37,7 +38,7 @@ const SCENARIOS = [
     world: world({ map: PANES, props: { hints: false } }),
     steps: [
       { tick: 120, shared: { "whistle.hints": null } },
-      { command: "whistle", shared: { "whistle.hints": undefined } },
+      { command: "switch-mode", shared: { "whistle.hints": undefined } },
       { world: { barFocused: true }, key: "w", shared: { "whistle.hints": PANES_HINTS } },
       { tick: 120, shared: { "whistle.hints": undefined } },
       { key: "v", shared: { "whistle.hints": null } },
@@ -168,29 +169,64 @@ const SCENARIOS = [
       { seq: 1, kind: "settings-broken", detail: "isn't a JSON object", text: "whistle.json isn't a JSON object; fix it first" }] } } }],
   },
   {
-    name: "A mappings command whose state isn't on or off is no command: it writes nothing and raises nothing",
-    world: world(),
-    steps: [{ tick: 120 }, { command: "mappings:alpha:maybe", effects: [], shared: { "whistle.events": undefined } }],
+    name: "The settings commands spell as the commands contract says",
+    world: world({ mods: ["claude-hints"], entries: { "claude-hints": entry({ g: { name: "Hints", map: { q: ["Q", "claude-hints.q"] } } }) } }),
+    steps: [{ tick: 120 },
+      { command: "mappings-off:claude-hints", effects: [
+        { write: "whistle.json", text: `${JSON.stringify({ mods: { "claude-hints": false } }, null, 2)}\n`, expected: null }] },
+      { command: 'keep-mapping:{"mod":"claude-hints","keys":["g","q"]}', effects: [
+        { write: "whistle.json", text: `${JSON.stringify({ map: { g: { map: { q: ["Q", "claude-hints.q"] } } } }, null, 2)}\n`, expected: null }] }],
   },
   {
-    name: "keys.json may bind the settings commands, and not a mappings command without a state",
+    name: "A keep-mapping whose argument isn't JSON with a mod and keys is an unknown command: it raises command-failed and writes nothing",
+    world: world(),
+    steps: [{ tick: 120 },
+      { command: "keep-mapping:{nope", effects: [], shared: { "whistle.events": { v: 1, events: [UNKNOWN(1, "keep-mapping:{nope")] } } },
+      { command: 'keep-mapping:{"mod":"alpha"}', effects: [], shared: { "whistle.events": { v: 1, events: [
+        UNKNOWN(1, "keep-mapping:{nope"), UNKNOWN(2, 'keep-mapping:{"mod":"alpha"}')] } } }],
+  },
+  {
+    name: "keys.json may bind the settings commands; a keep-mapping with bad JSON and a mode that isn't one are config problems",
     world: { ...world(), keysFile: { text: json({ global: {
       "f7": `whistle.${settingsCommandFor.switchMod("alpha", false)}`, "f8": `whistle.${settingsCommandFor.keep("alpha", ["g", "d"])}`,
-      "f9": "whistle.mappings:alpha" } }), error: null, at: 0 } },
+      "f9": "whistle.keep-mapping:{nope", "f10": "whistle.mode:foo", "f11": "whistle.mode:whistle" } }), error: null, at: 0 } },
     steps: [{ tick: 120, shared: { "whistle.config": { v: 1, problems: [
-      { source: "keys.json", detail: "global › f9: unknown whistle command whistle.mappings:alpha" }], mods: [], conflicts: [], overrides: [] } } }],
+      { source: "keys.json", detail: "global › f9: unknown whistle command whistle.keep-mapping:{nope" },
+      { source: "keys.json", detail: "global › f10: unknown whistle command whistle.mode:foo" }], mods: [], conflicts: [], overrides: [] } } }],
   },
 
-  // Mod names (docs/contracts/mod-mappings.md): letters, digits, ".", "_" and "-" only.
+  // The mode commands (docs/contracts/commands.md).
   {
-    name: "A mod offering mappings under a name with other characters is skipped and listed as a problem, which raises mod-problem-new",
-    world: world({ mods: ["my mod", "alpha"], entries: { "my mod": entry({ g: ["Go", "my.go"] }), alpha: entry({ z: ["Zap", "alpha.zap"] }) } }),
-    steps: [{ tick: 120,
-      shared: {
-        "whistle.config": { v: 1, problems: [{ source: "my mod", detail: BAD_NAME }], mods: [{ name: "alpha", on: true, problems: [] }], conflicts: [], overrides: [] },
-        "whistle.events": { v: 1, events: [{ seq: 1, kind: "mod-problem-new", source: "my mod", detail: BAD_NAME, text: "my mod's mappings have a problem, see settings" }] },
-      } },
-      { tick: 120, shared: { "whistle.events": undefined } }],
+    name: "mode:whistle goes to WHISTLE from TYPE, and stays in WHISTLE",
+    world: world(),
+    steps: [{ command: "mode:whistle", model: { mode: "whistle" }, effects: [{ focusBar: true }] },
+      { world: { barFocused: true }, command: "mode:whistle", model: { mode: "whistle" }, effects: [] }],
+  },
+  {
+    name: "mode:type goes to TYPE from WHISTLE, and does nothing in TYPE",
+    world: world(),
+    steps: [{ command: "switch-mode" }, { world: { barFocused: true }, command: "mode:type", model: { mode: "type" },
+      effects: [{ run: "pane.focus", args: { pane: "p1" } }] },
+    { world: { barFocused: false }, command: "mode:type", model: { mode: "type" }, effects: [] }],
+  },
+  {
+    name: "Switched off, mode:whistle types its key into the terminal, as switch-mode does",
+    world: { ...world({ user: { enabled: false } }), keys: [{ section: "global", keys: "f12", action: "whistle.mode:whistle" }] },
+    steps: [{ tick: 120 }, { command: "mode:whistle", model: { mode: "type" }, effects: [{ typeKey: "f12", terminal: "t1" }] }],
+  },
+  {
+    name: "The old names whistle and type, and a mode that isn't one, are unknown commands: command-failed, nothing else",
+    world: world(),
+    steps: [{ tick: 120 },
+      { command: "whistle", model: { mode: "type" }, effects: [], shared: { "whistle.events": { v: 1, events: [UNKNOWN(1, "whistle")] } } },
+      { command: "mode:foo", model: { mode: "type" }, effects: [], shared: { "whistle.events": { v: 1, events: [UNKNOWN(1, "whistle"), UNKNOWN(2, "mode:foo")] } } }],
+  },
+  {
+    name: "A mod's name may hold any characters: whistle takes its mappings and switches it by name",
+    world: world({ mods: ["my mod:2"], entries: { "my mod:2": entry({ z: ["Zap", "my.zap"] }) } }),
+    steps: [{ tick: 120, shared: { "whistle.config": { v: 1, problems: [], mods: [{ name: "my mod:2", on: true, problems: [] }], conflicts: [], overrides: [] } } },
+      { command: "mappings-off:my mod:2", effects: [
+        { write: "whistle.json", text: `${JSON.stringify({ mods: { "my mod:2": false } }, null, 2)}\n`, expected: null }] }],
   },
 
   // The whistle state's inert field.

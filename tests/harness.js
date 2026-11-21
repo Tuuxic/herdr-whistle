@@ -10,11 +10,11 @@
 //     world: { layout, focused, panes, barFocused, now },   // over DEFAULT_WORLD
 //     model: { ... },                                       // optional, over start()
 //     steps: [
-//       // One input each: { command: "whistle" }, { key: "ctrl-l" }, { tick: 120 } (the
+//       // One input each: { command: "switch-mode" }, { key: "ctrl-l" }, { tick: 120 } (the
 //       // clock moves on by 120 ms, then a tick), { wrote: path, ok, error } (a write's
 //       // outcome) or { ran: command, error } (a run that failed). `world` first changes the
 //       // world (shallow, before the input).
-//       { world: { barFocused: true }, command: "whistle",
+//       { world: { barFocused: true }, command: "switch-mode",
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it),

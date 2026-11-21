@@ -2,7 +2,7 @@
 
 For mod authors who want to show what the next key does: the choices of the key sequence typed
 so far, or the keys the selected field declares. Current version: **`v: 1`**. Since whistle
-1.4.0.
+2.0.0.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder and call
 `readHints()` when you draw. It gives the fields below, or `null` while there's nothing to show
@@ -53,7 +53,7 @@ step that changes nothing writes nothing.
   },
   "steps": [
     { "tick": 120, "shared": { "whistle.hints": null } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": "Esc cancels",
       "items": [{ "key": "v", "label": "Split right", "group": false }, { "key": "m", "label": "Move", "group": true }] } } },
     { "tick": 120, "unset": ["whistle.hints"] },
@@ -81,7 +81,7 @@ selected and no sequence is under way: `keys` is `""` and `title` the field's la
     "shared": { "keynav.field:tree {}": { "v": 2, "label": "Tree", "keys": { "r": "Rename" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "shared": { "whistle.hints": { "v": 1, "keys": "", "title": "Tree", "exit": null,
       "items": [{ "key": "r", "label": "Rename", "group": false }] } } }
   ]
@@ -108,7 +108,7 @@ call.
     }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": null,
       "items": [{ "key": "v", "label": "Split right", "group": false }] } } }
   ]
@@ -136,5 +136,5 @@ reads `v: 1` only, and gives `null` for any other `v`.
 
 ## History
 
-- `v: 1` (whistle 1.4.0): first version. Before, the items were private, in a key of the same
+- `v: 1` (whistle 2.0.0): first version. Before, the items were private, in a key of the same
   name; that private key moved.

@@ -15,7 +15,7 @@ const DEFAULTS = json({ keys: TEST_DEFAULTS.keys, map: { n: ["Next tab", "tab.ne
 const text = (v) => (v == null || typeof v === "string" ? v : json(v));
 const files = (user, defaults = DEFAULTS) => ({ configFiles: { defaults: text(defaults), user: text(user) } });
 const world = (user, defaults) => ({ ...IN_TERMINAL, ...files(user, defaults) });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const ran = (command) => [{ run: command, args: {} }, { focusBar: true }];
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 const SPACE = { map: { n: ["Next space", "space.next"] } };
@@ -142,7 +142,7 @@ const SCENARIOS = [
     world: world("{ nope"),
     steps: [
       { tick: 120, bar: { badge: "TYPE", label: "Terminal", marker: "⚠ 1" } },
-      { command: "whistle" },
+      { command: "switch-mode" },
       { world: { barFocused: true }, tick: 120, bar: { badge: "WHISTLE", label: "Terminal · zsh", marker: "⚠ 1" } },
       { world: files(null), tick: 120, bar: { marker: null } },
     ],
@@ -167,7 +167,7 @@ const SCENARIOS = [
     name: "A flash is gone with the switch key too",
     world: world(null),
     steps: [...IN, { key: "n" }, { ran: "tab.next", error: "no next tab" },
-      { command: "whistle", bar: { badge: "TYPE", label: "Terminal" } }],
+      { command: "switch-mode", bar: { badge: "TYPE", label: "Terminal" } }],
   },
   {
     name: "A key that isn't mapped in a key sequence flashes and ends it",

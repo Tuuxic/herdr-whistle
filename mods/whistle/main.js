@@ -4,8 +4,8 @@
 // reads Herdr into `world`, calls step on each command, key press and tick, carries out the
 // effects it returns and feeds write outcomes back. It decides nothing itself.
 //
-// Herdr's keys.json runs whistle's commands: "whistle" (ctrl-space: TYPE <-> WHISTLE) and
-// "type" (back to TYPE). In WHISTLE the bar holds the keyboard and its key presses go to step.
+// Herdr's keys.json runs whistle's commands: "switch-mode" (ctrl-space: TYPE <-> WHISTLE) and
+// "mode:type" (back to TYPE). In WHISTLE the bar holds the keyboard and its key presses go to step.
 // Keys whistle claims in keys.json's mod:whistle section come back as "key-<key>" commands,
 // and jump keys as "<verb>:<block>" (alt-a: "focus:agents").
 // Its config comes from mappings.json (this folder) and whistle.json (Herdr's home), read on

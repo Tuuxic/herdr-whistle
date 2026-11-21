@@ -3,7 +3,7 @@
 For mod authors who want to tell people what just happened in whistle: a key that isn't mapped,
 a block that can't be selected, a command that failed, a new conflict. Each event has a stable
 kind, its data and a default English text; whistle's bar flashes the same text. Current
-version: **`v: 1`**. Since whistle 1.4.0.
+version: **`v: 1`**. Since whistle 2.0.0.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder, keep the `seq`
 of the last event you handled, and call `readEvents(last)` when you draw. It gives the events
@@ -36,7 +36,7 @@ Each event:
 | `unmapped` | `keys`: the key names of the sequence, the last one unmapped | In a key sequence, a key the group doesn't map. |
 | `cant-select` | `block`, `reason`: `"missing"` (no such block in the shown layout), `"hidden"` (it doesn't show) or `"no-field"` (no field in it) | `whistle.field:<block>`, or a jump key to it, can't select it. |
 | `verb-failed` | `block`, `reason`: `"missing"` | `whistle.focus:` or `whistle.toggle:` on a block the shown layout lacks. |
-| `command-failed` | `command`, `error` | A command whistle ran failed, or a settings command couldn't run ([commands.md](commands.md#settings-commands)). |
+| `command-failed` | `command`, `error` | A command whistle ran failed, a command whistle got isn't one it knows (or has the wrong argument: [commands.md](commands.md#spelling)), or a `keep-mapping` found nothing to keep ([commands.md](commands.md#settings-commands)). |
 | `conflict-new` | `keys`: the key sequence, `mods`: the mods that want it | A mapping conflict that wasn't there before ([mod-mappings.md](mod-mappings.md)). |
 | `mod-problem-new` | `source`: the mod, `detail` | A problem in a mod's offered mappings that wasn't there before. |
 | `settings-unread` | none | A change to whistle.json asked before whistle read it. |
@@ -66,7 +66,7 @@ Whistle writes the feed once it runs (with no events) and again each time an eve
   },
   "steps": [
     { "tick": 120, "shared": { "whistle.events": { "v": 1, "events": [] } } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "w", "unset": ["whistle.events"] },
     { "key": "x", "shared": { "whistle.events": { "v": 1, "events": [
       { "seq": 1, "kind": "unmapped", "keys": ["w", "x"], "text": "w x is not mapped" }] } } }
@@ -154,4 +154,4 @@ its meaning changed, or a kind renamed, is a break. New kinds and new fields are
 
 ## History
 
-- `v: 1` (whistle 1.4.0): first version.
+- `v: 1` (whistle 2.0.0): first version.

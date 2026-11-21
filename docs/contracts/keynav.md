@@ -33,7 +33,7 @@ Keynav carries only what every kind of field shares ([ADR 0017](../adr/0017-keyn
 - **Declared keys**: everything your field does on its own, such as Space to show an item or
   `d` to delete one.
 - **The driver's public commands and state**: anything driver-specific. A field whose pick
-  should land in whistle's TYPE runs `whistle.type` after picking (docs/contracts/commands.md);
+  should land in whistle's TYPE runs `whistle.mode:type` after picking (docs/contracts/commands.md);
   in TYPE it does nothing, so the field needs no check of the mode.
 
 Keynav never grows a request or a move for one driver's behaviour, and a request never names
@@ -99,7 +99,7 @@ longer in the layout are ignored, so a field never has to clean up after itself.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [], "model": { "field": "main" } },
     { "world": { "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
@@ -131,10 +131,10 @@ whether the terminal is selected, read `onTerminal` in whistle state (docs/contr
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }] },
-    { "command": "whistle",
+    { "command": "switch-mode",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "setShared": "keynav", "value": { "v": 3, "active": null } }] }
   ]
 }
@@ -160,7 +160,7 @@ go to a space, go to an agent and type there, flip a setting.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }] },
     { "key": "enter", "effects": [{ "run": "files.keynav-pick", "args": {} }, { "focusBar": true }] }
@@ -193,7 +193,7 @@ again to change the keys at any time.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "d", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] },
     { "key": "ctrl-l", "hints": { "title": "Files", "items": [{ "key": "d", "label": "Delete", "group": false }] } },
     { "key": "d", "effects": [{ "run": "files.keynav-key-d", "args": {} }, { "focusBar": true }] }
@@ -223,7 +223,7 @@ field's like any declared key. A declared chord is always a config problem.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "j": "Jump" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "j", "effects": [{ "run": "files.keynav-down", "args": {} }, { "focusBar": true }],
       "model": { "fieldProblems": [{ "source": "keynav", "detail": "Files (files) declares j, down's own key; it counts once you unbind down" }] } }
@@ -247,7 +247,7 @@ field's like any declared key. A declared chord is always a config problem.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "d": "Delete" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "key": "x", "effects": [], "handled": false }
   ]
@@ -275,7 +275,7 @@ was selected.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "world": { "barFocused": false, "focused": { "pane": "p2" }, "shared": {
         "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} },
@@ -306,7 +306,7 @@ the driver selects the terminal and names no field.
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l" },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
@@ -341,7 +341,7 @@ reads only its `active`, so it still sees itself selected.
     "shared": { "keynav.field:files {}": { "v": 2, "label": "Files", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "files {}" } }],
       "model": { "field": "files", "fieldProblems": [{ "source": "keynav", "detail": "files speaks keynav v2: whistle still drives it, but update its keynav.js to v3" }] } },
@@ -373,7 +373,7 @@ settings say to update its `keynav.js`.
     "shared": { "keynav.fields": { "files {}": { "v": 1, "mod": "files", "props": {}, "label": "Files" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l", "effects": [],
       "model": { "field": "main", "fieldProblems": [{ "source": "keynav", "detail": "files speaks keynav v1, which whistle no longer drives; update its keynav.js" }] } }
   ]

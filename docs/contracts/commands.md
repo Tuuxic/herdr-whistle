@@ -4,15 +4,43 @@ For anyone who binds whistle in `keys.json`, runs it from another mod, or maps i
 commands whistle answers to. A renamed copy answers under its folder's name instead of
 `whistle` (verbs in mappings are always written `whistle.`).
 
+## Spelling
+
+Every command is `whistle.<command>` or `whistle.<command>:<argument>`: at most one argument,
+everything after the first colon, as Herdr's own `name:value` commands are. Herdr hands a mod's
+command over as that one string and never passes args, so each command declares what its
+argument is:
+
+- **none**: `whistle.switch-mode`;
+- **plain**: the string as it is, never parsed (a block id, a mod name, a word such as `type`);
+- **JSON**: one JSON value, only where a command needs several values
+  (`whistle.keep-mapping:{"mod":"claude-hints","keys":["g","q"]}`).
+
+A command whistle doesn't know is a config problem on a keys.json line, and a `command-failed`
+[event](events.md) when it runs. So is a known one with the wrong argument: a word it doesn't
+take (`whistle.mode:foo`), JSON that doesn't parse, or JSON missing a field.
+
+**JSON from Windows PowerShell 5.1.** PowerShell 5.1 strips the double quotes inside an argument
+it passes to a program, so `herdr-app do 'whistle.keep-mapping:{"mod":"a","keys":["g"]}'` reaches
+Herdr broken. Stop PowerShell parsing the line with `--%`:
+
+```powershell
+herdr-app do --% "whistle.keep-mapping:{\"mod\":\"a\",\"keys\":[\"g\"]}"
+```
+
+(Tested with node on PowerShell 5.1.26100; for `herdr-app` it's inferred, as the stripping is
+PowerShell's.) Bash, zsh and PowerShell 7.3 and later pass the quotes through.
+
 ## Commands
 
-| Command | Does |
-|---|---|
-| `whistle.whistle` | Switches: TYPE to WHISTLE, WHISTLE to TYPE. Switched off, the key bound to it types into the terminal. |
-| `whistle.type` | Back to TYPE (nothing in TYPE). |
-| `whistle.on` | Switches WHISTLE on: writes `"enabled": true` into whistle.json. |
-| `whistle.off` | Switches WHISTLE off: back to TYPE, and writes `"enabled": false` into whistle.json. |
-| `whistle.settings` | Opens whistle's settings (from WHISTLE, back to TYPE first). |
+| Command | Argument | Does |
+|---|---|---|
+| `whistle.switch-mode` | none | Switches: TYPE to WHISTLE, WHISTLE to TYPE. Switched off, the key bound to it types into the terminal. |
+| `whistle.mode:type` | `type` | Back to TYPE (nothing in TYPE). |
+| `whistle.mode:whistle` | `whistle` | To WHISTLE (nothing in WHISTLE). Switched off, the key bound to it types into the terminal, as for `switch-mode`. |
+| `whistle.on` | none | Switches WHISTLE on: writes `"enabled": true` into whistle.json. |
+| `whistle.off` | none | Switches WHISTLE off: back to TYPE, and writes `"enabled": false` into whistle.json. |
+| `whistle.settings` | none | Opens whistle's settings (from WHISTLE, back to TYPE first). |
 
 `on`, `off` and `settings` work whether WHISTLE is on or off. `on` and `off` keep the rest of
 whistle.json; with a whistle.json that doesn't parse they only flash, and leave it alone.
@@ -69,23 +97,16 @@ Ctrl+Shift+, would be `ctrl-<` on a US layout and `ctrl-;` on a German one: henc
 
 **Settings commands** change what whistle's settings change, without knowing whistle.json's
 format: whistle writes whistle.json itself, keeping the rest of it. A client (a mod that shows
-[whistle's config](config.md)) runs them with `run("whistle.mappings:alpha:off")`; keys.json
-may bind them too. Since whistle 1.4.0.
+[whistle's config](config.md)) runs them with `run("whistle.mappings-off:alpha")`; keys.json
+may bind them too. Since whistle 2.0.0.
 
-| Command | Does |
-|---|---|
-| `whistle.mappings:<mod>:on` | Switches the mod's mappings on: `"mods": { "<mod>": true }` in whistle.json. |
-| `whistle.mappings:<mod>:off` | Switches the mod's mappings off: `"mods": { "<mod>": false }`. |
-| `whistle.keep-mapping:<mod>:<keys>` | Keeps the mod's mapping at that key sequence: writes it into whistle.json's `map` as the mod wrote it, so it goes over every mod's there (a conflict settled). |
+| Command | Argument | Does |
+|---|---|---|
+| `whistle.mappings-on:<mod>` | plain: the mod's name | Switches the mod's mappings on: `"mods": { "<mod>": true }` in whistle.json. |
+| `whistle.mappings-off:<mod>` | plain: the mod's name | Switches the mod's mappings off: `"mods": { "<mod>": false }`. |
+| `whistle.keep-mapping:{"mod":"<mod>","keys":[…]}` | JSON: `mod` the mod's name, `keys` the key sequence as Herdr's key names (`["ctrl-x", "g"]`, any spelling keys.json takes) | Keeps the mod's mapping at that key sequence: writes it into whistle.json's `map` as the mod wrote it, so it goes over every mod's there (a conflict settled). |
 
-- Herdr hands a mod command no args, so the target is in the name, as a verb's block is. A mod
-  name is letters, digits, `.`, `_` and `-` only ([mod-mappings.md](mod-mappings.md)), so
-  nothing needs escaping.
-- `mappings`: the mod runs up to the last colon, then the state, `on` or `off`. Anything else
-  is an unknown command.
-- `keep-mapping`: the mod runs up to the first colon; the rest is the key sequence, Herdr's key
-  names joined by one space (`whistle.keep-mapping:alpha:ctrl-x g`), in any spelling keys.json
-  takes.
+- The mod name is plain, everything after the first colon, so it may hold any character.
 - They work whether WHISTLE is on or off, and leave the mode as it is.
 - What can't be done raises an [event](events.md): whistle.json not read yet
   (`settings-unread`), whistle.json that doesn't read (`settings-broken`, and whistle leaves it
@@ -125,7 +146,7 @@ The examples below run as tests: each is a scenario through whistle's core.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "command": "settings", "model": { "mode": "type" }, "effects": [
       { "run": "pane.focus", "args": { "pane": "p1" } },
       { "openOverlay": "settings", "spec": { "mod": "whistle", "kind": "dialog", "width": 640, "height": 0.8, "props": { "part": "settings" } } }
@@ -151,7 +172,7 @@ The examples below run as tests: each is a scenario through whistle's core.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle", "model": { "field": "main" } },
+    { "command": "switch-mode", "model": { "field": "main" } },
     { "world": { "barFocused": true }, "key": "n", "model": { "field": "notes" }, "effects": [] },
     { "key": "l", "model": { "field": "notes" }, "bar": { "label": "log can't be selected now" } }
   ]
@@ -171,7 +192,7 @@ The examples below run as tests: each is a scenario through whistle's core.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "g",
       "effects": [{ "run": "layout.show", "args": { "id": "log" } }, { "focusBar": true }], "model": { "field": "main" } },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
@@ -199,7 +220,7 @@ The examples below run as tests: each is a scenario through whistle's core.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "n", "model": { "field": "notes" } },
     { "key": "b", "effects": [{ "run": "layout.hide", "args": { "id": "notes" } }, { "focusBar": true }],
       "model": { "field": "main" } }
@@ -322,33 +343,79 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 12. `whistle.mappings:<mod>:off` writes the mod off into whistle.json, keeping the rest
+### 12. `whistle.mode:whistle` goes to WHISTLE; switched off, its key types through
 
-```json example whistle.mappings switches a mod off in whistle.json
+```json example whistle.mode:whistle goes to WHISTLE, and stays there
+{
+  "world": { "focused": { "pane": "p1" } },
+  "steps": [
+    { "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [{ "focusBar": true }] },
+    { "world": { "barFocused": true }, "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [] }
+  ]
+}
+```
+
+```json example Switched off, whistle.mode:whistle types its key into the terminal
+{
+  "world": {
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{\"enabled\":false}" },
+    "keys": [{ "section": "global", "keys": "f12", "action": "whistle.mode:whistle" }]
+  },
+  "steps": [
+    { "tick": 120 },
+    { "command": "mode:whistle", "model": { "mode": "type" }, "effects": [{ "typeKey": "f12", "terminal": "t1" }] }
+  ]
+}
+```
+
+### 13. An unknown command, or a known one with the wrong argument, fails
+
+It does nothing but raise `command-failed`; on a keys.json line it's a config problem too.
+
+```json example An unknown command and a mode that isn't one raise command-failed
+{
+  "world": { "focused": { "pane": "p1" } },
+  "steps": [
+    { "tick": 120 },
+    { "command": "whistle", "model": { "mode": "type" }, "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
+      { "seq": 1, "kind": "command-failed", "command": "whistle.whistle", "error": "unknown whistle command whistle.whistle", "text": "unknown whistle command whistle.whistle" }] } } },
+    { "command": "mode:foo", "model": { "mode": "type" }, "effects": [] }
+  ]
+}
+```
+
+```json example keys.json lines with a mode that isn't one, or a keep-mapping with bad JSON, are config problems
+{
+  "world": {
+    "focused": { "pane": "p1" },
+    "keysFile": { "text": "{ \"global\": { \"f1\": \"whistle.mode:foo\", \"f2\": \"whistle.keep-mapping:{nope\", \"f3\": \"whistle.mode:type\" } }", "error": null, "at": 0 }
+  },
+  "steps": [
+    { "tick": 120, "model": { "problems": [
+      { "source": "keys.json", "detail": "global › f1: unknown whistle command whistle.mode:foo" },
+      { "source": "keys.json", "detail": "global › f2: unknown whistle command whistle.keep-mapping:{nope" }] } }
+  ]
+}
+```
+
+### 14. `whistle.mappings-off:<mod>` writes the mod off into whistle.json, keeping the rest
+
+```json example whistle.mappings-off switches a mod off in whistle.json
 {
   "world": {
     "focused": { "pane": "p1" },
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{\"hints\":false}" }
   },
   "steps": [
-    { "command": "mappings:alpha:off", "effects": [
+    { "command": "mappings-off:alpha", "effects": [
       { "write": "whistle.json", "text": "{\n  \"hints\": false,\n  \"mods\": {\n    \"alpha\": false\n  }\n}\n", "expected": "{\"hints\":false}" }
     ] }
   ]
 }
 ```
 
-```json example whistle.mappings with a state other than on or off does nothing
-{
-  "world": { "focused": { "pane": "p1" } },
-  "steps": [
-    { "tick": 120 },
-    { "command": "mappings:alpha:maybe", "effects": [], "unset": ["whistle.events"] }
-  ]
-}
-```
-
-### 13. `whistle.keep-mapping:<mod>:<keys>` writes the mod's mapping there into whistle.json
+### 15. `whistle.keep-mapping:{"mod","keys"}` writes the mod's mapping there into whistle.json
 
 ```json example whistle.keep-mapping keeps one mod's mapping in a conflict
 {
@@ -367,7 +434,7 @@ The examples below run as tests: each is a scenario through whistle's core.
   },
   "steps": [
     { "tick": 120 },
-    { "command": "keep-mapping:alpha:g d", "effects": [
+    { "command": "keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"g\",\"d\"]}", "effects": [
       { "write": "whistle.json", "text": "{\n  \"map\": {\n    \"g\": {\n      \"map\": {\n        \"d\": [\n          \"D\",\n          \"alpha.d\"\n        ]\n      }\n    }\n  }\n}\n", "expected": null }
     ] }
   ]
@@ -387,22 +454,26 @@ The examples below run as tests: each is a scenario through whistle's core.
   },
   "steps": [
     { "tick": 120 },
-    { "command": "keep-mapping:alpha:x", "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
-      { "seq": 1, "kind": "command-failed", "command": "whistle.keep-mapping:alpha:x", "error": "alpha maps nothing at x", "text": "alpha maps nothing at x" }] } } }
+    { "command": "keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"x\"]}", "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
+      { "seq": 1, "kind": "command-failed", "command": "whistle.keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"x\"]}", "error": "alpha maps nothing at x", "text": "alpha maps nothing at x" }] } } }
   ]
 }
 ```
 
 ## Stable and may change
 
-- Stable: every command and verb above, the jump-key spelling `whistle.<verb>:<block>`
-  (ADR 0014), and the settings commands' spellings.
+- Stable: every command and verb above, its argument's kind, the jump-key spelling
+  `whistle.<verb>:<block>` (ADR 0014), and the settings commands' spellings.
 - `whistle.key-<key>` is the form whistle writes for the keys it claims in keys.json
   (see the guide). It may change; don't bind it yourself.
+- Gone in 2.0: `whistle.whistle` (now `whistle.switch-mode`) and `whistle.type` (now
+  `whistle.mode:type`). They are unknown commands.
 - Gone in 1.0: `whistle.enter`, `whistle.focus` (without a block) and the direction commands.
 
 ## History
 
 - whistle 1.0.0: first version of this list, with jump keys and `toggle-keep-mode`.
-- whistle 1.4.0: the settings commands, `whistle.mappings:<mod>:on|off` and
-  `whistle.keep-mapping:<mod>:<keys>`.
+- whistle 2.0.0: the spelling `whistle.<command>[:<argument>]`, each command declaring its
+  argument; `whistle.whistle` renamed `whistle.switch-mode`, `whistle.type` renamed
+  `whistle.mode:type`, and `whistle.mode:whistle` new; the settings commands,
+  `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and `whistle.keep-mapping:<JSON>`.

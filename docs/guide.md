@@ -10,15 +10,15 @@ usual. In **WHISTLE** whistle holds it: keys move between fields and run mapping
 whistle's defaults act only in WHISTLE, so TYPE stays yours. Herdr's `keys.json` holds them:
 
 ```json
-"global": { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces",
+"global": { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces",
             "alt-,": "whistle.settings" },
-"mod:whistle": { "ctrl-space": "whistle.type" }
+"mod:whistle": { "ctrl-space": "whistle.mode:type" }
 ```
 
 Ctrl+Space is taken elsewhere on some setups: terminal programs read it as NUL (Emacs uses it
 for set-mark), macOS uses it to switch input sources when you have more than one, and so do the
 Chinese IME on Windows and fcitx5 on Linux. If yours is taken, bind `ctrl-shift-space` instead
-in both places, which nothing in Herdr or the OS takes by default. `"ctrl-[": "whistle.whistle"`
+in both places, which nothing in Herdr or the OS takes by default. `"ctrl-[": "whistle.switch-mode"`
 in the `terminal` section works too, as an opt-in: it takes Esc-by-Ctrl+[ from every terminal
 program, and some keyboard layouts can't press it.
 
@@ -154,7 +154,7 @@ palette, settings, a rename), which takes it, and one that ends in TYPE.
     }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-n",
       "effects": [{ "run": "tab.new", "args": {} }], "bar": { "badge": "TYPE" } },
     { "world": { "focused": { "pane": "p2" } }, "tick": 120,
@@ -219,7 +219,7 @@ goes back to TYPE (`type` still does), and Herdr's spaces, tabs and agents lists
     "shared": { "keynav.field:files {}": { "v": 3, "label": "Files", "keys": { "enter": "Go in" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "hints": { "title": "Files", "items": [{ "key": "Enter", "label": "Go in", "group": false }] } },
     { "key": "enter", "effects": [{ "run": "files.keynav-key-enter", "args": {} }, { "focusBar": true }] },
@@ -274,7 +274,7 @@ Whether they wrap around at the ends is up to Herdr.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" } },
     { "key": "j", "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] }
   ]
@@ -298,7 +298,7 @@ After integration the `spaces` block holds the clone, which announces itself thr
     "shared": { "keynav.field:spaces-whistle {}": { "v": 3, "label": "Spaces", "keys": { "n": "New space", "r": "Rename", "x": "Close" } } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-h", "bar": { "label": "Spaces" },
       "effects": [{ "setShared": "keynav", "value": { "v": 3, "active": "spaces-whistle {}" } }] },
     { "key": "j", "effects": [{ "run": "spaces-whistle.keynav-down", "args": {} }, { "focusBar": true }] },
@@ -336,7 +336,7 @@ section, which wins while whistle has the keyboard:
 
 ```json
 "mod:whistle": {
-  "ctrl-space": "whistle.type",
+  "ctrl-space": "whistle.mode:type",
   "ctrl-h": "whistle.key-ctrl-h"
 }
 ```
@@ -365,7 +365,7 @@ A claimed key acts as if pressed on the bar:
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "command": "key-i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }],
       "bar": { "badge": "TYPE" } }
@@ -434,7 +434,7 @@ Each layer has two sections, kept apart:
     }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "n",
       "effects": [{ "run": "space.next", "args": {} }, { "focusBar": true }] },
     { "key": "p", "effects": [{ "run": "tab.prev", "args": {} }, { "focusBar": true }] }
@@ -505,7 +505,7 @@ a short marker (⚠ and how many) at its end, in TYPE and WHISTLE alike.
         "user": "{ \"map\": { \"n\": [\"Next tab\", " } }, "tick": 1000,
       "model": { "problems": [{ "source": "whistle.json", "detail": "doesn't parse; whistle runs on its last good version" }] },
       "bar": { "marker": "⚠ 1" } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "n",
       "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
   ]
@@ -538,17 +538,17 @@ anchor); it comes again only if the reason changes:
 
 Herdr hands a `keys.json` action to the mod its prefix names, so a copy of whistle in another
 folder (say `mods/whistle-2/`, because another mod is already named `whistle`) answers only to
-`whistle-2.*`: its lines read `"ctrl-space": "whistle-2.whistle"`, and the same for the jump
+`whistle-2.*`: its lines read `"ctrl-space": "whistle-2.switch-mode"`, and the same for the jump
 keys and the settings key. The installing agent writes them so. Switched off or standing aside,
 the copy types those keys into the terminal, as the copy in `mods/whistle/` does with its own.
 
-While no line in `global` runs this copy's switch command (`whistle-2.whistle`), the running
-copy lists every `global` line that runs another folder's (`whistle.whistle`) as a
+While no line in `global` runs this copy's switch command (`whistle-2.switch-mode`), the running
+copy lists every `global` line that runs another folder's (`whistle.switch-mode`) as a
 [config problem](#when-something-is-wrong) from `keys.json`, with the line to write. One line
 that runs its own is enough: then it lists none. Whistle only reads `global`; it never changes
 it.
 
-```json example A copy in mods/whistle-2/ whose switch key runs whistle.whistle lists a config problem
+```json example A copy in mods/whistle-2/ whose switch key runs whistle.switch-mode lists a config problem
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -558,11 +558,11 @@ it.
     "folder": "whistle-2",
     "copies": { "whistle-2": "1.0.0" },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "keysFile": { "text": "{ \"global\": { \"ctrl-space\": \"whistle.whistle\" } }", "error": null, "at": 0 }
+    "keysFile": { "text": "{ \"global\": { \"ctrl-space\": \"whistle.switch-mode\" } }", "error": null, "at": 0 }
   },
   "steps": [
     { "tick": 120, "model": { "problems": [{ "source": "keys.json",
-        "detail": "global › ctrl-space runs whistle.whistle, but this copy is whistle-2: make it whistle-2.whistle" }] },
+        "detail": "global › ctrl-space runs whistle.switch-mode, but this copy is whistle-2: make it whistle-2.switch-mode" }] },
       "bar": { "marker": "⚠ 1" } }
   ]
 }
@@ -582,10 +582,10 @@ the reason goes.
     ] },
     "herdr": "0.1.0",
     "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.switch-mode" }]
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
+    { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
       "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }], "bar": { "badge": null },
       "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
         "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0)", "fix": "Update Herdr." } } }
@@ -604,10 +604,10 @@ the reason goes.
     "folder": "whistle-old",
     "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle-old.whistle" }]
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle-old.switch-mode" }]
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
+    { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
       "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }], "published": null, "bar": { "badge": null, "problem": "Another whistle runs, from mods/whistle/" } }
   ]
 }
@@ -630,11 +630,11 @@ changes:
     "copies": { "whistle": "1.0.0", "whistle-old": "1.0.0" }
   },
   "steps": [
-    { "command": "type", "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }] },
-    { "command": "type", "notified": [] },
-    { "command": "whistle", "notified": [] },
-    { "world": { "herdr": "0.1.15" }, "command": "type", "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }] },
-    { "command": "type", "notified": [] }
+    { "command": "mode:type", "notified": [{ "title": "Whistle stands aside", "body": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.0). Update Herdr.", "level": "error" }] },
+    { "command": "mode:type", "notified": [] },
+    { "command": "switch-mode", "notified": [] },
+    { "world": { "herdr": "0.1.15" }, "command": "mode:type", "notified": [{ "title": "Whistle stands aside", "body": "Another whistle runs, from mods/whistle/. Delete the copies you don't want.", "level": "error" }] },
+    { "command": "mode:type", "notified": [] }
   ]
 }
 ```
@@ -713,7 +713,7 @@ at the window's bottom right.
     }
   },
   "steps": [
-    { "command": "whistle", "hints": null },
+    { "command": "switch-mode", "hints": null },
     { "world": { "barFocused": true }, "key": "w",
       "hints": { "keys": "w", "title": "Panes", "exit": "Esc cancels", "items": [
         { "key": "v", "label": "Split right", "group": false },
@@ -773,7 +773,7 @@ they wrote on its next read of whistle.json, within a second, as it does for an 
     { "world": { "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": {} }",
         "user": "{ \"mods\": { \"alpha\": false } }" } }, "tick": 1000,
       "settings": { "conflicts": [], "mods": [{ "name": "alpha", "on": false, "problems": [] }, { "name": "beta", "on": true, "problems": [] }] } },
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "g",
       "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
   ]
@@ -787,7 +787,7 @@ they wrote on its next read of whistle.json, within a second, as it does for an 
   [stands aside](#when-whistle-stands-aside). With a badge, the key isn't reaching Herdr: your
   OS or input method may take it (bind `ctrl-shift-space` instead, see
   [Modes and the switch key](#modes-and-the-switch-key)), or keys.json has no `global` line
-  `"ctrl-space": "whistle.whistle"`.
+  `"ctrl-space": "whistle.switch-mode"`.
 - **There's no bar**: the shown layout has no whistle block. Herdr's own layouts (`main`) never
   show a new mod's bar; the agent that installed whistle makes a copy with the bar
   (`main-whistle`) and switches to it. Ask it again, or add a block of the `whistle` mod to your

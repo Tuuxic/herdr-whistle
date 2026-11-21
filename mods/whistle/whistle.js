@@ -6,7 +6,7 @@
 // shared("whistle"):          { v: 1, mode: "type" | "whistle", enabled, sequence: null |
 //                               { keys, group }, pane: the terminal pane whistle has selected | null,
 //                               onTerminal: whether the terminal is the selected field in WHISTLE,
-//                               inert?: { problem, fix }: why whistle stands aside (1.4.0) }
+//                               inert?: { problem, fix }: why whistle stands aside (2.0.0) }
 // shared("whistle.hints"):    { v: 1, keys, title, items: [{ key, label, group }], exit } | null
 // shared("whistle.events"):   { v: 1, events: [{ seq, kind, text, ...data }] }, the last 8
 // shared("whistle.config"):   { v: 1, problems, mods: [{ name, on, problems }], conflicts, overrides }
@@ -25,7 +25,7 @@ export function readState(value) {
   if (!value || typeof value !== "object" || value.v !== 1) return null;
   const { mode, enabled, sequence, pane, onTerminal, inert } = value;
   // onTerminal came later under v 1 (whistle 1.0.0 has it); missing, it reads as false. inert
-  // came in 1.4.0; missing, whistle runs (or is older), so it reads as null.
+  // came in 2.0.0; missing, whistle runs (or is older), so it reads as null.
   return { mode, enabled, sequence, pane, onTerminal: onTerminal === true, inert: inert ?? null };
 }
 
@@ -71,7 +71,7 @@ export function configOf(value) {
 export const readConfig = () => configOf(shared("whistle.config"));
 
 // Offers whistle your mod's mappings and groups (mod: your mod's folder name, as its blocks
-// carry it in the layout, made of letters, digits, ".", "_" and "-" only; map: whistle's map
+// carry it in the layout; map: whistle's map
 // format). They count while your mod is in the shown layout. Call it again to change them; it
 // writes only when your entry differs, and keeps the other mods' entries.
 export function offerMappings(mod, map) {

@@ -27,11 +27,11 @@ const label = w?.mode === "whistle" ? "whistling" : "";
 | `sequence` | `null` \| `{ keys, group }` | The key sequence so far: `keys` a list of key names, `group` the name of the group it has reached. `null` outside a sequence. |
 | `pane` | string \| `null` | The terminal pane whistle has selected, `null` until it has selected one. |
 | `onTerminal` | boolean | Whether the terminal is the selected field: `true` only in WHISTLE with the terminal selected. |
-| `inert` | `{ problem, fix }`, missing while whistle runs | Why whistle stands aside, and what the person can do about it (rule 7). Since whistle 1.4.0. |
+| `inert` | `{ problem, fix }`, missing while whistle runs | Why whistle stands aside, and what the person can do about it (rule 7). Since whistle 2.0.0. |
 
 Whistle 1.0.0 writes every field above but `inert`. Fields added later under `v: 1` are
 optional; ignore fields you don't know. (`onTerminal` came in during 1.0's work: `whistle.js`
-reads it as `false` when it's missing. `inert` came in 1.4.0: `whistle.js` reads it as `null`
+reads it as `false` when it's missing. `inert` came in 2.0.0: `whistle.js` reads it as `null`
 when it's missing.)
 
 ## Rules
@@ -68,8 +68,8 @@ that changes nothing writes nothing, so a change of value is a change of state.
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } },
-    { "world": { "barFocused": true }, "command": "whistle",
+    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } },
+    { "world": { "barFocused": true }, "command": "switch-mode",
       "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
   ]
 }
@@ -113,7 +113,7 @@ sequence ends (a command runs, it's cancelled, or a key isn't mapped), `sequence
     }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "w",
       "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": "p1", "onTerminal": true } },
     { "key": "v",
@@ -138,7 +138,7 @@ field is `onTerminal`'s to say (rule 6).
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "l", "published": null },
     { "world": { "focused": { "pane": "p2", "onTerminal": true } }, "tick": 120,
       "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p2", "onTerminal": true } }
@@ -169,7 +169,7 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
   },
   "steps": [
     { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false } },
-    { "command": "whistle", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+    { "command": "switch-mode", "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
   ]
 }
 ```
@@ -188,7 +188,7 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
     "shared": { "keynav.field:tree {}": { "v": 2, "label": "Tree", "keys": {} } }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-l",
       "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } },
     { "key": "ctrl-h",
@@ -210,7 +210,7 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle" },
+    { "command": "switch-mode" },
     { "world": { "barFocused": true }, "key": "ctrl-h",
       "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
   ]
@@ -221,8 +221,8 @@ const marked = w?.mode === "whistle" && w.onTerminal && w.pane === props().pane;
 {
   "world": { "focused": { "pane": "p1" } },
   "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "command": "whistle",
+    { "command": "switch-mode" },
+    { "world": { "barFocused": true }, "command": "switch-mode",
       "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false } }
   ]
 }
@@ -252,7 +252,7 @@ stands aside and `fix` what the person can do, so any mod can show it. While whi
   "steps": [
     { "tick": 120, "published": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
       "inert": { "problem": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)", "fix": "Update Herdr." } } },
-    { "command": "whistle", "published": null }
+    { "command": "switch-mode", "published": null }
   ]
 }
 ```
@@ -260,7 +260,7 @@ stands aside and `fix` what the person can do, so any mod can show it. While whi
 ```json example A copy standing aside for another copy publishes nothing
 {
   "world": {
-    "folder": "whistle-2", "copies": { "whistle": "1.4.0", "whistle-2": "1.4.0" },
+    "folder": "whistle-2", "copies": { "whistle": "2.0.0", "whistle-2": "2.0.0" },
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } },
@@ -283,7 +283,7 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
 
 - Stable: `shared("whistle")` and everything above.
 - Also public, each with its own page: `shared("whistle.mappings")`, for offering mappings
-  ([mod-mappings.md](mod-mappings.md)), and since 1.4.0 the hint items
+  ([mod-mappings.md](mod-mappings.md)), and since 2.0.0 the hint items
   ([hints.md](hints.md)), the event feed ([events.md](events.md)) and the config
   ([config.md](config.md)).
 - Private: every other `whistle.*` key (such as `whistle.copies`). It may change or go in any
@@ -293,5 +293,5 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
 
 - `v: 1` (whistle 1.0.0): first version. Replaces the undocumented `whistle.enabled` and
   `whistle.sequence` keys, which are gone.
-- Whistle 1.4.0: the optional `inert` field. A copy standing aside with no other copy running
+- Whistle 2.0.0: the optional `inert` field. A copy standing aside with no other copy running
   now writes the state with it (before, it wrote nothing).

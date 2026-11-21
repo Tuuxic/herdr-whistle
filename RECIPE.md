@@ -76,8 +76,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 
 ## How it behaves
 
-- **Modes**: `ctrl-space` (keys.json `global`, `whistle.whistle`) enters WHISTLE on the
-  terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.type`),
+- **Modes**: `ctrl-space` (keys.json `global`, `whistle.switch-mode`) enters WHISTLE on the
+  terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.mode:type`),
   `i` or Enter go back to TYPE in the selected pane. A click anywhere else ends WHISTLE; a
   click on the bar enters it.
 - **Jump keys** (ADR 0014): a keys.json line `whistle.<verb>:<block>` (verbs `field`, `focus`,
@@ -123,7 +123,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - **Inert**: on a Herdr older than the minimum in `version.js` (`updates().app.version`, or
   when that can't be read), or while another copy of whistle runs, whistle stands aside:
   WHISTLE never starts, keys and clicks on the bar do nothing, and the key keys.json binds to
-  `whistle.whistle` (as it resolves from a terminal: `terminal`, then a layout's section,
+  `whistle.switch-mode` (as it resolves from a terminal: `terminal`, then a layout's section,
   then `global`) is typed into the focused terminal instead. If WHISTLE was on, it goes back
   to TYPE first.
 - **Copies**: each copy announces its folder in `shared("whistle.copies")`. Of this copy
@@ -149,10 +149,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   next read.
 - **Whistle state and the public keys**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane, onTerminal }` whenever it changes, and only then; an inert copy writes it only with
-  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it, since 1.4.0:
+  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it, since 2.0.0:
   `whistle.hints`, `whistle.events` and `whistle.config` (docs/contracts/hints.md, events.md,
-  config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings:<mod>:on|off`
-  and `whistle.keep-mapping:<mod>:<keys>` (docs/contracts/commands.md). Every other `whistle.*` key
+  config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings-on|off:<mod>`
+  and `whistle.keep-mapping:<JSON>` (docs/contracts/commands.md). Every other `whistle.*` key
   is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
   key>")` says `v: 3` (or `v: 2`, still driven, with a notice in settings). Whistle names the
@@ -175,10 +175,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).
-- **`keys.json`** (repo root): `global: ctrl-space → whistle.whistle`,
+- **`keys.json`** (repo root): `global: ctrl-space → whistle.switch-mode`,
   `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`,
   `alt-, → whistle.settings`;
-  `mod:whistle: ctrl-space → whistle.type`.
+  `mod:whistle: ctrl-space → whistle.mode:type`.
 - **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
   `layout.show`), `exec("hc", ["keys", ...])` to type the switch key through while inert.
@@ -197,8 +197,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   doesn't keep another copy inert.
 - Herdr hands a keys.json action to the mod its prefix names: a copy in `mods/whistle-2/`
   answers only to `whistle-2.*`, and switched off or inert it types those keys through. While no
-  `global` line runs this copy's switch command (`whistle-2.whistle`), the running copy lists
-  each one that runs another folder's (`whistle.whistle`) as a `keys.json` config problem. Whistle
+  `global` line runs this copy's switch command (`whistle-2.switch-mode`), the running copy lists
+  each one that runs another folder's (`whistle.switch-mode`) as a `keys.json` config problem. Whistle
   only reads `global`; it never writes it (ADR 0001).
 - `run()` returns `null` on a command Herdr refuses, and Herdr shows its own error toast; it
   doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then the bar
@@ -215,7 +215,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
   hides itself and `mods/whistle/` runs.
 - Alt+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
-- With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.whistle`,
+- With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.switch-mode`,
   settings list the switch-key problem and the bar shows `⚠ 1`.
 - With only `mods/whistle-2/`, its `global` lines on `whistle-2.*` and whistle switched off,
   Ctrl+Space and Alt+A reach the terminal.
@@ -515,14 +515,14 @@ and anything whistle-specific goes through whistle's public commands
 
 **Pick into TYPE**: on the spaces and agents fields, pick runs the block's Herdr command on the
 cursor item, makes its request as in step 5 (`toTerminal` for an agent, `keepKeys` for a
-space), and then, if whistle is there, runs `whistle.type`, so the person lands typing in what
+space), and then, if whistle is there, runs `whistle.mode:type`, so the person lands typing in what
 they picked:
 
 <!-- table integrate-pick -->
 | Block | Herdr command | Then |
 |---|---|---|
-| `spaces` | `space.select` | `whistle.type` |
-| `agents` | `agent.focus` | `whistle.type` |
+| `spaces` | `space.select` | `whistle.mode:type` |
+| `agents` | `agent.focus` | `whistle.mode:type` |
 
 `space.select` takes the space, `{ "id": <its id> }`; `agent.focus` the agent's terminal,
 `{ "terminal": <its terminal> }`; where the mod's click runs another command, use that one.
@@ -531,11 +531,11 @@ For an agent:
 ```js
 run("agent.focus", { terminal: item.terminal });
 toTerminal(this.key);                          // keepKeys(this.key) for a space
-if (shared("whistle")) run("whistle.type");    // shared and run from "herdr"
+if (shared("whistle")) run("whistle.mode:type");    // shared and run from "herdr"
 ```
 
 Check `shared("whistle")` first: without whistle, Herdr shows the person an "unknown command"
-error toast. In TYPE `whistle.type` does nothing, so don't check whistle's mode. Other fields
+error toast. In TYPE `whistle.mode:type` does nothing, so don't check whistle's mode. Other fields
 decide for themselves whether their pick lands in TYPE; on the simple path, tabs, files and
 changes keep theirs.
 
@@ -544,7 +544,7 @@ same Herdr command on the cursor item, then `keepKeys(this.key)`, which writes
 `{ after: "hold" }`, for spaces and agents alike. Whistle stays in WHISTLE with the field
 selected: if the command moved the keyboard to a pane (`agent.focus` may), whistle takes it
 back, so the person looks at the item without working in it and moves on with `j`/`k`. Show never writes `{ after: "terminal" }` (no `toTerminal`) and never runs
-`whistle.type`.
+`whistle.mode:type`.
 
 ### The selected terminal's header
 
@@ -626,7 +626,7 @@ only through you.
 2. Replace the contents of `mods/whistle/` with the new `mods/whistle/`: copy every file over
    and delete the files the new version doesn't ship. Don't rename anything. If the only
    copy is in another folder, move it to `mods/whistle/` and update it there, and rewrite its
-   `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.whistle`,
+   `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.switch-mode`,
    `whistle.focus:agents`, `whistle.focus:spaces`, `whistle.settings`), keeping their keys.
 3. Other copies stay inert while `mods/whistle/` runs. Ask before deleting them.
 4. Never touch `whistle.json` in Herdr's home, and don't merge `keys.json` again:
