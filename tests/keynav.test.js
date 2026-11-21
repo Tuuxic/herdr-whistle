@@ -1,5 +1,5 @@
 // Keynav v3 (ADR 0009, ADR 0017, docs/contracts/keynav.md): a mod's block is a field once its entry
-// shared("keynav.field:<fieldKey>") says v 3 (or v 2, still driven); whistle names the selected one in
+// shared("keynav.field:<fieldKey>") says v 3; whistle names the selected one in
 // shared("keynav") = { v: 3, active }, sends it moves and its declared keys as
 // <mod>.keynav-* commands, and reads only its request slot.
 
@@ -15,10 +15,7 @@ const files = (props) => ({ id: "files", type: "block", content: { mod: "files",
 const LAYOUT = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), files()] }, bar] };
 const NO_FILES = { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main")] }, bar] };
 const KEY = "files {}";
-const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3, label, keys } });
-// The same field on a copy of keynav.js still at v 2.
-const entry2 = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 2, label, keys } });
-const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
+const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3, label, keys } });const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
@@ -31,7 +28,7 @@ const ACTIVE = { setShared: "keynav", value: { v: 3, active: KEY } };
 const SCENARIOS = [
   // A field appearing.
   {
-    name: "A mod's block is a field once its entry announces v 2: Ctrl+L selects it and names it active",
+    name: "A mod's block is a field once its entry announces v 3: Ctrl+L selects it and names it active",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l", handled: true, effects: [ACTIVE], model: { field: "files" }, bar: { label: "Files" } }],
   },
@@ -279,53 +276,24 @@ const SCENARIOS = [
     steps: [...IN, { key: "ctrl-l" }, { world: { barFocused: false }, tick: 120, model: { mode: "type" } },
       { world: { shared: { ...entry(), [`keynav.request:${KEY}`]: { after: "hold", at: 300 } } }, tick: 120, effects: [], model: { mode: "type" } }],
   },
-  // Versions.
   {
-    name: "A field still on keynav v2 stays a field, and settings say to update its keynav.js",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l", model: { field: "files",
-      fieldProblems: [{ source: "keynav", detail: "files speaks keynav v2: whistle still drives it, but update its keynav.js to v3" }] } },
-      { tick: 120, bar: { marker: "⚠ 1" } }],
-  },
-  {
-    name: "A field still on keynav v2 asking for the terminal with { to: \"terminal\" }: whistle selects it on the pane the field focused",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry2(), [`keynav.request:${KEY}`]: { to: "terminal", at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }, { setShared: "keynav", value: { v: 3, active: null } }],
-        model: { mode: "whistle", field: "main", pane: "p2", holdUntil: 840 } }],
-  },
-  {
-    name: "A field still on keynav v2 asking to hold with { hold: true }: whistle takes the keyboard back",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l" },
-      { world: { barFocused: false, shared: { ...entry2(), [`keynav.request:${KEY}`]: { hold: true, at: 150 } } },
-        tick: 120, effects: [{ focusBar: true }], model: { mode: "whistle", field: "files", holdUntil: 840 } }],
-  },
-  {
-    name: "A v3 field's request in v2's shape isn't one",
+    name: "A request with to instead of after isn't one",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
       { world: { barFocused: false, focused: { pane: "p2", terminal: "t1" }, shared: { ...entry(), [`keynav.request:${KEY}`]: { to: "terminal", at: 150 } } },
         tick: 120, effects: [{ setShared: "keynav", value: { v: 3, active: null } }], model: { mode: "type", holdUntil: 0 } }],
   },
-  {
-    name: "A field still on keynav v2 is driven as before: Enter sends it open as files.keynav-open, other moves as in v3",
-    world: { ...WORLD, shared: entry2() },
-    steps: [...IN, { key: "ctrl-l", effects: [ACTIVE], model: { field: "files" } },
-      { key: "enter", effects: [{ run: "files.keynav-open", args: {} }, { focusBar: true }] },
-      { key: "j", effects: [{ run: "files.keynav-down", args: {} }, { focusBar: true }] }],
-  },
-  {
-    name: "A copy that announces keynav v1 isn't a field, and settings say to update its keynav.js",
-    world: { ...WORLD, shared: { "keynav.fields": { [KEY]: { v: 1, mod: "files", props: {}, label: "Files" } } } },
-    steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main",
-      fieldProblems: [{ source: "keynav", detail: "files speaks keynav v1, which whistle no longer drives; update its keynav.js" }] } }],
-  },
+  // Versions.
   {
     name: "An entry with a v this driver doesn't speak isn't a field",
     world: { ...WORLD, shared: { [`keynav.field:${KEY}`]: { v: 4, label: "Files", keys: {} } } },
     steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main" } }],
+  },
+  {
+    name: "An entry with v 2 isn't a field, and settings list nothing about it",
+    world: { ...WORLD, shared: { [`keynav.field:${KEY}`]: { v: 2, label: "Files", keys: {} } } },
+    steps: [...IN, { key: "ctrl-l", effects: [], model: { field: "main" } },
+      { tick: 120, bar: { marker: null } }],
   },
 ];
 
@@ -345,7 +313,6 @@ export default suite("keynav", (t) => {
   t.check("keynav.js's entry declares no keys by default", helper.entry("Files"), { v: 3, label: "Files", keys: {} });
   t.check("keynav.js reads a move", helper.move("keynav-down"), "down");
   t.check("keynav.js reads pick", helper.move("keynav-pick"), "pick");
-  t.check("keynav.js doesn't read v2's open", helper.move("keynav-open"), null);
   t.check("a declared key isn't a move", helper.move("keynav-key-d"), null);
   t.check("keynav.js reads a declared key as the field wrote it", helper.declared("keynav-key-D"), "D");
   t.check("keynav.js ignores other commands", [helper.move("settings"), helper.declared("settings"), helper.move(null)], [null, null, null]);

@@ -1,13 +1,12 @@
 // Fields: the parts of the window whistle can select in WHISTLE, found in the layout, and the
 // field in a direction. Pure: it reads only the layout it is given (world.layout).
 //
-// A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys, v }
+// A field is { block, kind, label }, plus { stock } for a stock field and { mod, key, keys }
 // for a keynav field. Kinds:
 //   - the terminal: each block that shows a pane;
 //   - stock fields: a block of one of Herdr's own spaces, tabs or agents mods (ADR 0006);
 //   - keynav (docs/contracts/keynav.md): any other mod's block whose entry
-//     shared("keynav.field:<fieldKey>") says v 3, or v 2 (still driven); the field's `v` is
-//     its entry's, and decides how whistle speaks to it. `shared` is the shared state the shell read
+//     shared("keynav.field:<fieldKey>") says v 3. `shared` is the shared state the shell read
 //     ({ "<shared key>": value }); stale entries for blocks not in the layout never count.
 
 import { canonicalKey, isChord } from "./keynames.js";
@@ -27,28 +26,17 @@ export const STOCK_FIELDS = {
   agents: { label: "Agents", down: "agent.next", up: "agent.prev", pick: "terminal" },
 };
 
-// keynav's newest version (the driver's entry announces it), and what a request asks:
+// The keynav version whistle speaks (the driver's entry announces it), and what a request asks:
 // "terminal" (whistle selects the terminal on the pane the field focused) or "hold" (whistle
 // takes the keyboard back).
 export const KEYNAV_V = 3;
 export const AFTER_TERMINAL = "terminal";
 export const AFTER_HOLD = "hold";
-// What differs between the keynav versions whistle drives, one row each, so dropping a version
-// is deleting its row. pick: the name the version gives the pick move (open before v3). asks:
-// what one of its requests asks, AFTER_TERMINAL | AFTER_HOLD | null (not a request).
-const VERSIONS = {
-  // v2: { to: "terminal", at } | { hold: true, at }.
-  2: { pick: "open", asks: (r) => (r.to === "terminal" ? AFTER_TERMINAL : r.hold === true ? AFTER_HOLD : null) },
-  // v3: { after: "terminal" | "hold", at }.
-  3: { pick: "pick", asks: (r) => (r.after === AFTER_TERMINAL || r.after === AFTER_HOLD ? r.after : null) },
-};
-export const KEYNAV_VERSIONS = Object.keys(VERSIONS).map(Number);
-// A move as a keynav field of its version reads it.
-export const moveFor = (field, move) => (move === "pick" ? VERSIONS[field.v]?.pick ?? move : move);
-// What a keynav field's request asks, read as its version writes it.
-export function requestOf(field, r) {
+// What a request, { after: "terminal" | "hold", at }, asks: AFTER_TERMINAL | AFTER_HOLD | null
+// (not a request).
+export function requestOf(r) {
   if (!r || typeof r !== "object" || typeof r.at !== "number") return null;
-  return VERSIONS[field.v]?.asks(r) ?? null;
+  return r.after === AFTER_TERMINAL || r.after === AFTER_HOLD ? r.after : null;
 }
 export const entryKey = (key) => `keynav.field:${key}`;
 export const requestKey = (key) => `keynav.request:${key}`;
@@ -63,10 +51,10 @@ const stable = (v) => {
 };
 export const fieldKey = (mod, props) => `${mod} ${stable(props ?? {})}`;
 
-// A keynav field's entry, if it is in a version this driver speaks: { v, label, keys }.
+// A keynav field's entry, if it is in the version this driver speaks: { v, label, keys }.
 export function entryOf(shared, key) {
   const e = shared?.[entryKey(key)];
-  return e && typeof e === "object" && KEYNAV_VERSIONS.includes(e.v) ? e : null;
+  return e && typeof e === "object" && e.v === KEYNAV_V ? e : null;
 }
 
 // Every node of a layout tree, depth first in layout order: visit(node, parent | null, hidden:
@@ -119,7 +107,7 @@ function list(idx, shared) {
     else if (c.mod) {
       const key = fieldKey(c.mod, c.props);
       const e = entryOf(shared, key);
-      if (e) out.push({ block: id, kind: KEYNAV, label: typeof e.label === "string" ? e.label : c.mod, mod: c.mod, key, keys: e.keys, v: e.v });
+      if (e) out.push({ block: id, kind: KEYNAV, label: typeof e.label === "string" ? e.label : c.mod, mod: c.mod, key, keys: e.keys });
     }
   }
   return out;

@@ -3,8 +3,7 @@
 For mod authors who want to show what whistle's settings show: config problems, mapping
 conflicts between mods, keys mapped over mods', and the mods that offer mappings with whether
 each is on. To change any of it, run whistle's
-[settings commands](commands.md#settings-commands). Current version: **`v: 1`**. Since whistle
-2.0.0.
+[settings commands](commands.md#settings-commands). Current version: **`v: 1`**.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder and call
 `readConfig()` when you draw. It gives the fields below, or `null` while there's nothing to

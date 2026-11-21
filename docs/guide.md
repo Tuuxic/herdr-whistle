@@ -411,9 +411,7 @@ Each layer has two sections, kept apart:
 - **`keys`**, whistle's own keys: an action to its list of keys. The actions: `field-left`,
   `field-down`, `field-up`, `field-right` (select the field that way), `left`, `down`, `up`,
   `right` (move inside it), `pick`, `type` (back to TYPE) and `cancel` (end a key sequence).
-  `back` is gone: a layer that still sets it is ignored and listed as a config problem. `pick`
-  was called `open` before 1.1.0: a layer that still sets `open` is read as `pick` (unless it
-  sets `pick` too) and listed in settings to rename.
+  Any other action is unknown: it is skipped and listed.
 - A key set to `null` takes it away; groups merge key by key, so a layer can add to a group or
   take one key out of it. An action's list replaces the one below; `null` leaves the action
   with no keys.
@@ -683,8 +681,7 @@ Standing aside, it shows only [why](#when-whistle-stands-aside).
 A layout can offer more than one **spot** for the bar: a whistle block in each, each with its
 own `bar` name, all hidden but one. You show the one you want and hide the others (Herdr
 remembers it), or use the layout's own control if it has one; whistle never shows or hides a
-bar. whistle.json's `bar` no longer does anything: settings list it as a config problem. The
-rules:
+bar. The rules:
 [The layout's whistle block](contracts/layout-block.md#5-bar-names-a-spot-the-layout-shows-or-hides-it).
 
 ## Hints

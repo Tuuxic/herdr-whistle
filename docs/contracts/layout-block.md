@@ -37,10 +37,10 @@ layout puts the bar, only the bar's own size inside any border, so a layout that
 in from the window's right edge, or draws a border around it, tells whistle by how much: the
 box is then as wide as the bar block, border included, ends where the block ends, and sits
 `hintsGap` above the block's top edge, border included (rule 7). With no bar shown, the box
-docks at the window's bottom right (rule 13).
+docks at the window's bottom right (rule 12).
 
 `mappings`, `keys`, `mods`, `enabled`, `hints` and `nav` are the layout's config layer and go
-on the anchor (rule 14). `bar` and the three `hints*` props describe a bar's own spot and go on
+on the anchor (rule 13). `bar` and the three `hints*` props describe a bar's own spot and go on
 each bar. In a layout without an anchor, a bar holds them all.
 
 A layout may have several whistle blocks (bar spots). Without an anchor, each prop but `bar`
@@ -146,53 +146,10 @@ with a marker on the bar. The rest of the block still counts.
 
 A layout that offers several spots names each whistle block with `bar` and hides all but one.
 The person, or a layout's own control (`layout.show` / `layout.hide` on a spot's block), shows
-and hides them, and Herdr remembers which. Whistle never shows or hides a bar. whistle.json's
-`bar` no longer picks the spot: whistle ignores it and lists it as a config problem (source
-`whistle.json`), whatever its value.
-
-```json example Anchored, whistle.json's bar moves no bar and is listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Top\" }" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "model": { "problems": [
-      { "source": "whistle.json", "detail": "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }
-    ] } }
-  ]
-}
-```
-
-The same without an anchor, from the shown bar's copy:
-
-```json example Without an anchor, whistle.json's bar moves no bar and is listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
-    ] },
-    "props": { "bar": "Bottom" },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Top\" }" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "model": { "problems": [
-      { "source": "whistle.json", "detail": "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }
-    ] } }
-  ]
-}
-```
+and hides them, and Herdr remembers which. Whistle never shows or hides a bar.
 
 A bar something else hides (a `whistle.toggle-keep-mode:<bar>` key, `layout.hide`, the
-layout's own control) stays hidden, whatever whistle.json's `bar` says:
+layout's own control) stays hidden:
 
 ```json example A bar the layout hides stays hidden
 {
@@ -203,7 +160,7 @@ layout's own control) stays hidden, whatever whistle.json's `bar` says:
       { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
     ] },
     "props": { "anchor": true },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Bottom\" }" }
+    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": null }
   },
   "steps": [
     { "tick": 120, "effects": [] },
@@ -467,12 +424,7 @@ straight away.
 }
 ```
 
-### 11. Removed
-
-Removed in whistle 1.3.0: whistle.json's `bar` no longer picks the spot, from the anchor or
-anywhere (rule 5). The other rules keep their numbers.
-
-### 12. One anchor runs whistle; any other is left out
+### 11. One anchor runs whistle; any other is left out
 
 A layout has one anchor. If it has more, the first in layout order runs whistle and every
 other anchor is left out like a bar's copy: it acts on no command, key or tick. Each extra
@@ -563,7 +515,7 @@ as if it had no anchor: a bar stands in for it (rule 6) and settings list the an
 }
 ```
 
-### 13. With no bar shown, the hints box docks at the window's bottom right
+### 12. With no bar shown, the hints box docks at the window's bottom right
 
 Inside a group the hints box opens whether or not a bar shows. While a bar shows, it docks on
 that bar (rule 7), by the size that bar publishes (rule 9); with several shown, on the first in
@@ -684,7 +636,7 @@ A layout with no bar spot at all, only the anchor, docks the box the same way.
 }
 ```
 
-### 14. The layout's props come from the anchor; place props from the bar
+### 13. The layout's props come from the anchor; place props from the bar
 
 In a layout with an anchor, the anchor holds the layout's config layer: `mappings`, `keys`,
 `mods`, `enabled`, `hints` and `nav` are read from it alone.
@@ -775,11 +727,4 @@ they are skipped and listed.
 
 ## History
 
-- whistle 1.3.0: whistle never shows or hides a bar; the layout does (rule 5). whistle.json's
-  `bar` is ignored and listed as a config problem. Rule 11, in which whistle.json's `bar` picked
-  the spot from the anchor, is removed. With no bar shown, the hints box docks at the window's
-  bottom right (rule 13), no longer where a hidden spot would sit.
-- whistle 1.0.0: first version. `nav` directions are `left`/`down`/`up`/`right` (they were
-  `h`/`j`/`k`/`l`); a bad prop is now listed instead of ignored. `hintsAlignRight` measures to
-  the bar block's outer edge, border included (it was to the bar's inside), and `hintsGap`
-  counts from the block's top border.
+- whistle 1.0.0: first version.
