@@ -7,7 +7,8 @@
 // `enabled`, `hints`, `nav`, `bar`, and `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`,
 // which place the hints box. `part` is private (whistle's own overlay copies). A bad prop is skipped and listed as a config problem; the rest still count.
 //
-// whistle.json's `enabled`, `hints` and `bar` go over the layout's (settings()).
+// whistle.json's `enabled` and `hints` go over the layout's (settings()). Its `bar` is ignored
+// and listed: the layout shows and hides bars, whistle never does (ADR 0019).
 
 import { fieldKey, eachNode } from "./fields.js";
 import { isObject } from "./config.js";
@@ -132,34 +133,24 @@ export function viewing(layout, folder, props) {
   return twins.some((g) => fieldKey(folder, g[0].props) === mine);
 }
 
-// The bar spots: this copy's blocks named by a `bar` prop.
-export const spots = (layout, folder) => bars(layout, folder).filter((b) => typeof b.props.bar === "string");
-
-// Where the hints box docks (ADR 0018): { spot: the bar block it lines up with | null, shown }.
-// The first of this copy's bars (its blocks but the anchor) that shows; with every bar hidden,
-// the spot that would show (pick: whistle.json's `bar`, else the first bar in layout order),
-// not shown; with no bar at all, no spot.
-export function dock(layout, folder, pick) {
-  const all = bars(layout, folder).filter((b) => !isAnchor(b.props));
-  const shown = all.find((b) => !b.hidden);
-  if (shown) return { spot: shown, shown: true };
-  return { spot: all.find((b) => pick != null && b.props.bar === pick) ?? all[0] ?? null, shown: false };
-}
-
-// A block's place props (NUMBERS) as it writes them, the bad ones left out.
-export function placeOf(props) {
-  const place = {};
-  for (const k of NUMBERS) if (Number.isFinite(props?.[k])) place[k] = props[k];
-  return place;
+// Where the hints box docks: { spot: the bar block it lines up with | null, shown }. The first
+// of this copy's bars (its blocks but the anchor) that shows; with no bar shown, no spot (the
+// box docks at the window's bottom right, ADR 0019). Which bar shows is the layout's business.
+export function dock(layout, folder) {
+  const shown = bars(layout, folder).find((b) => !isAnchor(b.props) && !b.hidden);
+  return shown ? { spot: shown, shown: true } : { spot: null, shown: false };
 }
 
 // The spot a bar's props name (its `bar`), "" for a bar that names none.
 export const spotName = (props) => (typeof props?.bar === "string" ? props.bar : "");
 
-// whistle.json's `enabled`, `hints` and `bar` over the layout's props: { settings, problems }.
-// settings: { enabled, hints, nav, bar: the spot whistle.json picks | null, place: the hints'
-// placement props }.
-export function settings(props, user, layout, folder) {
+// What whistle.json's `bar` gets, whatever its value: whistle never shows or hides a bar (ADR 0019).
+const USER_BAR_GONE = "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)";
+
+// whistle.json's `enabled` and `hints` over the layout's props: { settings, problems }.
+// settings: { enabled, hints, nav, place: the hints' placement props }. whistle.json's `bar` is
+// ignored and listed.
+export function settings(props, user) {
   const problems = [];
   const own = {};
   for (const k of BOOLEANS) {
@@ -167,13 +158,7 @@ export function settings(props, user, layout, folder) {
     if (typeof user[k] === "boolean") own[k] = user[k];
     else problems.push(`${k} should be true or false`);
   }
-  let bar = null;
-  if (user?.bar != null) {
-    if (typeof user.bar !== "string") problems.push("bar should be the spot's name, a string");
-    else if (!spots(layout, folder).some((s) => s.props.bar === user.bar))
-      problems.push(`bar: this layout has no spot "${user.bar}"; the bar stays where it is`);
-    else bar = user.bar;
-  }
+  if (isObject(user) && "bar" in user) problems.push(USER_BAR_GONE);
   const place = {};
   for (const k of NUMBERS) if (k in props) place[k] = props[k];
   return {
@@ -181,7 +166,6 @@ export function settings(props, user, layout, folder) {
       enabled: own.enabled ?? props.enabled ?? true,
       hints: own.hints ?? props.hints ?? true,
       nav: props.nav ?? {},
-      bar,
       place,
     },
     problems,

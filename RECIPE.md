@@ -134,7 +134,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   its props (`props()`). In a layout with an anchor (`anchor: true`, 0 px), the first anchor
   (of those whose props no other anchor shares) runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
   Without an anchor, a bar stands in for it, and a copy whose block is hidden rests: TYPE, no
-  claims, no state, no spot moves; only the shown spot's copy runs
+  claims, no state; only the shown spot's copy runs
   (docs/contracts/layout-block.md, rule 6).
 - **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
   sets them in private shared keys, `whistle.hints` and `whistle.settings`, when they change;
@@ -142,8 +142,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
   sizes the shell measures) and closes the hints window, as effects. Each bar's copy
   publishes its drawn size in `whistle.barsize:<folder>:<bar>`, so the anchor, which draws no
-  bar, docks the box on the bar that shows, or on the picked spot's last size with every bar
-  hidden. Settings
+  bar, docks the box on the bar that shows; with no bar shown, the box docks at the window's
+  bottom right. Whistle never shows or hides a bar: the layout does (ADR 0019). Settings
   change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
   the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
   next read.

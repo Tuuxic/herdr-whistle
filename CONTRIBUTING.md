@@ -92,7 +92,9 @@ affects. `next` reaches `main` only by a release.
 
 1. **Version**: `VERSION` in `mods/whistle/version.js` and `"version"` in
    `mods/whistle/mod.json` agree (a test checks), semver over every public surface: a break in
-   a contract, a helper, keys.json's lines or whistle.json is a major version. Raise
+   a contract, a helper, keys.json's lines or whistle.json is a major version. A whistle.json
+   key that stops having an effect, while it still parses and is listed as a config problem,
+   is minor (as `back` in 1.1.0 and `bar` in 1.3.0), marked **Changed** or **Removed**. Raise
    `MIN_HERDR` and `"herdr"` together if whistle now needs a newer Herdr.
 2. **CHANGELOG.md** has the version's entry, `## v<version> (<date>)` with the date of the
    release, grouped by audience: **Upgrading** (the installing agent's steps, if any), **You**,

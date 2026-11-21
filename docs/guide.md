@@ -379,7 +379,8 @@ Whistle's config comes in layers, each over the one before:
 
 1. **The defaults**: `mods/whistle/mappings.json`. An update replaces it, so don't edit it.
 2. **The layout's anchor**: its `mappings` and `keys` props, for keys that suit that layout's
-   mods. Its other props (`mods`, `enabled`, `hints`, `nav`) and each bar's own (`bar`, and
+   mods. Its other props (`mods`, `enabled`, `hints`, `nav`) and each bar's own (`bar`, its
+   spot's name, and
    `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, which line the hints box up with that
    bar: `hintsAlignRight` is the px from the window's right edge to the bar block's outer edge,
    its border included) are in [The layout's whistle block](contracts/layout-block.md). A
@@ -678,9 +679,11 @@ Standing aside, it shows only [why](#when-whistle-stands-aside).
 ```
 
 A layout can offer more than one **spot** for the bar: a whistle block in each, each with its
-own `bar` name, all hidden but one. `"bar": "<name>"` in your whistle.json picks the spot;
-whistle shows it and hides the others. The rules:
-[The layout's whistle block](contracts/layout-block.md#5-bar-names-a-spot-whistlejsons-bar-picks-it).
+own `bar` name, all hidden but one. You show the one you want and hide the others (Herdr
+remembers it), or use the layout's own control if it has one; whistle never shows or hides a
+bar. whistle.json's `bar` no longer does anything: settings list it as a config problem. The
+rules:
+[The layout's whistle block](contracts/layout-block.md#5-bar-names-a-spot-the-layout-shows-or-hides-it).
 
 ## Hints
 
@@ -692,8 +695,7 @@ whether a mapping runs, the cancel key ends it or a key isn't mapped. Outside a 
 a [field](#fields) that declares keys of its own is selected, the box lists those keys instead,
 under the field's name. `"hints": false` in your whistle.json (or the layout's anchor; yours
 wins) turns the box off. In a layout with an anchor, the box opens with every bar hidden too,
-docked where the bar spot whistle.json's `bar` picks would sit (the layout's first spot without
-one), or at the window's bottom right in a layout with no bar spot.
+at the window's bottom right.
 
 ```json example Hints list the keys that can follow a group
 {

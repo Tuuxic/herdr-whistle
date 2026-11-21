@@ -19,7 +19,8 @@
 // The anchor (issue #52, ADR 0018): the blocks Install adds are one fenced block tagged
 // ```json whistle-blocks``` (a JSON array). Put in a layout, block.js (the layout-block contract)
 // must read them as an anchor (anchor: true, 0 px) that drives and a bar that only draws, with no
-// config problem, and the hints box docking at the bar's spot while it is hidden. Integrate adds
+// config problem, and the hints box docking on the bar while it shows and on no spot (the
+// window's bottom right) while it is hidden (ADR 0019). Integrate adds
 // the same anchor to a layout that has whistle's bar but no anchor, and Uninstall removes it.
 
 import { suite } from "./harness.js";
@@ -94,7 +95,8 @@ export default suite("integrate", (t) => {
   t.check("the anchor runs whistle, the bar only draws",
     [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
   const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
-  t.check("with the bar hidden, the hints box docks at its spot", [dock(hidden, "whistle", null).spot?.id, dock(hidden, "whistle", null).shown], [bar?.id, false]);
+  t.check("with the bar shown, the hints box docks on it", [dock(layout, "whistle").spot?.id, dock(layout, "whistle").shown], [bar?.id, true]);
+  t.check("with the bar hidden, the hints box docks on no spot (the window's bottom right)", dock(hidden, "whistle"), { spot: null, shown: false });
   t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
   // Story 16 (#46): adding the anchor to a layout whose bar holds the layout's config moves
   // those props onto the anchor, so whistle reads the same config with no problem.
@@ -102,7 +104,7 @@ export default suite("integrate", (t) => {
     && BEHAVIOUR.every((p) => text.includes(`\`${p}\``));
   t.check("Install moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Install")), true);
   t.check("Integrate moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Integrate")), true);
-  t.check("CHANGELOG's Upgrading moves them too", moves(texts["CHANGELOG.md"].split(/^## /m)[1] ?? ""), true);
+  t.check("CHANGELOG's v1.2.0 Upgrading moves them too", moves(texts["CHANGELOG.md"].split(/^## /m).find((e) => e.startsWith("v1.2.0 ")) ?? ""), true);
   const bar2 = (props) => ({ id: "whistle", type: "block", content: { mod: "whistle", props } });
   const before = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } },
     bar2({ mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false, hintsGap: 4 })] };

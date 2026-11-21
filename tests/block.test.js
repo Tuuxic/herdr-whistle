@@ -1,6 +1,6 @@
 // The layout's whistle block (docs/contracts/layout-block.md): its props in their 1.0 form.
 // `enabled`, `hints`, `nav`, `bar` and the hints' placement props; a bad prop is skipped and
-// listed as a config problem (source "layout").
+// listed as a config problem (source "layout"). whistle.json's `bar` is ignored and listed (ADR 0019).
 
 import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
@@ -140,22 +140,20 @@ const SCENARIOS = [
       model: { problems: [{ source: "whistle.json", detail: "enabled should be true or false" }] } }],
   },
 
-  // Bar spots.
-  {
-    name: "whistle.json's bar moves the bar to that spot",
-    world: spots({ bar: "Top" }),
-    steps: [{ tick: 120, effects: [{ run: "layout.show", args: { id: "top-bar" } }, { run: "layout.hide", args: { id: "bottom-bar" } }] }],
-  },
-  {
-    name: "The bar already in its spot: nothing to do",
-    world: spots({ bar: "Bottom" }),
-    steps: [{ tick: 120, effects: [] }],
-  },
-  {
-    name: "whistle.json's bar naming a spot the layout doesn't have is listed, and the bar stays",
-    world: spots({ bar: "Left" }),
+  // Bar spots (ADR 0019): the layout shows and hides them; whistle.json's bar is ignored and listed,
+  // whatever its value.
+  ...[["names a spot", "Top"], ["names no spot", "Left"], ["isn't a string", 3], ["is false", false]].map(([what, v]) => ({
+    name: `whistle.json's bar that ${what} moves no bar and is listed`,
+    world: spots({ bar: v }),
     steps: [{ tick: 120, effects: [],
-      model: { problems: [{ source: "whistle.json", detail: 'bar: this layout has no spot "Left"; the bar stays where it is' }] } }],
+      model: { problems: [{ source: "whistle.json", detail: "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }] } }],
+  })),
+  {
+    name: "With whistle.json's bar set, a bar the layout shows stays shown and one it hides stays hidden",
+    world: spots({ bar: "Top" }),
+    steps: [{ tick: 120, effects: [] },
+      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", true), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, effects: [] },
+      { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", false)] } }, tick: 120, effects: [] }],
   },
 
   // A hidden bar copy rests (ADR 0011): each spot is a copy of whistle, known by its props.
@@ -173,7 +171,7 @@ const SCENARIOS = [
 `, expected: "{}" }] }],
   },
   {
-    name: "A hidden bar copy doesn't move the bar: the shown copy does",
+    name: "A hidden bar copy moves no bar",
     world: { ...spots({ bar: "Top" }), props: { bar: "Top" } },
     steps: [{ tick: 120, effects: [] }],
   },
