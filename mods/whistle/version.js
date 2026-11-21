@@ -1,8 +1,8 @@
-// Whistle's version and the oldest Herdr it runs on (ADR 0012). mod.json repeats both for
+// Whistle's version and the oldest Herdr it runs on (ADR 0002). mod.json repeats both for
 // people and agents (a mod can't import JSON); a test fails if they drift apart. Bump them
 // together with CHANGELOG.md at a release.
 
-export const VERSION = "1.3.0";
+export const VERSION = "2.0.0";
 export const MIN_HERDR = "0.1.15";
 
 // This copy's own folder, spelled as Herdr's add procedure finds it: when a name is taken it

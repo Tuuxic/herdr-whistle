@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs whistle's tests on Herdr's own engine: builds a throwaway test mod in a fresh temp folder
-# and loads it with `herdr-app check` (ADR 0013), once per suite. A failing case throws, so the
+# and loads it with `herdr-app check` (ADR 0003), once per suite. A failing case throws, so the
 # check fails and lists every failure. Exits non-zero on failure.
 #
 # One check per suite: `check` interrupts a mod whose loading runs longer than about half a
@@ -8,15 +8,15 @@
 # is printed, slowest first, so a suite nearing the limit shows before it flakes (split it).
 #
 # The test mod holds:
-#   - the core's modules (CORE below: everything but the shell and the views) and the
-#     helpers mods copy (HELPERS),
+#   - the core's modules (CORE below: everything but the shell and the views), whistle-ui's
+#     core in ui/ (UI_CORE) and the helpers mods copy (HELPERS),
 #   - tests/mod.json and every tests/*.js: main.js (the test mod), harness.js, shared data
 #     (worlds.js) and the *.test.js suites,
 #   - suites.js, written here: imports the suite that check runs and reports its load time,
 #   - texts.js, written here: the text of each spec .md (docs/contracts/, docs/guide.md,
 #     tests/fixtures/), the other docs (README, CHANGELOG, CONTRIBUTING, docs/authors.md, the
-#     checker's README), the workflows, mods/whistle/mod.json and mappings.json, keys.json,
-#     RECIPE.md and the core's sources, by repo path, plus `files`, every file in the repo.
+#     checker's README), the workflows, mods/whistle/mod.json, mappings.json and whistle.js,
+#     whistle-ui's mod.json and keys.json, keys.json, RECIPE.md and both cores' sources, by repo path, plus `files`, every file in the repo.
 #     Suites read them from there: readTextFile is async, and `check` never sees an async failure.
 #
 # HERDR_APP picks the herdr-app to run (default: the one on PATH).
@@ -27,7 +27,7 @@ mod="$root/mods/whistle"
 app="${HERDR_APP:-herdr-app}"
 
 # The core: pure modules, no `herdr` import (a suite checks). Add a module here when it joins.
-CORE="version.js keynames.js block.js fields.js inert.js claims.js config.js keymap.js views.js step.js"
+CORE="version.js keynames.js block.js fields.js inert.js claims.js commands.js config.js keymap.js facts.js step.js"
 
 dir="$(mktemp -d)"
 trap 'rm -rf "$dir"' EXIT
@@ -35,6 +35,12 @@ trap 'rm -rf "$dir"' EXIT
 base="$dir/base"
 mkdir "$base"
 for f in $CORE; do cp "$mod/$f" "$base/"; done
+# whistle-ui's core (mods/whistle-ui/, a client of whistle's public keys): pure like whistle's,
+# copied into base/ui/ so its names don't clash with whistle's. Add a module here when it joins.
+UI="mods/whistle-ui"
+UI_CORE="read.js box.js ui.js"
+mkdir "$base/ui"
+for f in $UI_CORE; do cp "$root/$UI/$f" "$base/ui/"; done
 # Helpers other mods copy (they import herdr, so they aren't core): their suites import them.
 HELPERS="whistle.js keynav.js"
 for f in $HELPERS; do cp "$mod/$f" "$base/"; done
@@ -48,11 +54,12 @@ literal() { sed -e 's/\\/\\\\/g' -e 's/`/\\`/g' -e 's/\$/\\$/g' "$1"; }
   echo 'export default {'
   cd "$root" || exit 1
   for f in docs/contracts/*.md docs/guide.md docs/authors.md tests/fixtures/*.md mods/whistle/mod.json mods/whistle/mappings.json \
-      keys.json RECIPE.md README.md CHANGELOG.md CONTRIBUTING.md kit/keynav-checker/README.md .github/workflows/*.yml; do
+      mods/whistle/whistle.js "$UI/mod.json" "$UI/keys.json" keys.json RECIPE.md README.md CHANGELOG.md CONTRIBUTING.md kit/keynav-checker/README.md .github/workflows/*.yml; do
     [ -f "$f" ] || continue
     printf '  "%s": `' "$f"; literal "$f"; echo '`,'
   done
   for f in $CORE; do printf '  "mods/whistle/%s": `' "$f"; literal "$mod/$f"; echo '`,'; done
+  for f in $UI_CORE; do printf '  "%s/%s": `' "$UI" "$f"; literal "$UI/$f"; echo '`,'; done
   echo '};'
   # Every file in the repo (tracked or new, not ignored), so links in the docs can be checked.
   echo 'export const files = ['

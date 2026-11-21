@@ -1,10 +1,10 @@
-// Whistle's config (ADR 0004, ADR 0007): the config layers, each over the one before:
+// Whistle's config (ADR 0010, ADR 0011): the config layers, each over the one before:
 //   1. the defaults: mappings.json in whistle's folder (an update replaces it)
 //   2. the layout's whistle block: its "mappings" and "keys" props
 //   3. whistle.json in Herdr's home: the person's own; nothing replaces it
 //   (between 1 and 2: mod mappings, from shared("whistle.mappings"), while each mod is in the layout)
 //
-// Mods' offers (ADR 0007, ADR 0008) and a "mods" section switching mods off: see compose.
+// Mods' offers (ADR 0011, ADR 0012) and a "mods" section switching mods off: see compose.
 //
 // Two sections, apart: "map" (mappings: key -> [label, command, args?, "type"?], or a group
 // { name, map } whose keys follow) and "keys" (own keys: action -> list of keys). A key set to
@@ -16,8 +16,9 @@
 // of its file still counts.
 
 import { canonicalKey } from "./keynames.js";
+import { parseCommand } from "./commands.js";
 
-// Whistle's own-key actions, in the order settings list them.
+// Whistle's own-key actions, in the order clients list them.
 export const ACTIONS = {
   "field-left": { kind: "field", dir: "left", label: "Field to the left" },
   "field-down": { kind: "field", dir: "down", label: "Field below" },
@@ -66,7 +67,7 @@ export function readFile(good, text) {
 }
 
 // A command as written, "<verb>" or "<verb>:<block>": { verb, block: everything after the
-// first colon (ADR 0014) | null }. A Herdr command's "<name>:<arg>" splits the same way.
+// first colon (ADR 0007) | null }. A Herdr command's "<name>:<arg>" splits the same way.
 export function verbAndBlock(written) {
   const colon = written.indexOf(":");
   return colon > 0 ? { verb: written.slice(0, colon), block: written.slice(colon + 1) } : { verb: written, block: null };
@@ -90,46 +91,47 @@ function command(written, args, commands) {
   return { run: written, args: args ?? {} };
 }
 
-// Whistle's own commands a mapping can run (docs/contracts/commands.md): those that need a
-// block ("whistle.field:<block>") and those that don't.
-export const VERBS = ["whistle", "type", "on", "off", "settings"];
+// The verbs: whistle's commands that act on a block ("whistle.field:<block>"), which a mapping
+// may also give as args ({ "block": "<block>" }).
 export const BLOCK_VERBS = ["field", "focus", "toggle"];
-// The verb a jump key may add to keep the mode it was pressed in (ADR 0014).
+// The verb a jump key may add to keep the mode it was pressed in (ADR 0007).
 export const KEEP_MODE = "toggle-keep-mode";
 // The verbs a jump key (keys.json "whistle.<verb>:<block>") may run.
 export const JUMP_VERBS = [...BLOCK_VERBS, KEEP_MODE];
 // The block verb a jump verb runs: toggle-keep-mode runs as toggle.
 export const runsAs = (verb) => (verb === KEEP_MODE ? "toggle" : verb);
 
-// A whistle.<verb> mapping's command as written: { run: "whistle.<verb>", args: { block } | {} }
-// | a reason it's bad.
+// A whistle.<command> mapping's command as written: { run: "whistle.<verb>", args: { block } }
+// for a verb, { run: as written, args: {} } for any other command (parseCommand) | a reason
+// it's bad.
 function whistleCommand(written, args) {
   const { verb: name, block: arg } = verbAndBlock(written);
   const v = name.slice("whistle.".length);
-  if (VERBS.includes(v)) return { run: name, args: {} };
-  if (!JUMP_VERBS.includes(v)) return `unknown whistle command ${name}`;
-  const block = arg ?? args?.block;
-  if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
-  return { run: `whistle.${runsAs(v)}`, args: { block } };
+  if (JUMP_VERBS.includes(v)) {
+    const block = arg ?? args?.block;
+    if (typeof block !== "string" || !block) return `${name} needs a block: ${name}:<block>`;
+    return { run: `whistle.${runsAs(v)}`, args: { block } };
+  }
+  return parseCommand(written.slice("whistle.".length)) ? { run: written, args: {} } : `unknown whistle command ${written}`;
 }
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
 // config problems: a command whistle doesn't answer to, such as a jump key with an unknown verb
-// (ADR 0014). A block the layout lacks is not one (pressed, it flashes). A keys.json that
+// (ADR 0007). A block the layout lacks is not one (pressed, it raises an event). A keys.json that
 // doesn't parse is the claims' problem, not listed here.
 // Also a switch key in global that names another folder's switch command while none names this
 // copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)
-// never gets "whistle.whistle" (issue #35). Whistle only reads global; it never writes it.
+// never gets "whistle.switch-mode" (issue #35). Whistle only reads global; it never writes it.
 export function keysProblems(text, folder) {
   let all;
   try { all = JSON.parse(text ?? "null"); } catch { return []; }
   if (!isObject(all)) return [];
   const out = [];
   const global = isObject(all.global) ? Object.entries(all.global) : [];
-  if (!global.some(([, a]) => a === `${folder}.whistle`)) {
+  if (!global.some(([, a]) => a === `${folder}.switch-mode`)) {
     for (const [key, action] of global) {
-      if (typeof action !== "string" || !/^[^.]+\.whistle$/.test(action)) continue;
-      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.whistle` });
+      if (typeof action !== "string" || !/^[^.]+\.switch-mode$/.test(action)) continue;
+      out.push({ source: KEYS, detail: `global › ${key} runs ${action}, but this copy is ${folder}: make it ${folder}.switch-mode` });
     }
   }
   for (const [section, keys] of Object.entries(all)) {
@@ -137,9 +139,8 @@ export function keysProblems(text, folder) {
     for (const [key, action] of Object.entries(keys)) {
       if (typeof action !== "string" || !action.startsWith(`${folder}.`)) continue;
       const c = action.slice(folder.length + 1);
-      const { verb, block } = verbAndBlock(c);
-      if (block === null ? VERBS.includes(c) || c.startsWith("key-") : JUMP_VERBS.includes(verb)) continue;
-      const why = block === null && JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
+      if (c.startsWith("key-") || parseCommand(c)) continue;
+      const why = JUMP_VERBS.includes(c) ? `${action} needs a block: ${action}:<block>` : `unknown whistle command ${action}`;
       out.push({ source: KEYS, detail: `${section} › ${key}: ${why}` });
     }
   }
@@ -209,7 +210,7 @@ function mergeMap(base, over, ctx, path) {
 // The mods' offers ([{ name, map }], in layout order) over the merged map below: a key one mod
 // offers is added (a group merged into the one below); groups that several mods offer on one
 // key merge key by key, titled by the first; any other key two mods offer, or a mod offers on
-// an own key (outside a key sequence), is a mapping conflict and counts for neither (ADR 0008).
+// an own key (outside a key sequence), is a mapping conflict and counts for neither (ADR 0012).
 // Add-only: a mod can't take a key away.
 function mergeOffers(base, offers, ctx, path) {
   const out = { ...base };
@@ -281,27 +282,10 @@ function badEntry(entry) {
   return null;
 }
 
-// Own-key actions whistle no longer has: a layer that sets one is ignored and listed, with why.
-const GONE = {
-  back: "whistle has no back key any more; it's ignored (Escape ends a key sequence)",
-};
-
-// Own-key actions renamed, old name -> new: a layer that sets the old name is honoured as the
-// new one (unless it sets the new one too, which wins) and listed as a config problem.
-const RENAMED = { open: "pick" };
-
 // A layer's own keys over the merged ones below: action by action.
 function mergeKeys(base, over, ctx) {
   const out = { ...base };
-  const actions = {};
   for (const [action, v] of Object.entries(over)) {
-    const now = RENAMED[action];
-    if (!now) { actions[action] = v; continue; }
-    ctx.problem(`keys › ${action} is now ${JSON.stringify(now)}: rename it`);
-    if (!Object.hasOwn(over, now)) actions[now] = v;
-  }
-  for (const [action, v] of Object.entries(actions)) {
-    if (Object.hasOwn(GONE, action)) { ctx.problem(`keys › ${action}: ${GONE[action]}`); continue; }
     if (!ACTIONS[action]) { ctx.problem(`keys › ${action}: unknown action`); continue; }
     if (v === null) { delete out[action]; continue; }
     if (!Array.isArray(v)) { ctx.problem(`keys › ${action}: should be a list of keys`); continue; }
@@ -318,7 +302,7 @@ function mergeKeys(base, over, ctx) {
 // The layers ([{ source, map, keys, mods }], lowest first; map/keys/mods as written, any may be
 // missing; the mods layer is { source: MODS, offers: [{ name, entry }] }, in layout order) as
 // one config: { map, keys: action -> keys, own: key -> action, problems,
-//   conflicts: mapping conflicts, for settings [{ seq, mods, own?: the own key's action }],
+//   conflicts: mapping conflicts, for whistle.config [{ seq, mods, own?: the own key's action }],
 //   overrides: keys a later layer maps over a mod's (or over a group holding mods' mappings), or
 //     over a conflict [{ seq, source, over: mods }],
 //   off: the mods switched off (names) }.
@@ -396,7 +380,7 @@ export function flatten(map, path = [], group = "") {
 }
 
 // whistle.json's text (null: no file) with a mod switched on or off in its "mods" section, for
-// settings to write: { text } | { problem } (a whistle.json that doesn't read is left alone).
+// whistle.mappings-on and -off to write: { text } | { problem } (a whistle.json that doesn't read is left alone).
 export function switchMod(text, name, on) {
   return edit(text, (json) => {
     if (json.mods != null && !isObject(json.mods)) return "whistle.json's mods isn't an object: fix it first";
@@ -406,7 +390,7 @@ export function switchMod(text, name, on) {
 }
 
 // whistle.json's text (null: no file) with a mod's mapping (as the mod wrote it) at the key
-// sequence seq, for settings' "keep <mod>'s": { text } | { problem }. Groups on the way that
+// sequence seq, for whistle.keep-mapping: { text } | { problem }. Groups on the way that
 // whistle.json doesn't have yet are added (no name: the one below keeps its title).
 export function keepMapping(text, seq, value) {
   return edit(text, (json) => {

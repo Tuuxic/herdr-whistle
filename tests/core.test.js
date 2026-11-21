@@ -1,15 +1,17 @@
-// The core's own rules: it imports nothing from Herdr (ADR 0011, ADR 0013), and version.js
-// agrees with mod.json (ADR 0012).
+// The core's own rules: it imports nothing from Herdr (ADR 0004, ADR 0003), and version.js
+// agrees with mod.json (ADR 0002).
 
 import { suite } from "./harness.js";
 import { VERSION, MIN_HERDR, HOME } from "./version.js";
 import { folderOf } from "./inert.js";
 import texts from "./texts.js";
 
-const SEMVER = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
+const HELPERS = ["mods/whistle/whistle.js", "mods/whistle/keynav.js"];
+const SEMVER =/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 
 export default suite("core", (t) => {
-  const sources = Object.entries(texts).filter(([p]) => p.startsWith("mods/whistle/") && p.endsWith(".js"));
+  // The helpers other mods copy (whistle.js) call Herdr: they aren't core.
+  const sources = Object.entries(texts).filter(([p]) => p.startsWith("mods/whistle/") && p.endsWith(".js") && !HELPERS.includes(p));
   t.check("the core's sources are there to check", sources.map(([p]) => p).includes("mods/whistle/step.js"), true);
   for (const [path, text] of sources) {
     const from = [...text.matchAll(/\bimport\b[^;]*?["']([^"']+)["']/g)].map((m) => m[1]);

@@ -1,53 +1,29 @@
 # The layout's whistle block
 
-For layout authors: how a layout places whistle's bar and tunes whistle for its own mods. A
-layout runs whistle in an anchor and shows it in bars, each a block of the whistle mod; those
-blocks' props are this contract.
+For layout authors: how a layout runs whistle and tunes it for its own mods. Whistle runs in
+its block, the anchor: a block of the whistle mod, sized 0 px, that draws nothing. Its props are
+this contract. What shows whistle (a bar, the hints box, a settings dialog) is a client's, such
+as [whistle-ui](whistle-ui.md), with blocks and props of its own.
 
 ```json
-[
-  { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": {
-    "anchor": true,
-    "mappings": { "g": ["Git", "mod.open:git"] },
-    "nav": { "sidebar": { "right": "main" } },
-    "hints": true
-  } } },
-  { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
-]
+{ "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": {
+  "mappings": { "g": ["Git", "mod.open:git"] },
+  "nav": { "sidebar": { "right": "main" } }
+} } }
 ```
 
 ## Props
 
 | Prop | Type | Meaning |
 |---|---|---|
-| `anchor` | boolean | `true` makes this block the anchor, the block whistle runs in (see The anchor). Size it 0 px. |
 | `mappings` | object | The layout's mappings, as whistle.json's `map` (see the guide's Your config). |
 | `keys` | object | The layout's own keys, as whistle.json's `keys`. |
 | `mods` | object | `{ "<mod>": false }` switches a mod's offered mappings off (see [Mods' mappings](mod-mappings.md)). |
 | `enabled` | boolean | `false` switches WHISTLE off in this layout. Default `true`. |
-| `hints` | boolean | `false` hides the hints box. Default `true`. |
 | `nav` | object | `{ "<block id>": { "<direction>": "<block id>" } }`: which field the field keys reach from a block, over the layout's rows and columns. Directions: `left`, `down`, `up`, `right`. |
-| `bar` | string | Names this block as a bar spot. The layout shows or hides spots; whistle doesn't (see rule 5). |
-| `hintsAlignRight` | number | px from the window's right edge to the bar block's outer edge (its border included). Default 0. |
-| `hintsAlignBorder` | number | The width in px of the border the layout draws around the bar. Default 0. |
-| `hintsGap` | number | px between the bar's top and the hints box. Default 6. |
 
-The three `hints*` props line the hints box up with the bar. Whistle can't measure where the
-layout puts the bar, only the bar's own size inside any border, so a layout that sets the bar
-in from the window's right edge, or draws a border around it, tells whistle by how much: the
-box is then as wide as the bar block, border included, ends where the block ends, and sits
-`hintsGap` above the block's top edge, border included (rule 7). With no bar shown, the box
-docks at the window's bottom right (rule 13).
-
-`mappings`, `keys`, `mods`, `enabled`, `hints` and `nav` are the layout's config layer and go
-on the anchor (rule 14). `bar` and the three `hints*` props describe a bar's own spot and go on
-each bar. In a layout without an anchor, a bar holds them all.
-
-A layout may have several whistle blocks (bar spots). Without an anchor, each prop but `bar`
-comes from the first block, in layout order, that has it, so a second spot needn't repeat the
-mappings.
-
-whistle.json's own `enabled` and `hints` go over the layout's: the person has the last word.
+They are the layout's config layer. whistle.json's own `enabled` goes over the layout's: the
+person has the last word.
 
 ## Rules
 
@@ -55,22 +31,23 @@ The examples below run as tests: each is a scenario through whistle's core.
 
 ### 1. `enabled: false` switches WHISTLE off: the switch key goes to the terminal
 
-The key Herdr binds to `whistle.whistle` types into the focused terminal as if whistle weren't
-there, and the bar shows no mode badge. Switched off in WHISTLE, whistle goes back to TYPE.
+The key Herdr binds to `whistle.switch-mode` types into the focused terminal as if whistle weren't
+there, and the whistle state says `enabled: false`. Switched off in WHISTLE, whistle goes back to
+TYPE.
 
 ```json example enabled false sends the switch key to the terminal
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.switch-mode" }]
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
-      "bar": { "badge": null, "label": "Whistle off" } }
+    { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }],
+      "state": { "enabled": false } }
   ]
 }
 ```
@@ -82,12 +59,12 @@ there, and the bar shows no mode badge. Switched off in WHISTLE, whistle goes ba
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" },
     "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"enabled\": true }" }
   },
-  "steps": [{ "command": "whistle", "effects": [{ "focusBar": true }], "bar": { "badge": "WHISTLE" } }]
+  "steps": [{ "command": "switch-mode", "effects": [{ "focusAnchor": true }], "state": { "mode": "whistle" } }]
 }
 ```
 
@@ -106,13 +83,13 @@ field is no move.
         { "id": "b", "type": "block", "content": { "pane": {} } }
       ] },
       { "id": "c", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "nav": { "a": { "down": "b" } } } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "nav": { "a": { "down": "b" } } } } }
     ] },
     "focused": { "pane": "p1" }
   },
   "model": { "recent": ["a"] },
   "steps": [
-    { "command": "whistle", "model": { "field": "a" } },
+    { "command": "switch-mode", "model": { "field": "a" } },
     { "key": "ctrl-j", "model": { "field": "b" } },
     { "key": "ctrl-j", "model": { "field": "c" } }
   ]
@@ -122,200 +99,58 @@ field is no move.
 ### 4. A bad prop is skipped and listed
 
 A prop of the wrong type, a `nav` entry with an unknown direction or block, or a prop whistle
-doesn't know is skipped and listed as a config problem (source `layout`) in whistle's settings,
-with a marker on the bar. The rest of the block still counts.
+doesn't know is skipped and listed as a config problem (source `layout`) in
+[whistle.config](config.md). The rest of the block still counts. A client's props, such as
+whistle-ui's `hints`, go on the client's own blocks.
 
-```json example A bad enabled prop is skipped and listed
+```json example A bad enabled prop and an unknown prop are skipped and listed
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": "no" } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "enabled": "no", "hints": false } } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }],
-      "model": { "problems": [{ "source": "layout", "detail": "enabled should be true or false" }] },
-      "bar": { "badge": "WHISTLE", "marker": "⚠ 1" } }
+    { "command": "switch-mode", "effects": [{ "focusAnchor": true }],
+      "model": { "problems": [
+        { "source": "layout", "detail": "enabled should be true or false" },
+        { "source": "layout", "detail": "hints: not a whistle block prop" }
+      ] },
+      "state": { "mode": "whistle" }, "problems": 2 }
   ]
 }
 ```
 
-### 5. `bar` names a spot; the layout shows or hides it
+### 5. Whistle runs in its block, the anchor, which draws nothing
 
-A layout that offers several spots names each whistle block with `bar` and hides all but one.
-The person, or a layout's own control (`layout.show` / `layout.hide` on a spot's block), shows
-and hides them, and Herdr remembers which. Whistle never shows or hides a bar. whistle.json's
-`bar` no longer picks the spot: whistle ignores it and lists it as a config problem (source
-`whistle.json`), whatever its value.
+Every whistle block is the anchor (ADR 0005). Whistle runs in it: it holds the
+keyboard in WHISTLE, takes whistle's commands, jump keys and claimed keys, and publishes the
+whistle state and its other public keys. It draws nothing, so size it 0 px. Whatever shows
+whistle is a client's, so hiding or showing a client's bar changes what you see, never what
+whistle does. Herdr doesn't run a hidden block's copy, so never hide the anchor.
 
-```json example Anchored, whistle.json's bar moves no bar and is listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Top\" }" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "model": { "problems": [
-      { "source": "whistle.json", "detail": "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }
-    ] } }
-  ]
-}
-```
-
-The same without an anchor, from the shown bar's copy:
-
-```json example Without an anchor, whistle.json's bar moves no bar and is listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
-    ] },
-    "props": { "bar": "Bottom" },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Top\" }" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "model": { "problems": [
-      { "source": "whistle.json", "detail": "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }
-    ] } }
-  ]
-}
-```
-
-A bar something else hides (a `whistle.toggle-keep-mode:<bar>` key, `layout.hide`, the
-layout's own control) stays hidden, whatever whistle.json's `bar` says:
-
-```json example A bar the layout hides stays hidden
+```json example The switch key enters WHISTLE through the anchor, with no bar in the layout
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
-    "props": { "anchor": true },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] } }", "user": "{ \"bar\": \"Bottom\" }" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [] },
-    { "world": { "layout": { "id": "root", "type": "column", "children": [
-        { "id": "main", "type": "block", "content": { "pane": {} } },
-        { "id": "bottom-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-        { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-      ] } },
-      "tick": 120, "effects": [] },
-    { "tick": 120, "effects": [] }
-  ]
-}
-```
-
-### 6. Without an anchor, a hidden spot's copy rests
-
-Each whistle block is a copy of whistle, told apart by its props (give each spot its own
-`bar` name). In a layout without an anchor, while a copy's block is hidden, that copy rests: it stays in TYPE, claims no keys,
-publishes nothing, so only the shown spot's copy runs. Shown again, it runs
-again and publishes its state anew. The blocks a copy hid itself, while it stood aside for
-another copy of whistle, don't make it rest: once that copy's blocks go, it shows them again.
-
-```json example Without an anchor, a hidden spot's copy rests while the shown one runs
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "top-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Top" } } },
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bottom-bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } }
-    ] },
-    "props": { "bar": "Top" }
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "published": null }
-  ]
-}
-```
-
-### 7. The hints box lines up with the bar block, border included
-
-A bar block that ends 200 px from the window's right edge, with a 2 px border, sets
-`hintsAlignRight: 200` and `hintsAlignBorder: 2`: the box is as wide as the bar and both
-borders, ends where the block's outer edge does, and sits `hintsGap` (6) above the block's top
-border.
-
-```json example A bar 200 px in with a 2 px border gets a hints box as wide as it, 6 px above it
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": {
-        "hintsAlignRight": 200, "hintsAlignBorder": 2,
-        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
-      } } }
-    ] },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 },
-    "barSize": { "width": 600, "height": 22 }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 604, "height": 50,
-      "at": { "x": 196, "y": 518 }, "props": { "part": "hints", "width": 604 } } }] }
-  ]
-}
-```
-
-The box is 600 + 2 × 2 = 604 px wide and starts at 1000 − 200 − 604 = 196; the bar block is
-22 + 2 × 2 = 26 px high, so the box (50 px, one row) ends 6 px above it: 600 − 26 − 6 − 50 = 518.
-
-## The anchor
-
-The anchor is a whistle block with the prop `anchor: true`, sized 0 px, that draws nothing
-(ADR 0018). Whistle runs in it: it holds the keyboard in WHISTLE, takes whistle's commands,
-jump keys and claimed keys, and publishes the whistle state. Bars are then only views: hiding
-or showing one changes what you see, never what whistle does.
-Herdr doesn't run a hidden block's copy, so never hide the anchor.
-
-```json
-{ "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": { "anchor": true } } }
-```
-
-A layout without an anchor works as before: a bar stands in for it, and a hidden bar's copy
-rests (rule 6).
-
-### 8. With every bar hidden, whistle runs in the anchor
-
-The switch key enters WHISTLE and whistle takes the keyboard (through the anchor), mappings
-run, and the field keys select fields. The whistle state is published as with a bar.
-
-```json example Anchored with every bar hidden, the switch key enters WHISTLE
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
+    "props": {},
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [] },
-      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } }
+    { "command": "switch-mode", "effects": [{ "focusAnchor": true }], "model": { "mode": "whistle", "problems": [] },
+      "published": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } }
   ]
 }
 ```
 
-A mapping runs and the field keys select fields with no bar shown:
+A mapping runs and the field keys select fields:
 
-```json example Anchored with every bar hidden, a mapping runs and ctrl-h selects a field
+```json example Through the anchor, a mapping runs and ctrl-h selects a field
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -323,18 +158,17 @@ A mapping runs and the field keys select fields with no bar shown:
         { "id": "side", "type": "block", "content": { "pane": {} } },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
-    "props": { "anchor": true },
+    "props": {},
     "focused": { "pane": "p1", "terminal": "t1" },
     "configFiles": { "defaults": "{ \"keys\": { \"field-left\": [\"ctrl-h\"], \"type\": [\"i\"] }, \"map\": { \"z\": [\"Zoom\", \"pane.zoom\"] } }", "user": null }
   },
   "model": { "recent": ["main"] },
   "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "field": "main" } },
-    { "world": { "barFocused": true }, "command": "key-ctrl-h", "model": { "field": "side" }, "handled": true },
-    { "key": "z", "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "run": "pane.zoom", "args": {} }, { "focusBar": true }], "model": { "mode": "whistle" } },
+    { "command": "switch-mode", "effects": [{ "focusAnchor": true }], "model": { "field": "main" } },
+    { "world": { "anchorFocused": true }, "command": "key-ctrl-h", "model": { "field": "side" }, "handled": true },
+    { "key": "z", "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "run": "pane.zoom", "args": {} }, { "focusAnchor": true }], "model": { "mode": "whistle" } },
     { "key": "i", "model": { "mode": "type" } }
   ]
 }
@@ -347,439 +181,115 @@ The anchor is no field: the field keys pass it by.
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
-    "props": { "anchor": true },
+    "props": {},
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "whistle", "model": { "field": "main" } },
-    { "world": { "barFocused": true }, "key": "ctrl-j", "model": { "field": "main" } },
+    { "command": "switch-mode", "model": { "field": "main" } },
+    { "world": { "anchorFocused": true }, "key": "ctrl-j", "model": { "field": "main" } },
     { "key": "ctrl-k", "model": { "field": "main" } }
   ]
 }
 ```
 
-### 9. In a layout with an anchor, a bar's copy only draws
+### 6. The first whistle block runs whistle; any other is left out and listed
 
-Herdr hands every whistle command and claimed key to every shown copy of whistle, so a bar's
-copy in a layout with an anchor acts on none of them, nor on its ticks: it draws the bar the
-anchor sets, so a key press is never handled twice. The one thing it sets is its own measured
-size, in a private shared key of its spot (`whistle.barsize:<folder>:<bar>`), when it changes:
-the anchor docks the hints box on the shown bar by it (rules 7 and 13).
+A layout has one whistle block. If it has more, the first in layout order runs whistle and every
+other is left out: Herdr hands every command and claimed key to every copy, so an extra block's
+copy acts on none of them, nor on its ticks, and a key press is never handled twice. Its props
+count for nothing. Each extra block is a config problem, so the mistake shows but costs nothing.
 
-```json example A bar's copy in an anchored layout returns no effects for a command or a key
+```json example The first whistle block runs whistle and lists the second as a config problem
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } },
+      { "id": "spare", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
     ] },
-    "props": { "bar": "Bottom" },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
+    "props": {},
+    "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
-    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
+    { "command": "switch-mode", "effects": [{ "focusAnchor": true }], "model": { "mode": "whistle", "problems": [
+      { "source": "layout", "detail": "spare: a second whistle block, left out; whistle-anchor runs whistle" }
+    ] } }
+  ]
+}
+```
+
+```json example A second whistle block's copy acts on nothing
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } },
+      { "id": "spare", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+    ] },
+    "props": { "enabled": false },
+    "focused": { "pane": "p1", "terminal": "t1" },
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.switch-mode" }]
+  },
+  "steps": [
+    { "tick": 120, "effects": [], "published": null, "unset": ["whistle.hints", "whistle.events", "whistle.config"] },
+    { "command": "switch-mode", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
     { "command": "key-ctrl-h", "effects": [], "published": null, "handled": false },
-    { "command": "focus:main", "effects": [], "published": null, "handled": false },
-    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
+    { "world": { "anchorFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
   ]
 }
 ```
 
-```json example A bar's copy in an anchored layout publishes its measured size when it changes
+### 7. Whistle blocks with the same props make whistle inert
+
+Copies are told apart only by their props, so whistle blocks with the same props can't tell
+which of them comes first. Whistle is then inert: no copy runs, the switch key types through,
+and one Herdr notification and the whistle state's `inert` say to keep one.
+
+```json example Whistle blocks with the same props make whistle inert, saying to keep one
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } },
+      { "id": "twin", "type": "block", "content": { "mod": "whistle" } }
     ] },
-    "props": { "bar": "Bottom" },
-    "barSize": { "width": 600, "height": 22 }
-  },
-  "steps": [
-    { "tick": 120, "published": null, "effects": [{ "setShared": "whistle.barsize:whistle:Bottom", "value": { "width": 600, "height": 22 } }] },
-    { "tick": 120, "effects": [] },
-    { "world": { "barSize": { "width": 640, "height": 22 } }, "tick": 120,
-      "effects": [{ "setShared": "whistle.barsize:whistle:Bottom", "value": { "width": 640, "height": 22 } }] }
-  ]
-}
-```
-
-### 10. Hiding or showing a bar changes only what you see
-
-Hiding the bar in WHISTLE keeps the mode, the selected field and the key sequence. The anchor
-sets the bar's model whether or not a bar shows, so a bar shown later draws the current state
-straight away.
-
-```json example Hiding the bar in WHISTLE keeps the mode, the field and the key sequence
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
+    "props": {},
     "focused": { "pane": "p1", "terminal": "t1" },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split\", \"pane.split\"] } } } }", "user": null }
+    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.switch-mode" }]
   },
   "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "model": { "sequence": ["w"] } },
-    { "world": { "layout": { "id": "root", "type": "column", "children": [
-        { "id": "main", "type": "block", "content": { "pane": {} } },
-        { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-        { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-      ] } },
-      "tick": 120, "effects": [], "model": { "mode": "whistle", "field": "main", "sequence": ["w"] } },
-    { "key": "v", "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "run": "pane.split", "args": {} }, { "focusBar": true }] }
+    { "command": "switch-mode", "effects": [{ "typeKey": "ctrl-space", "terminal": "t1" }], "model": { "mode": "type" },
+      "notified": [{ "title": "Whistle stands aside",
+        "body": "Whistle blocks whistle-anchor and twin have the same props, so whistle can't tell which one runs. Keep one.", "level": "error" }],
+      "state": { "inert": { "problem": "Whistle blocks whistle-anchor and twin have the same props, so whistle can't tell which one runs", "fix": "Keep one." } } },
+    { "command": "switch-mode", "notified": [] }
   ]
 }
 ```
 
-```json example A bar shown later draws the state the anchor set while it was hidden
+### 8. With no whistle block, whistle doesn't run
+
+A layout without a whistle block runs no whistle: a copy that finds none in the shown layout
+acts on nothing and publishes nothing.
+
+```json example In a layout with no whistle block, whistle acts on nothing
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
+      { "id": "main", "type": "block", "content": { "pane": {} } }
     ] },
-    "props": { "anchor": true },
+    "props": {},
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "whistle", "shared": { "whistle.bar:whistle": { "badge": "WHISTLE", "marker": null,
-      "where": { "mode": "whistle", "field": "main", "recent": ["main"], "pane": "p1" } } } },
-    { "world": { "barFocused": true, "layout": { "id": "root", "type": "column", "children": [
-        { "id": "main", "type": "block", "content": { "pane": {} } },
-        { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-        { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-      ] } },
-      "tick": 120, "effects": [], "model": { "mode": "whistle" }, "bar": { "badge": "WHISTLE", "label": "Terminal" } }
-  ]
-}
-```
-
-### 11. Removed
-
-Removed in whistle 1.3.0: whistle.json's `bar` no longer picks the spot, from the anchor or
-anywhere (rule 5). The other rules keep their numbers.
-
-### 12. One anchor runs whistle; any other is left out
-
-A layout has one anchor. If it has more, the first in layout order runs whistle and every
-other anchor is left out like a bar's copy: it acts on no command, key or tick. Each extra
-anchor is a config problem in settings, so the mistake shows but costs nothing.
-
-```json example A second anchor is left out and is listed as a config problem
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
-      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
-    ] },
-    "props": { "anchor": true, "hints": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
-    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } },
-    { "world": { "barFocused": true }, "key": "i", "effects": [], "published": null, "handled": false }
-  ]
-}
-```
-
-```json example The first anchor runs whistle and lists the second as a config problem
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
-      { "id": "spare-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true, "hints": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" }
-  },
-  "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
-      { "source": "layout", "detail": "anchor: spare-anchor is a second anchor and is left out; whistle-anchor runs whistle" }
-    ] } }
-  ]
-}
-```
-
-Copies are told apart only by their props, so anchors with the same props can't tell which of
-them comes first. All of them are left out, so no key is ever handled twice, and the layout runs
-as if it had no anchor: a bar stands in for it (rule 6) and settings list the anchors. Keep one.
-
-```json example Anchors with the same props are all left out
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
-      { "id": "twin-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "keys": [{ "section": "global", "keys": "ctrl-space", "action": "whistle.whistle" }]
-  },
-  "steps": [
-    { "tick": 120, "effects": [], "published": null, "hintsWindow": [] },
-    { "command": "whistle", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } }
-  ]
-}
-```
-
-```json example With anchors that share their props, the bar stands in and lists them
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } },
-      { "id": "twin-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "bar": "Bottom" },
-    "focused": { "pane": "p1", "terminal": "t1" }
-  },
-  "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }], "model": { "mode": "whistle", "problems": [
-      { "source": "layout", "detail": "anchor: whistle-anchor and twin-anchor have the same props, so they can't tell which comes first and all are left out; keep one" }
-    ] } }
-  ]
-}
-```
-
-### 13. With no bar shown, the hints box docks at the window's bottom right
-
-Inside a group the hints box opens whether or not a bar shows. While a bar shows, it docks on
-that bar (rule 7), by the size that bar publishes (rule 9); with several shown, on the first in
-layout order. With no bar shown (every spot hidden, or no spot at all), it docks at the
-window's bottom right: 480 px wide (the window's width less 12 px, if narrower), 6 px in from
-the bottom and right edges. A hidden spot's `hints*` props and last size don't count.
-
-```json example Anchored with every bar hidden, the hints box docks at the window's bottom right
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "side-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": {
-        "bar": "Side", "hintsAlignRight": 700, "hintsAlignBorder": 1, "hintsGap": 4 } } },
-      { "id": "bottom-bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 },
-    "barSizes": { "Side": { "width": 300, "height": 22 } },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 480, "height": 50,
-      "at": { "x": 514, "y": 544 }, "props": { "part": "hints", "width": 480 } } }] }
-  ]
-}
-```
-
-The box (50 px, one row) starts at 1000 − 6 − 480 = 514 and ends 6 px above the window's
-bottom: 600 − 6 − 50 = 544.
-
-A bar shown again docks the box on it, by the size it publishes:
-
-```json example Anchored, a bar shown again docks the hints box on it
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": {
-        "bar": "Bottom", "hintsAlignRight": 200, "hintsAlignBorder": 2 } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 },
-    "barSizes": { "Bottom": { "width": 600, "height": 22 } },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 480, "height": 50,
-      "at": { "x": 514, "y": 544 }, "props": { "part": "hints", "width": 480 } } }] },
-    { "world": { "layout": { "id": "root", "type": "column", "children": [
-        { "id": "main", "type": "block", "content": { "pane": {} } },
-        { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": {
-          "bar": "Bottom", "hintsAlignRight": 200, "hintsAlignBorder": 2 } } },
-        { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-      ] } },
-      "tick": 120, "hintsWindow": [{ "openOverlay": "hints", "spec": {
-        "mod": "whistle", "kind": "window", "frame": "none", "width": 604, "height": 50,
-        "at": { "x": 196, "y": 518 }, "props": { "part": "hints", "width": 604 } } }] }
-  ]
-}
-```
-
-The numbers are rule 7's: 600 + 2 × 2 = 604 px wide, at 1000 − 200 − 604 = 196, and
-600 − 26 − 6 − 50 = 518.
-
-In a narrow window the box is the window's width less 12 px, 6 px in from each side:
-
-```json example Anchored with no bar shown in a narrow window, the hints box is the window's width less 12
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "hidden": true, "content": { "mod": "whistle", "props": { "bar": "Bottom" } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 400, "height": 600 },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 388, "height": 50,
-      "at": { "x": 6, "y": 544 }, "props": { "part": "hints", "width": 388 } } }] }
-  ]
-}
-```
-
-A layout with no bar spot at all, only the anchor, docks the box the same way.
-
-```json example Anchored with no bar spot at all, the hints box docks at the window's bottom right too
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 },
-    "configFiles": { "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }", "user": null }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 480, "height": 50,
-      "at": { "x": 514, "y": 544 }, "props": { "part": "hints", "width": 480 } } }] }
-  ]
-}
-```
-
-### 14. The layout's props come from the anchor; place props from the bar
-
-In a layout with an anchor, the anchor holds the layout's config layer: `mappings`, `keys`,
-`mods`, `enabled`, `hints` and `nav` are read from it alone.
-
-```json example Anchored, the mappings come from the anchor
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom",
-        "mappings": { "z": ["Zoom", "pane.zoom"] }, "keys": { "type": ["x"] } } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
-        "mappings": { "z": ["Split", "pane.split"] }, "keys": { "type": ["q"] } } } }
-    ] },
-    "props": { "anchor": true, "mappings": { "z": ["Split", "pane.split"] }, "keys": { "type": ["q"] } },
-    "focused": { "pane": "p1", "terminal": "t1" }
-  },
-  "steps": [
-    { "command": "whistle" },
-    { "world": { "barFocused": true }, "key": "z",
-      "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }, { "run": "pane.split", "args": {} }, { "focusBar": true }] },
-    { "key": "q", "model": { "mode": "type" } }
-  ]
-}
-```
-
-Without an anchor, the bar standing in for it holds them, as in rules 1 to 4.
-
-One of these props on a bar in a layout with an anchor is skipped and listed as a config
-problem (source `layout`), so a bar spot never changes what whistle does. Move it to the anchor.
-
-```json example Anchored, enabled on a bar is skipped and listed
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom", "enabled": false } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true } } }
-    ] },
-    "props": { "anchor": true },
-    "focused": { "pane": "p1", "terminal": "t1" }
-  },
-  "steps": [
-    { "command": "whistle", "effects": [{ "focusBar": true }],
-      "model": { "mode": "whistle", "problems": [{ "source": "layout", "detail": "enabled: a bar's is skipped in a layout with an anchor; put it on the anchor" }] },
-      "bar": { "badge": "WHISTLE", "marker": "⚠ 1" } }
-  ]
-}
-```
-
-The hints' place props (`hintsAlignRight`, `hintsAlignBorder`, `hintsGap`) describe where a
-bar sits, so they stay on the bar the box lines up with. On the anchor, which sits nowhere,
-they are skipped and listed.
-
-```json example Anchored, the hints box lines up by the bar's place props, not the anchor's
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "bar": "Bottom",
-        "hintsAlignRight": 200, "hintsAlignBorder": 2 } } },
-      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle", "props": { "anchor": true,
-        "hintsAlignRight": 50,
-        "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } }
-      } } }
-    ] },
-    "props": { "anchor": true, "hintsAlignRight": 50,
-      "mappings": { "w": { "name": "Panes", "map": { "v": ["Split right", "pane.split", { "direction": "right" }] } } } },
-    "focused": { "pane": "p1", "terminal": "t1" },
-    "viewport": { "width": 1000, "height": 600 },
-    "barSizes": { "Bottom": { "width": 600, "height": 22 } }
-  },
-  "steps": [
-    { "command": "whistle",
-      "model": { "problems": [{ "source": "layout", "detail": "hintsAlignRight: the anchor's is skipped; put it on the bar it places" }] } },
-    { "world": { "barFocused": true }, "key": "w", "hintsWindow": [{ "openOverlay": "hints", "spec": {
-      "mod": "whistle", "kind": "window", "frame": "none", "width": 604, "height": 50,
-      "at": { "x": 196, "y": 518 }, "props": { "part": "hints", "width": 604 } } }] }
+    { "tick": 120, "effects": [], "published": null },
+    { "command": "switch-mode", "effects": [], "published": null, "handled": false, "model": { "mode": "type" } }
   ]
 }
 ```
 
 ## Stable and may change
 
-- Stable: `anchor`, `mappings`, `keys`, `mods`, `enabled`, `hints`, `nav`, `bar`, `hintsAlignRight`,
-  `hintsAlignBorder`, `hintsGap`, and the rules above.
-- Private: `part`, which whistle sets on its own overlay copies. Don't write it.
-
-## History
-
-- whistle 1.3.0: whistle never shows or hides a bar; the layout does (rule 5). whistle.json's
-  `bar` is ignored and listed as a config problem. Rule 11, in which whistle.json's `bar` picked
-  the spot from the anchor, is removed. With no bar shown, the hints box docks at the window's
-  bottom right (rule 13), no longer where a hidden spot would sit.
-- whistle 1.0.0: first version. `nav` directions are `left`/`down`/`up`/`right` (they were
-  `h`/`j`/`k`/`l`); a bad prop is now listed instead of ignored. `hintsAlignRight` measures to
-  the bar block's outer edge, border included (it was to the bar's inside), and `hintsGap`
-  counts from the block's top border.
+- Stable: `mappings`, `keys`, `mods`, `enabled`, `nav`, and the rules above.
