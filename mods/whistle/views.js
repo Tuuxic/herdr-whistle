@@ -83,23 +83,23 @@ export function hintsColumns(items, width) {
 
 // The bar's height when the shell hasn't measured it (mod.json's size), and the window's width.
 const BAR_HEIGHT = 22, WIDTH = 900;
-// The hints box with no bar spot at all: its width, and its distance from the window's bottom
-// and right edges (px).
+// The hints box with no bar shown: its width, and its distance from the window's edges (px).
 const CORNER = 480, EDGE = 6;
 
 // Where the hints window docks: on top of the bar and as wide as it, { width, height, at? }.
-// bar: the bar it lines up with, { place: its place props, size: its drawn size { width,
-// height }, inside any border | null (not measured) }, or null with no bar spot at all.
+// bar: the shown bar it lines up with, { place: its place props, size: its drawn size { width,
+// height }, inside any border | null (not measured) }, or null with no bar shown.
 // Whistle measures only the window (world.viewport) and its bars; the layout says the rest. The
 // bar block (the bar and a border hintsAlignBorder wide around it) ends hintsAlignRight px from
 // the window's right edge, and the box sits hintsGap (6) above the block's top, border
 // included. A bar not measured is taken as reaching from the window's left edge, along the
-// bottom, BAR_HEIGHT high. With no bar, the box is CORNER px wide (the window's width, if
-// narrower) at the window's bottom right, EDGE px in. Without a viewport, Herdr places it.
+// bottom, BAR_HEIGHT high. With no bar shown, the box is CORNER px wide (the window's width
+// less EDGE on each side, if narrower) at the window's bottom right, EDGE px in (ADR 0019).
+// Without a viewport, Herdr places it.
 export function hintsBox(items, world, bar) {
   const vp = world.viewport ?? null;
   if (!bar) {
-    const width = Math.min(CORNER, vp?.width ?? CORNER);
+    const width = vp ? Math.max(0, Math.min(CORNER, vp.width - 2 * EDGE)) : CORNER;
     const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
     if (!vp) return { width, height };
     return { width, height, at: { x: Math.max(0, vp.width - EDGE - width), y: Math.max(8, vp.height - EDGE - height) } };

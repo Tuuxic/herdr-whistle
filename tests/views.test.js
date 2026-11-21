@@ -101,12 +101,17 @@ const SCENARIOS = [
     steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW)] }],
   },
   {
-    // ADR 0018: with every bar hidden, the box docks where whistle.json's spot would sit, by
-    // that spot's own place props (the first spot's are ignored).
-    name: "Anchored with every bar hidden, the hints window docks on the place of the spot whistle.json picks",
-    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 },
+    // ADR 0019: with every bar hidden, the box docks at the window's bottom right, whatever
+    // whistle.json's bar, the spots' place props and their last sizes say.
+    name: "Anchored with every bar hidden, the hints window docks at the window's bottom right",
+    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Top: { width: 500, height: 30 } },
       configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
-    steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW, { x: 0, y: 600 - 22 - 2 - ONE_ROW })] }],
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(480, ONE_ROW, { x: 1000 - 6 - 480, y: 600 - 6 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with every bar hidden and no viewport, the hints window is 480 wide where Herdr puts it",
+    world: { ...anchored({ side: true, top: true }), configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(480, ONE_ROW)] }],
   },
   {
     name: "Anchored with a bar shown, the hints window docks on that bar as without an anchor",
@@ -116,17 +121,18 @@ const SCENARIOS = [
     steps: [...IN, { key: "w", hintsWindow: [HINTS(298, ONE_ROW, { x: 1000 - 700 - 298, y: 600 - 24 - 4 - ONE_ROW })] }],
   },
   {
-    name: "Anchored with every bar hidden, the hints window docks by the size the picked spot's bar last published",
-    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Top: { width: 500, height: 30 } },
-      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
-    steps: [...IN, { key: "w", hintsWindow: [HINTS(500, ONE_ROW, { x: 1000 - 100 - 500, y: 600 - 30 - 2 - ONE_ROW })] }],
+    name: "Anchored with both bars shown, the hints window docks on the first in layout order",
+    world: { ...anchored({ side: false, top: false }), viewport: { width: 1000, height: 600 },
+      barSizes: { Side: { width: 296, height: 22 }, Top: { width: 500, height: 30 } },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(298, ONE_ROW, { x: 1000 - 700 - 298, y: 600 - 24 - 4 - ONE_ROW })] }],
   },
   {
-    name: "Anchored with no bar spot, the hints window docks at the window's bottom right, no wider than the window",
+    name: "Anchored with no bar spot, the hints window docks at the window's bottom right, 6 px in from each side of a narrow window",
     world: { layout: { id: "root", type: "column", children: [term("main"), ANCHOR] }, props: { anchor: true },
       focused: { pane: "p1", terminal: "t1" }, viewport: { width: 300, height: 600 },
       configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
-    steps: [...IN, { key: "w", hintsWindow: [HINTS(300, ONE_ROW, { x: 0, y: 600 - 6 - ONE_ROW })] }],
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(288, ONE_ROW, { x: 6, y: 600 - 6 - ONE_ROW })] }],
   },
   {
     name: "An inert copy closes its hints window and sets no hints' or settings' models",
