@@ -94,9 +94,10 @@ every public surface: ADR 0002). Agents relay these entries when they update whi
   `{ seq, kind, groups, text, ...data }`: `kind` unique and stable, `groups` the groups it is in
   (`mode`, `whistle`, `sequence`, `field`, `command`, `config`, `settings`, and `problem` for
   everything that went wrong), `text` a default English text. Kinds include `mode-switched`,
-  `whistle-enabled`/`-disabled`, `whistle-inert`/`-active`, `sequence-started`/`-ended`,
-  `key-unmapped`, `field-selected`, `command-ran` and the failures
-  ([events.md](docs/contracts/events.md#kinds)).
+  `whistle-enabled`/`-disabled`, `whistle-inert`/`-active`, `sequence-started` (its
+  `mappingGroup` the mapping group reached) and `sequence-ended`, `key-unmapped`,
+  `field-selected`, `command-ran` (a mapping's command, or a keynav field's declared key) and
+  the failures ([events.md](docs/contracts/events.md#kinds)).
 - **New**: `whistle.events` keeps the last 32 events. `readEvents(last, filter)` and
   `eventsSince(value, last, filter)` take a filter, `{ groups, kinds }` or a predicate, and
   return `{ events, last, missed }`: `last` moves past every event read, and `missed` counts the

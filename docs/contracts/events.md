@@ -48,7 +48,7 @@ Each event:
 | `whistle-disabled` | none | whistle | WHISTLE was switched off. |
 | `whistle-inert` | `problem`, `fix` | whistle, problem | Whistle stands aside, with no copy running (rule 6); as the whistle state's `inert` says. |
 | `whistle-active` | none | whistle | A copy that stood aside runs now. |
-| `sequence-started` | `keys`, `group`: the name of the group reached | sequence | A key opened a group, outside a key sequence. |
+| `sequence-started` | `keys`, `mappingGroup`: the name of the mapping group the keys reached (not an event group) | sequence | A key opened a group, outside a key sequence. |
 | `sequence-ended` | `keys`: the sequence before it ended, `by`: `"ran"` (a mapping ran), `"unmapped"` (a key it doesn't map) or `"left"` (cancelled, or a jump key) | sequence | A key sequence ended. |
 | `key-unmapped` | `keys`: the key names of the sequence, the last one unmapped | sequence, problem | In a key sequence, a key the group doesn't map. |
 | `field-selected` | `block`: the field's block id | field | Another field is selected in WHISTLE (entering WHISTLE included). |
@@ -140,7 +140,7 @@ is both a `sequence` and a `problem` event.
   "steps": [
     { "tick": 120, "shared": { "whistle.events": { "v": 1, "events": [] } } },
     { "command": "switch-mode" },
-    { "world": { "anchorFocused": true }, "key": "w", "raised": [{ "kind": "sequence-started", "keys": ["w"], "group": "Panes" }] },
+    { "world": { "anchorFocused": true }, "key": "w", "raised": [{ "kind": "sequence-started", "keys": ["w"], "mappingGroup": "Panes" }] },
     { "key": "x", "raised": [
       { "seq": 3, "kind": "key-unmapped", "groups": ["sequence", "problem"], "text": "w x is not mapped", "keys": ["w", "x"] },
       { "seq": 4, "kind": "sequence-ended", "groups": ["sequence"], "keys": ["w"], "by": "unmapped" }] }
@@ -286,7 +286,7 @@ raises `command-ran`, and so does a key a keynav field declares, pressed on that
     { "tick": 120 },
     { "command": "switch-mode" },
     { "world": { "anchorFocused": true }, "key": "w", "raised": [
-      { "kind": "sequence-started", "groups": ["sequence"], "keys": ["w"], "group": "Panes", "text": "w: Panes" }] },
+      { "kind": "sequence-started", "groups": ["sequence"], "keys": ["w"], "mappingGroup": "Panes", "text": "w: Panes" }] },
     { "key": "v", "raised": [
       { "kind": "sequence-ended", "groups": ["sequence"], "keys": ["w"], "by": "ran", "text": "w: ran" },
       { "kind": "command-ran", "groups": ["command"], "command": "pane.split", "text": "ran pane.split" }] },

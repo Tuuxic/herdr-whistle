@@ -41,8 +41,9 @@ export function raised(model, event) {
 
 const keysText = (keys) => keys.map(keyLabel).join(" ");
 
-// A key sequence that started: keys so far, group the name of the group they reached.
-export const sequenceStarted = (keys, group) => ({ kind: "sequence-started", keys: [...keys], group, text: `${keysText(keys)}: ${group ?? "group"}` });
+// A key sequence that started: keys so far, mappingGroup the name of the mapping group they
+// reached (not an event group: those are `groups`).
+export const sequenceStarted = (keys, mappingGroup) => ({ kind: "sequence-started", keys: [...keys], mappingGroup, text: `${keysText(keys)}: ${mappingGroup ?? "group"}` });
 
 // A key sequence that ended, by: "ran" (a mapping ran), "unmapped" (a key it doesn't map) or
 // "left" (cancelled, or left another way).
