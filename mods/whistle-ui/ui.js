@@ -114,13 +114,16 @@ const sequenceOf = (state) => JSON.stringify(state?.sequence?.keys ?? null);
 // (Herdr makes one on every layout change) goes on from there.
 export const SEEN = "whistle-ui.seen";
 
-// The flash after this call: the new events' texts, else the one kept while it lasts and the key
-// sequence hasn't changed. A new copy (last null) goes on from SEEN; with none kept, it handles
+// The events a bar flashes: those in the problem group (docs/contracts/events.md).
+const FLASHED = { groups: ["problem"] };
+
+// The flash after this call: the new problem events' texts, else the one kept while it lasts and
+// the key sequence hasn't changed. A new copy (last null) goes on from SEEN; with none kept, it handles
 // the events already there unshown. When seqs go back (whistle started again), every event is new.
 function flashed(published, state, world) {
   const seen = world.shared?.[SEEN];
   const from = world.last ?? (Number.isInteger(seen) ? seen : null);
-  const { events, last } = eventsSince(published.events, from ?? Infinity);
+  const { events, last } = eventsSince(published.events, from ?? Infinity, FLASHED);
   if (from == null) return { last: last === Infinity ? 0 : last, flash: null };
   const sequence = sequenceOf(state);
   if (events.length) return { last, flash: { text: events.map((e) => e.text).join(" · "), until: world.now + FLASH_MS, sequence } };

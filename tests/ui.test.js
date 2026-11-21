@@ -19,7 +19,7 @@ const layout = ({ bar = {}, barHidden = false, extra = [] } = {}) => ({ id: "roo
 const STATE = { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null, inert: null };
 const CONFIG = { v: 1, problems: [], mods: [], conflicts: [], overrides: [] };
 const EVENTS = (...events) => ({ v: 1, events });
-const ev = (seq, text, kind = "unmapped") => ({ seq, kind, text });
+const ev = (seq, text, kind = "key-unmapped", groups = ["sequence", "problem"]) => ({ seq, kind, groups, text });
 const pub = (over = {}) => ({ whistle: STATE, hints: null, events: EVENTS(), config: CONFIG, ...over });
 const whistling = (over = {}) => ({ ...STATE, mode: "whistle", ...over });
 
@@ -95,6 +95,11 @@ export default suite("whistle-ui", (t) => {
     ui(pub({ events: EVENTS(ev(1, "a"), ev(2, "b"), ev(3, "c")) }), world({ last: 3, now: 20000 })).model.bar.label, "Terminal");
   t.check("seqs gone back (whistle started again): every event in the feed is new",
     ui(pub({ events: EVENTS(ev(1, "again")) }), world({ last: 7 })).model.bar.label, "again");
+  t.check("only events in the problem group flash",
+    ui(pub({ events: EVENTS(ev(1, "WHISTLE", "mode-switched", ["mode"]), ev(2, "w x is not mapped"), ev(3, "main selected", "field-selected", ["field"])) }), world()).model.bar.label,
+    "w x is not mapped");
+  const quiet = ui(pub({ events: EVENTS(ev(1, "WHISTLE", "mode-switched", ["mode"])) }), world()).model;
+  t.check("an event outside the problem group flashes nothing, and is handled", [quiet.bar.label, quiet.last], ["Terminal", 1]);
   t.check("switched off, the flash shows instead of Whistle off",
     ui(pub({ whistle: { ...STATE, enabled: false }, events: one }), world()).model.bar.label, "`x` is not mapped");
 
