@@ -45,13 +45,13 @@ const stable = (v) => {
 // bar shown.
 export const isCorner = (props) => isObject(props) && props.corner === true;
 
-// This mod's blocks in the layout, in layout order: [{ id, props, shown }].
-function blocks(layout, folder) {
+// The layout's mod blocks, in layout order: [{ id, mod, props, shown }].
+function blocks(layout) {
   const out = [];
   const walk = (n, hidden) => {
     if (!n) return;
     const h = hidden || Boolean(n.hidden);
-    if (n.content?.mod === folder) out.push({ id: n.id, props: propsOf(n), shown: !h });
+    if (n.content?.mod) out.push({ id: n.id, mod: n.content.mod, props: propsOf(n), shown: !h });
     for (const c of n.children ?? []) walk(c, h);
   };
   walk(layout, false);
@@ -61,7 +61,7 @@ function blocks(layout, folder) {
 // The block that shows the hints and opens the settings: the first bar that shows, else the
 // corner block if it shows, else none.
 export function lead(layout, folder) {
-  const all = blocks(layout, folder).filter((b) => b.shown);
+  const all = blocks(layout).filter((b) => b.mod === folder && b.shown);
   return all.find((b) => !isCorner(b.props)) ?? all.find((b) => isCorner(b.props)) ?? null;
 }
 
@@ -75,17 +75,8 @@ const leads = (world) => {
 // fields (they take no part in keynav, so only the whistle state's field names them).
 const STOCK = { spaces: "Spaces", tabs: "Tabs", agents: "Agents" };
 
-// The mod in the layout's block with this id, if any.
-function modAt(layout, id) {
-  let found = null;
-  const walk = (n) => {
-    if (!n || found) return;
-    if (n.id === id && n.content?.mod) found = n.content.mod;
-    for (const c of n.children ?? []) walk(c);
-  };
-  walk(layout);
-  return found;
-}
+// The mod of a keynav field key: the folder name before the first space (docs/contracts/keynav.md).
+const modOfFieldKey = (key) => key.split(" ")[0];
 
 // Where the keyboard is, as the bar says it: in TYPE, the terminal if a pane is focused; in
 // WHISTLE, the terminal and its selected pane's title, the selected keynav field's label
@@ -100,9 +91,9 @@ function where(state, world) {
   const active = world.shared?.keynav?.active;
   if (typeof active === "string") {
     const label = world.shared?.[`keynav.field:${active}`]?.label;
-    return typeof label === "string" ? label : active.split(" ")[0];
+    return typeof label === "string" ? label : modOfFieldKey(active);
   }
-  return STOCK[modAt(world.layout, state.field)] ?? "";
+  return STOCK[blocks(world.layout).find((b) => b.id === state.field)?.mod] ?? "";
 }
 
 // The bar: inert, why; whistle not running, that; switched off, "Whistle off"; else the mode

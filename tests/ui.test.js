@@ -2,7 +2,7 @@
 // core: the bar it draws, the events it flashes, the hints box it opens, docks and closes, and
 // the commands its settings run. The contract examples tie the two mods together.
 
-import { suite } from "./harness.js";
+import { suite, examplesIn } from "./harness.js";
 import { ui, command, mappingsCommand, keepCommand, FLASH_MS } from "./ui/ui.js";
 import * as read from "./ui/read.js";
 import texts from "./texts.js";
@@ -145,11 +145,11 @@ export default suite("whistle-ui", (t) => {
 
   // The contract page's examples (`json ui-example <name>`) run through whistle-ui's core.
   const page = "docs/contracts/whistle-ui.md";
-  const found = [...String(texts[page] ?? "").replace(/\r\n/g, "\n").matchAll(/^```[ \t]*json[ \t]+ui-example[ \t]+([^\n`]*?)[ \t]*\n([\s\S]*?)^```[ \t]*$/gm)];
+  const found = examplesIn(texts[page] ?? "", "ui-example");
   t.check(`${page} has examples`, found.length > 0, true);
   const DEFAULTS = { folder: "whistle-ui", props: {}, size: null, viewport: null, focused: null, panes: [], shared: {}, now: 0, last: 0, flash: null, box: null,
     layout: { id: "root", type: "column", children: [uiBlock("whistle-bar", {}), uiBlock("whistle-corner", CORNER)] } };
-  for (const [, name, body] of found) {
+  for (const { name, body } of found) {
     let x;
     try { x = JSON.parse(body); } catch (e) { t.fail(`${page}: ${name}`, `doesn't parse: ${e?.message ?? e}`); continue; }
     const w = { ...DEFAULTS, ...(x.world ?? {}) };
