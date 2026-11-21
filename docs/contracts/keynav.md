@@ -393,8 +393,3 @@ running.
 - May change: `keynav.js`'s functions. Keep your copy; update it when the CHANGELOG says so
   under **Keynav authors**.
 - The contract assumes one driver at a time.
-
-## History
-
-- `v: 3` (whistle 1.1.0): the version this page describes
-  ([ADR 0013](../adr/0013-keynav-fields-join-by-protocol.md)).
