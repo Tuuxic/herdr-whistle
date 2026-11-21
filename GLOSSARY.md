@@ -144,9 +144,21 @@ never changes how whistle works.
 _Avoid_: view, UI, frontend
 
 **Event**:
-Something that just happened in whistle, such as a key that isn't mapped or a command that
-failed, published with a stable kind and a default text that clients may show.
+Something that happened in whistle that clients may want to know, such as a mode switch, a
+field selected, a key that isn't mapped or a command that failed; published with a stable kind,
+its event groups and a default text.
 _Avoid_: flash, message, notification
+
+**Event group**:
+A named set of event kinds a client can ask for together, such as `mode` or `problem` (every
+kind that says something went wrong); a kind may be in several. Not a group of mappings.
+_Avoid_: category, level, channel
+
+**Subscriber**:
+A mod that named itself to whistle with a filter of event groups and kinds, so whistle runs
+its `whistle-event` command for each event the filter passes while the mod has a block that
+shows.
+_Avoid_: listener, observer, handler
 
 **Bar**:
 A client's strip in the window showing the mode badge and where the keyboard is; only an aid,

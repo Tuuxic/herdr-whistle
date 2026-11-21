@@ -50,7 +50,7 @@ every public surface: ADR 0002). Agents relay these entries when they update whi
 - **New**: whistle-ui, a separate mod shipped with whistle: whistle's bar, hints box and
   settings dialog, drawn from what whistle publishes. Its bar shows the mode, where the keyboard
   is, a `⚠ n` count of config problems, "Whistle off", why whistle stands aside, and a 2 s flash
-  for each event. Its hints box docks on the first bar that shows, or sits at the window's bottom
+  for each problem event (an unmapped key, a failed command, a new conflict). Its hints box docks on the first bar that shows, or sits at the window's bottom
   right with no bar shown. `alt-,` runs `whistle-ui.settings`, which goes back to TYPE and opens
   its settings dialog ([whistle-ui.md](docs/contracts/whistle-ui.md)).
 - **Changed**: `open` in your whistle.json's `keys` is no longer read as `pick`; it's an
@@ -86,16 +86,32 @@ every public surface: ADR 0002). Agents relay these entries when they update whi
   Windows PowerShell 5.1, pass a JSON argument with `herdr-app do --% "…"`.
 - **New**: three public keys, each with its contract page and `whistle.js` reader:
   `whistle.hints`, the hint items whether or not a client shows them
-  ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the last 8 events,
-  each with a stable kind, its data and a default English text, numbered by `seq`
-  ([events.md](docs/contracts/events.md), `readEvents(last)`); `whistle.config`, what the
-  settings show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy
-  writes them, and only when they change.
+  ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the feed of what
+  happened ([events.md](docs/contracts/events.md), below); `whistle.config`, what the settings
+  show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy writes
+  them, and only when they change.
+- **New**: events, for anything that happened in whistle, not only what went wrong. Each is
+  `{ seq, kind, groups, text, ...data }`: `kind` unique and stable, `groups` the groups it is in
+  (`mode`, `whistle`, `sequence`, `field`, `command`, `config`, `settings`, and `problem` for
+  everything that went wrong), `text` a default English text. Kinds include `mode-switched`,
+  `whistle-enabled`/`-disabled`, `whistle-inert`/`-active`, `sequence-started`/`-ended`,
+  `key-unmapped`, `field-selected`, `command-ran` and the failures
+  ([events.md](docs/contracts/events.md#kinds)).
+- **New**: `whistle.events` keeps the last 32 events. `readEvents(last, filter)` and
+  `eventsSince(value, last, filter)` take a filter, `{ groups, kinds }` or a predicate, and
+  return `{ events, last, missed }`: `last` moves past every event read, and `missed` counts the
+  events that fell out of the feed before you read them.
+- **New**: `whistle.subscribe:{"mod":"<mod>","groups":[…],"kinds":[…]}` and
+  `whistle.unsubscribe:<mod>`. Whistle runs `<mod>.whistle-event:<event>` for each event a
+  subscriber's filter passes, only while the mod has a block that shows; one that doesn't
+  show reads the feed when it shows again. Subscriptions are per mod and outlive layout
+  changes; unsubscribing in `close()` is the mod's job
+  ([events.md](docs/contracts/events.md#subscriptions)).
 - **New**: the whistle state's fields `field`, the selected field's block id in WHISTLE (else
   `null`), and `inert`, `{ problem, fix }` while whistle stands aside (else `null`). A copy
   standing aside on an old Herdr, or with whistle blocks that share their props, with no other
   copy running, writes the state with `inert` ([state.md](docs/contracts/state.md), rules 7 and
-  8). `readState` gives both.
+  8) and raises `whistle-inert` in the feed. `readState` gives both.
 - **Breaking**: `whistle.settings` is gone: whistle opens no dialog, and runs it as an unknown
   command. whistle-ui's `whistle-ui.settings` opens its own.
 - **New**: the settings commands, `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and

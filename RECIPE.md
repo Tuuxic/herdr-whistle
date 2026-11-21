@@ -147,7 +147,9 @@ text) takes the label for 2 s, or until the key sequence changes. A command
   (with `inert`: why) only while no other copy runs (docs/contracts/state.md). Beside it:
   `whistle.hints`, `whistle.events` and `whistle.config` (docs/contracts/hints.md, events.md,
   config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings-on|off:<mod>`
-  and `whistle.keep-mapping:<JSON>` (docs/contracts/commands.md). Every other `whistle.*` key
+  and `whistle.keep-mapping:<JSON>` (docs/contracts/commands.md). A mod that subscribes
+  (`whistle.subscribe:<JSON>`) gets each event its filter passes as
+  `<mod>.whistle-event:<event>`, while it has a block that shows. Every other `whistle.*` key
   is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
   key>")` says `v: 3`; an entry in any other `v` isn't a field. Whistle names the

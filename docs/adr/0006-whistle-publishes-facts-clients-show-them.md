@@ -11,8 +11,8 @@ for a client:
   inert;
 - `whistle.hints`: the hint items, the group a key sequence reached or the selected field's
   declared keys;
-- `whistle.events`: a feed of what just happened (an unmapped key, a failed command, a new
-  conflict), each with a kind, its data and a default text;
+- `whistle.events`: a feed of what just happened (a mode switch, an unmapped key, a failed
+  command, a new conflict), each with a kind, its groups, its data and a default text;
 - `whistle.config`: config problems, conflicts, overrides and mods on or off.
 
 Each public key carries its own `v`, which goes up only on a breaking change; new optional
@@ -43,8 +43,9 @@ Each private use gets a key of its own, so copies never overwrite each other.
 - Herdr has no per-key subscription: any `setShared` re-renders every mod. Whistle writes each
   public key only when it changes, and the event feed carries a rising `seq` so a client shows
   each event once.
-- Whistle never names a client. `whistle-ui.settings` opens whistle-ui's dialog; whistle has no
-  settings command of its own.
+- Whistle never names a client, except a mod that subscribes to events
+  ([ADR 0018](0018-subscribers-get-events-pushed-while-they-show.md)). `whistle-ui.settings`
+  opens whistle-ui's dialog; whistle has no settings command of its own.
 - The inert notification isn't remembered per folder: a new copy skips it when the published
   whistle state already gives the same reason. A copy standing aside for another copy publishes
   no state, so after a layout change it may post its notification again.
