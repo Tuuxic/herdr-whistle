@@ -95,8 +95,8 @@ export default suite("integrate", (t) => {
   t.check("the anchor runs whistle, the bar only draws",
     [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
   const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
-  t.check("with the bar shown, the hints box docks on it", [dock(layout, "whistle").spot?.id, dock(layout, "whistle").shown], [bar?.id, true]);
-  t.check("with the bar hidden, the hints box docks on no spot (the window's bottom right)", dock(hidden, "whistle"), { spot: null, shown: false });
+  t.check("with the bar shown, the hints box docks on it", dock(layout, "whistle")?.id, bar?.id);
+  t.check("with the bar hidden, the hints box docks on no spot (the window's bottom right)", dock(hidden, "whistle"), null);
   t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
   // Story 16 (#46): adding the anchor to a layout whose bar holds the layout's config moves
   // those props onto the anchor, so whistle reads the same config with no problem.

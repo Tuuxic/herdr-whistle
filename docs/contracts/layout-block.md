@@ -279,7 +279,8 @@ The box is 600 + 2 × 2 = 604 px wide and starts at 1000 − 200 − 604 = 196; 
 
 The anchor is a whistle block with the prop `anchor: true`, sized 0 px, that draws nothing
 (ADR 0018). Whistle runs in it: it holds the keyboard in WHISTLE, takes whistle's commands,
-jump keys and claimed keys, and publishes the whistle state. Bars are then only views: hiding or showing one changes what you see, never what whistle does.
+jump keys and claimed keys, and publishes the whistle state. Bars are then only views: hiding
+or showing one changes what you see, never what whistle does.
 Herdr doesn't run a hidden block's copy, so never hide the anchor.
 
 ```json

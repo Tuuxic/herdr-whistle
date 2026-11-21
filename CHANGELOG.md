@@ -30,7 +30,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   `layout.hide` on a spot's block) is the way to switch spots; Herdr remembers which shows
   (docs/contracts/layout-block.md, rule 5). The `bar` prop still names each spot.
 - **Changed**: with no bar shown, the hints box docks at the window's bottom right; a hidden
-  spot's `hints*` props and last size no longer count (rule 13).
+  spot's `hints*` props and last size no longer count (rule 13). In a window narrower than
+  492 px, the box is the window's width less 12 px, 6 px in from each side (it was the
+  window's full width), in a layout with no spot too.
 - **Removed**: rule 11 (whistle.json's `bar` picking the spot from the anchor).
 
 ### Mod authors

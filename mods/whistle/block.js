@@ -133,19 +133,18 @@ export function viewing(layout, folder, props) {
   return twins.some((g) => fieldKey(folder, g[0].props) === mine);
 }
 
-// Where the hints box docks: { spot: the bar block it lines up with | null, shown }. The first
-// of this copy's bars (its blocks but the anchor) that shows; with no bar shown, no spot (the
-// box docks at the window's bottom right, ADR 0019). Which bar shows is the layout's business.
+// The bar the hints box docks on: the first of this copy's bars (its blocks but the anchor)
+// that shows, or null with no bar shown (the box docks at the window's bottom right, ADR 0019).
+// Which bar shows is the layout's business.
 export function dock(layout, folder) {
-  const shown = bars(layout, folder).find((b) => !isAnchor(b.props) && !b.hidden);
-  return shown ? { spot: shown, shown: true } : { spot: null, shown: false };
+  return bars(layout, folder).find((b) => !isAnchor(b.props) && !b.hidden) ?? null;
 }
 
 // The spot a bar's props name (its `bar`), "" for a bar that names none.
 export const spotName = (props) => (typeof props?.bar === "string" ? props.bar : "");
 
 // What whistle.json's `bar` gets, whatever its value: whistle never shows or hides a bar (ADR 0019).
-const USER_BAR_GONE = "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)";
+const USER_BAR_PROBLEM = "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)";
 
 // whistle.json's `enabled` and `hints` over the layout's props: { settings, problems }.
 // settings: { enabled, hints, nav, place: the hints' placement props }. whistle.json's `bar` is
@@ -158,7 +157,7 @@ export function settings(props, user) {
     if (typeof user[k] === "boolean") own[k] = user[k];
     else problems.push(`${k} should be true or false`);
   }
-  if (isObject(user) && "bar" in user) problems.push(USER_BAR_GONE);
+  if (isObject(user) && "bar" in user) problems.push(USER_BAR_PROBLEM);
   const place = {};
   for (const k of NUMBERS) if (k in props) place[k] = props[k];
   return {

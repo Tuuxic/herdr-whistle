@@ -23,8 +23,8 @@ bar, in any layout: which bar shows is the layout's business, and Herdr remember
 
 - A "no bar" value for whistle.json's `bar` (`false`, `"none"`): it changes the key's type, and
   `"none"` collides with a spot name.
-- A separate `barVisible` key, or `whistle.bar:<spot>` / `bar-hide` commands: the engine
-  shouldn't manage a view.
+- A separate `barVisible` key, or `whistle.bar:<spot>` / `bar-hide` commands: whistle
+  shouldn't manage a view (bars only draw; the anchor runs whistle).
 - Applying whistle.json's pick only when it changes (edge-triggered): whistle.json and what's
   on screen drift apart, leaving two levers.
 - Docking the hints box under the selected terminal: Herdr gives mods no pane geometry;

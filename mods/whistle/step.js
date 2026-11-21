@@ -597,8 +597,8 @@ function viewsSent(out, world) {
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;
   if (h) {
-    const d = dock(world.layout, folderOf(world));
-    const b = hintsBox(h.items, world, d.spot && { place: m.config?.place ?? {}, size: sizeOf(d.spot, world) });
+    const spot = dock(world.layout, folderOf(world));
+    const b = hintsBox(h.items, world, spot && { place: m.config?.place ?? {}, size: sizeOf(spot, world) });
     const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
