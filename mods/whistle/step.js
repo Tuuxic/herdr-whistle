@@ -84,7 +84,7 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots, resting, viewing, dock, placeOf, spotName, isAnchor } from "./block.js";
+import { blockProps, settings as blockSettings, resting, viewing, dock, spotName, isAnchor } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
@@ -177,7 +177,7 @@ function configured(model, world) {
   const props = block.props;
   const offered = world.modMappings ?? {};
   const offers = modsShown(world).filter((name) => offered[name] !== undefined).map((name) => ({ name, entry: offered[name] }));
-  const sig = JSON.stringify([texts.defaults, texts.user, props, block.problems, spots(world.layout, folder).map((s) => s.props.bar),
+  const sig = JSON.stringify([texts.defaults, texts.user, props, block.problems,
     offers, world.commands?.length ?? null, world.platform ?? null, world.keysFile?.text ?? null]);
   if (model.config?.sig === sig) return model;
   const files = model.files ?? {};
@@ -188,7 +188,7 @@ function configured(model, world) {
   else if (defaults.missing || defaults.broken) fileProblems.push({ source: DEFAULTS, detail: `${why(defaults)}: a broken install; whistle runs on its built-in safety keys` });
   if (user.broken) fileProblems.push({ source: USER, detail: `${user.broken}; ${user.good ? "whistle runs on its last good version" : "whistle leaves it out until it parses"}` });
   const userGood = user.missing ? null : user.good;
-  const chosen = blockSettings(props, userGood?.json, world.layout, folder);
+  const chosen = blockSettings(props, userGood?.json);
   const composed = compose([
     { source: DEFAULTS, ...(defaults.good?.json ?? SAFETY) },
     { source: MODS, offers },
@@ -482,21 +482,7 @@ function flashTick(model, world) {
 function tick(model, world) {
   const moded = modeTick(waitTick(fieldsChecked(requests(stillThere(flashTick(configured(model, world), world), world), world), world), world), world);
   const claimed = claimsTick(moded.model, world);
-  return { model: claimed.model, effects: [...moded.effects, ...claimed.effects, ...spotTick(claimed.model, world)] };
-}
-
-// The bar in the spot whistle.json picks (block.js checked it exists): that spot shown, the
-// layout's other spots hidden.
-function spotTick(model, world) {
-  const want = model.config?.bar;
-  if (!want) return [];
-  const effects = [];
-  for (const s of spots(world.layout, folderOf(world))) {
-    const mine = s.props.bar === want;
-    if (mine && s.hidden) effects.push({ run: "layout.show", args: { id: s.id } });
-    if (!mine && !s.hidden) effects.push({ run: "layout.hide", args: { id: s.id } });
-  }
-  return effects;
+  return { model: claimed.model, effects: [...moded.effects, ...claimed.effects] };
 }
 
 // The key Herdr binds to action as it resolves from a terminal: terminal, a layout, global.
@@ -611,8 +597,8 @@ function viewsSent(out, world) {
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;
   if (h) {
-    const d = dock(world.layout, folderOf(world), m.config?.bar);
-    const b = hintsBox(h.items, world, d.spot && { place: d.shown ? m.config?.place ?? {} : placeOf(d.spot.props), size: sizeOf(d.spot, world) });
+    const spot = dock(world.layout, folderOf(world));
+    const b = hintsBox(h.items, world, spot && { place: m.config?.place ?? {}, size: sizeOf(spot, world) });
     const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
@@ -622,7 +608,7 @@ function viewsSent(out, world) {
   return { ...barred, model: { ...m, sent: { ...sent, hints: hs, settings: ss, box, leftOpen: false } }, effects };
 }
 
-// A bar's drawn size: this copy's own, measured, unless it is the anchor (which draws no bar),
+// A shown bar's drawn size: this copy's own, measured, unless it is the anchor (which draws no bar),
 // else the size the spot's copy last published.
 const sizeOf = (spot, world) => (!isAnchor(world.props) && world.barSize) || world.barSizes?.[spotName(spot.props)] || null;
 
@@ -722,12 +708,9 @@ function running(model, input, world) {
   model = configured(model, world);
   const none = { model, effects: [] };
   if (["on", "off", "settings"].includes(input.command)) return command(model, world, input.command);
-  // Switched off: standing aside, but still keeping its claims and the bar in its spot.
+  // Switched off: standing aside, but still keeping its claims.
   if (model.enabled === false) {
-    if (input.tick && model.mode !== "whistle") {
-      const claimed = claimsTick(model, world);
-      return { ...claimed, effects: [...claimed.effects, ...spotTick(claimed.model, world)] };
-    }
+    if (input.tick && model.mode !== "whistle") return claimsTick(model, world);
     return standAside(model, input, world);
   }
   const pressed = (name) => (model.mode === "whistle" && name ? key(model, world, name) : { ...none, handled: false });

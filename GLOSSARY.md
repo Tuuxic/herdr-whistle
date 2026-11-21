@@ -141,7 +141,7 @@ _Avoid_: core, engine, host, driver block
 **Bar**:
 Whistle's strip in the window showing the mode badge and where the keyboard is; only an aid,
 so hiding it changes what you see, never what whistle does. A layout can offer several spots
-for it.
+for it; the layout decides which spot shows, never whistle.
 _Avoid_: status bar, statusline
 
 **Mode badge**:
@@ -149,7 +149,8 @@ The TYPE or WHISTLE label at the start of the bar.
 _Avoid_: mode indicator, pill
 
 **Hints**:
-The box above the bar listing the keys that can follow the current key sequence.
+The box above the bar, or at the window's bottom right with no bar shown, listing the keys
+that can follow the current key sequence.
 _Avoid_: which-key, popup, help
 
 **Flash**:

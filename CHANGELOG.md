@@ -4,6 +4,45 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.3.0 (2026-11-21)
+
+### Upgrading
+
+1. **whistle.json's `bar`**: if the person's whistle.json sets `bar`, show that spot and hide
+   the layout's other spots once, by the whistle block whose `bar` prop matches
+   (`herdr-app do layout.show '{"id":"<block id>"}'`, and `layout.hide` for the others), so
+   the bar stays where it was. Then offer to remove `bar` from whistle.json, by its result:
+   "whistle no longer picks the bar's spot; Herdr remembers which bar you show". Whistle never
+   rewrites whistle.json itself.
+
+### You
+
+- **Changed**: whistle no longer shows or hides bars. Hide or show any bar and it stays that
+  way (Herdr remembers it across restarts), even with `bar` set in your whistle.json.
+- **Changed**: with no bar shown, the hints box sits at the window's bottom right, 480 px wide
+  (narrower in a narrow window), no longer where a hidden bar would sit.
+- **Removed**: whistle.json's `bar`. It is ignored and listed in settings as a config
+  problem; remove it, and show the bar you want in the layout instead.
+
+### Layout authors
+
+- **Changed**: whistle never shows or hides spots, so a layout's own control (`layout.show` /
+  `layout.hide` on a spot's block) is the way to switch spots; Herdr remembers which shows
+  (docs/contracts/layout-block.md, rule 5). The `bar` prop still names each spot.
+- **Changed**: with no bar shown, the hints box docks at the window's bottom right; a hidden
+  spot's `hints*` props and last size no longer count (rule 13). In a window narrower than
+  492 px, the box is the window's width less 12 px, 6 px in from each side (it was the
+  window's full width), in a layout with no spot too.
+- **Removed**: rule 11 (whistle.json's `bar` picking the spot from the anchor).
+
+### Mod authors
+
+- Nothing changes for you.
+
+### Keynav authors
+
+- Nothing changes for you.
+
 ## v1.2.0 (2026-11-21)
 
 ### Upgrading

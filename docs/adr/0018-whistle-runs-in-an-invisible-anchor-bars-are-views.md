@@ -28,7 +28,9 @@ takes focus, and gets plain keys and its `mod:whistle` keys.
 - Herdr hands every command and `mod:whistle` key to every shown copy, so bar copies ignore
   them; only the anchor acts.
 - With no bar showing, WHISTLE carries on, and the hints box docks where the picked bar would
-  be (bottom right with no spot at all). Flashes and the mode badge go unseen.
+  be (bottom right with no spot at all). Flashes and the mode badge go unseen. Superseded by
+  [ADR 0019](0019-whistle-leaves-which-bar-shows-to-the-layout.md): the box docks bottom right
+  whenever no bar shows, and the layout decides which bar shows.
 - A layout without an anchor keeps working: a bar stands in for it, as before, and hiding that
   bar rests whistle there. Integrate offers to add the anchor.
 - Changing the anchor's props restarts its copy and drops the keyboard, as for any block.
