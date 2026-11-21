@@ -8,8 +8,7 @@
 export function readState(value) {
   if (!value || typeof value !== "object" || value.v !== 1) return null;
   const { mode, enabled, sequence, pane, onTerminal, inert } = value;
-  // onTerminal came later under v 1 (whistle 1.0.0 has it); missing, it reads as false. inert
-  // came in 2.0.0; missing, whistle runs (or is older), so it reads as null.
+  // Missing, onTerminal reads as false, and inert as null (whistle runs).
   return { mode, enabled, sequence, pane, onTerminal: onTerminal === true, inert: inert ?? null };
 }
 

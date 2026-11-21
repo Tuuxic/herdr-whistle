@@ -1,8 +1,7 @@
 # Whistle hints
 
 For mod authors who want to show what the next key does: the choices of the key sequence typed
-so far, or the keys the selected field declares. Current version: **`v: 1`**. Since whistle
-2.0.0.
+so far, or the keys the selected field declares. Current version: **`v: 1`**.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder and call
 `readHints()` when you draw. It gives the fields below, or `null` while there's nothing to show
@@ -78,7 +77,7 @@ selected and no sequence is under way: `keys` is `""` and `title` the field's la
       { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
-    "shared": { "keynav.field:tree {}": { "v": 2, "label": "Tree", "keys": { "r": "Rename" } } }
+    "shared": { "keynav.field:tree {}": { "v": 3, "label": "Tree", "keys": { "r": "Rename" } } }
   },
   "steps": [
     { "command": "switch-mode" },
@@ -136,5 +135,4 @@ reads `v: 1` only, and gives `null` for any other `v`.
 
 ## History
 
-- `v: 1` (whistle 2.0.0): first version. Before, the items were private, in a key of the same
-  name; that private key moved.
+- `v: 1` (whistle 2.0.0): first version.

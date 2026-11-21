@@ -55,7 +55,7 @@
 //          configFiles: { defaults: mappings.json, user: whistle.json } as texts (null: no
 //                         file, undefined: not read yet),
 //          commands: Herdr's commands [{ name, args }] | null (unknown: not checked),
-//          shared: keynav's shared state by key ("keynav", "keynav.fields", and each shown
+//          shared: keynav's shared state by key ("keynav", and each shown
 //                  mod block's "keynav.field:<key>" and "keynav.request:<key>"),
 //          props: this copy's block props (props()), which tell the bar spots' copies apart
 //                 | undefined (unknown),
@@ -85,7 +85,7 @@
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
-import { fieldAt, fields, terminal, neighbour, modBlocks, eachNode, declaredKeys, requestKey, moveFor, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
+import { fieldAt, fields, terminal, neighbour, eachNode, declaredKeys, requestKey, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, parseCommand, switchMod, keepMapping } from "./config.js";
@@ -426,7 +426,7 @@ function ownKey(model, world, action) {
     return { ...done, model: (next && select(model, world, next.block)) || model };
   }
   const field = fieldAt(world.layout, model.field, model.recent, world.shared);
-  if (field?.kind === KEYNAV && (own.kind === "pick" || own.kind === "move")) return toField(model, world, field, moveFor(field, own.dir ?? "pick"));
+  if (field?.kind === KEYNAV && (own.kind === "pick" || own.kind === "move")) return toField(model, world, field, own.dir ?? "pick");
   if (own.kind === "pick") {
     if (!field || field.kind === TERMINAL) return { ...type(model, world), handled: true };
     return field.kind === STOCK && STOCK_FIELDS[field.stock].pick === "terminal" ? toTerminal(model, world) : done;
@@ -441,27 +441,13 @@ function ownKey(model, world, action) {
 }
 
 // The model with its keynav problems (model.fieldProblems) brought in line with the fields
-// that show: declared keys whistle ignores, copies still on keynav v2 (driven, but asked to
-// update) and copies still on keynav v1 (not driven). Unchanged when they
-// are the same.
+// that show: the declared keys whistle ignores. Unchanged when they are the same.
 function fieldsChecked(model, world) {
   if (!world.shared && !model.fieldProblems?.length) return model; // no keynav state: nothing to check
   const out = [];
-  const all = fields(world.layout, world.shared);
-  const seen = new Set();
-  for (const f of all) {
+  for (const f of fields(world.layout, world.shared)) {
     if (f.kind !== KEYNAV) continue;
     for (const detail of declaredKeys(f, model.config?.own, world.platform).problems) out.push({ source: "keynav", detail });
-    if (f.v !== KEYNAV_V && !seen.has(f.key)) {
-      seen.add(f.key);
-      out.push({ source: "keynav", detail: `${f.mod} speaks keynav v${f.v}: whistle still drives it, but update its keynav.js to v${KEYNAV_V}` });
-    }
-  }
-  const v1 = world.shared?.["keynav.fields"] ?? {};
-  for (const b of modBlocks(world.layout)) {
-    if (seen.has(b.key) || v1[b.key]?.v !== 1 || all.some((f) => f.key === b.key)) continue;
-    seen.add(b.key);
-    out.push({ source: "keynav", detail: `${b.mod} speaks keynav v1, which whistle no longer drives; update its keynav.js` });
   }
   return JSON.stringify(out) === JSON.stringify(model.fieldProblems ?? []) ? model : { ...model, fieldProblems: out };
 }
@@ -514,8 +500,7 @@ function stillThere(model, world) {
 }
 
 // The selected keynav field's request slot, shared("keynav.request:<fieldKey>"), once per
-// request made since it was selected (fields.js requestOf reads either version's shape):
-// "terminal" (it focused one: whistle selects the terminal on that pane) or "hold" (it moved
+// request made since it was selected (fields.js requestOf): "terminal" (it focused one: whistle selects the terminal on that pane) or "hold" (it moved
 // the keyboard: whistle takes it back). Either way the bar holds the keyboard for HOLD_MS;
 // modeTick takes it back.
 function requests(model, world) {
@@ -523,7 +508,7 @@ function requests(model, world) {
   const f = fieldAt(world.layout, model.field, model.recent, world.shared);
   if (f?.kind !== KEYNAV) return model;
   const r = world.shared[requestKey(f.key)];
-  const asks = requestOf(f, r);
+  const asks = requestOf(r);
   if (!asks || !(r.at > (model.requestAt ?? 0))) return model;
   const m = { ...model, requestAt: r.at, holdUntil: world.now + HOLD_MS };
   return asks === AFTER_TERMINAL && terminal(world.layout, m.recent) ? onTerminalPane(m, world) : m;

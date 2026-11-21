@@ -15,6 +15,15 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
    `whistle.switch-mode` (in `global`, by default on `ctrl-space`) and `whistle.type` with
    `whistle.mode:type` (in `mod:whistle`, by default on `ctrl-space`), keeping their keys. Do
    the same in any mapping (whistle.json, a layout's whistle block) that runs them.
+2. **Keynav v3 only (breaking)**: whistle drives keynav v3 fields only. A mod whose
+   `keynav.js` is on v2 or v1 is no longer a field, and settings no longer ask it to update.
+   For each such mod in `whistle-integration.md`, replace its `keynav.js` with whistle's and
+   change its `open` move to `pick` (Integrate's "How a mod becomes a field").
+3. **`open` is no longer read as `pick` (breaking)**: a `keys` section that sets `open` now
+   sets an unknown action, listed as a config problem. In whistle.json and in a layout's
+   whistle block, rename `open` to `pick`.
+4. whistle.json's `bar` is no longer listed as a config problem: whistle ignores it, like any
+   key it doesn't know. Nothing to do; you may remove it.
 
 ### You
 
@@ -28,6 +37,11 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   for each event. Its hints box docks on the first bar that shows, or sits at the window's bottom
   right with no bar shown. `alt-,` runs `whistle-ui.settings`, which goes back to TYPE and opens
   its settings dialog ([whistle-ui.md](docs/contracts/whistle-ui.md)).
+- **Changed**: `open` in your whistle.json's `keys` is no longer read as `pick`; it's an
+  unknown action, listed in settings. Rename it to `pick`.
+- **Changed**: whistle.json's `bar` is no longer listed in settings; whistle ignores it.
+- **Changed**: a mod still on keynav v2 or v1 is no longer a field, and settings no longer
+  mention it.
 
 ### Layout authors
 
@@ -36,6 +50,7 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 - **New**: whistle-ui's blocks: bars, and a 0 px corner block (`corner: true`) that shows the
   hints box when no bar shows. Props `hints`, `hintsAlignRight`, `hintsAlignBorder` and
   `hintsGap` ([whistle-ui.md](docs/contracts/whistle-ui.md#blocks-and-props)).
+- **Changed**: `open` in the whistle block's `keys` is an unknown action; use `pick`.
 
 ### Mod authors
 
@@ -66,7 +81,10 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ### Keynav authors
 
-- Nothing changes for you.
+- **Breaking**: whistle drives keynav v3 only. An entry in v2 is no longer a field: whistle no
+  longer sends it `<mod>.keynav-open` or reads v2's `{ to }` and `{ hold }` requests, and
+  settings no longer ask it to update. A v1 copy is no longer named in settings either. Copy
+  whistle's current `keynav.js` (v3). The keynav checker no longer has the `no v1` rule.
 
 ## v1.3.0 (2026-11-21)
 

@@ -149,13 +149,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   next read.
 - **Whistle state and the public keys**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
   sequence, pane, onTerminal }` whenever it changes, and only then; an inert copy writes it only with
-  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it, since 2.0.0:
+  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it:
   `whistle.hints`, `whistle.events` and `whistle.config` (docs/contracts/hints.md, events.md,
   config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings-on|off:<mod>`
   and `whistle.keep-mapping:<JSON>` (docs/contracts/commands.md). Every other `whistle.*` key
   is private.
 - **Keynav fields**: a mod's block is a field once its entry `shared("keynav.field:<field
-  key>")` says `v: 3` (or `v: 2`, still driven, with a notice in settings). Whistle names the
+  key>")` says `v: 3`; an entry in any other `v` isn't a field. Whistle names the
   selected one in `shared("keynav") = { v: 3, active }`, sends it moves and its declared keys
   as `<mod>.keynav-*` commands, and reads its request slot `shared("keynav.request:<field
   key>")`. Declared keys beat mappings but not own keys (docs/contracts/keynav.md).
@@ -347,9 +347,8 @@ Offer it after Install's last step. Do it at any other time the person asks.
 - **Already fields, left as they are**: terminal blocks (`content` is a `pane`, `tab`,
   `terminal` or `agent`), mods that already speak keynav v3 (a `keynav.js` with `V = 3` whose
   `announce` the mod calls), and whistle's own blocks (`"title": "Whistle"` in the mod's
-  `mod.json`). A mod still on keynav v2 (`V = 2`) or v1 (`shared("keynav.fields")`) is
-  adapted: its `keynav.js` is replaced and its calls changed as below (from v2, its `open`
-  move becomes `pick`; nothing else changes).
+  `mod.json`). Any other mod with a `keynav.js` is adapted: its `keynav.js` is replaced with
+  whistle's, whatever its version, and its calls changed as below.
 
 ### Simple path
 
@@ -621,8 +620,7 @@ Update in place: whistle never shows an "updated" notice, so what changed reache
 only through you.
 
 1. Find every copy: each `mods/*/mod.json` with `"title": "Whistle"`. The old version is
-   `"version"` in the copy's `mod.json`. **A copy without `version.js` is older than 1.0:
-   also apply v1.0.0's Upgrading note in `CHANGELOG.md` in full.**
+   `"version"` in the copy's `mod.json`.
 2. Replace the contents of `mods/whistle/` with the new `mods/whistle/`: copy every file over
    and delete the files the new version doesn't ship. Don't rename anything. If the only
    copy is in another folder, move it to `mods/whistle/` and update it there, and rewrite its
@@ -632,8 +630,8 @@ only through you.
 4. Never touch `whistle.json` in Herdr's home, and don't merge `keys.json` again:
    whistle reconciles its own `mod:whistle` keys. Change keys.json only where step 2 or an
    Upgrading note says to.
-5. Read `CHANGELOG.md` and tell the person about every entry newer than the old version,
-   breaking ones first; follow each entry's **Upgrading** note.
+5. Read the `CHANGELOG.md` entries newer than the old version, up to the new one, and follow
+   their **Upgrading** notes. Tell the person about each, breaking ones first.
 6. `herdr-app check mods/whistle`.
 7. **Integration**: if `whistle-integration.md` is in Herdr's home, read it. Clones never get
    their original's updates on their own, so for each row:

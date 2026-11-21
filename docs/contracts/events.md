@@ -3,7 +3,7 @@
 For mod authors who want to tell people what just happened in whistle: a key that isn't mapped,
 a block that can't be selected, a command that failed, a new conflict. Each event has a stable
 kind, its data and a default English text; whistle's bar flashes the same text. Current
-version: **`v: 1`**. Since whistle 2.0.0.
+version: **`v: 1`**.
 
 Read it with `whistle.js`: copy `mods/whistle/whistle.js` into your mod's folder, keep the `seq`
 of the last event you handled, and call `readEvents(last)` when you draw. It gives the events

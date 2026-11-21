@@ -20,7 +20,7 @@ const FILES_KEY = "files {}";
 const WITH_KEYNAV = {
   ...WORLD,
   layout: { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), { id: "files", type: "block", content: { mod: "files" } }] }, bar] },
-  shared: { [`keynav.field:${FILES_KEY}`]: { v: 2, label: "Files", keys: {} } },
+  shared: { [`keynav.field:${FILES_KEY}`]: { v: 3, label: "Files", keys: {} } },
 };
 // In WHISTLE with the bar holding the keyboard, the state already published.
 const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];

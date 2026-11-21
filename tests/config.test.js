@@ -91,23 +91,11 @@ const SCENARIOS = [
     steps: [...IN, { key: "enter", effects: TO_TYPE, model: { mode: "type" } }],
   },
   {
-    name: "A layer that still sets \"open\" is honoured as pick, and listed as a config problem asking to rename it",
+    name: "A layer that sets \"open\" sets an unknown action: it's listed, and pick keeps its keys",
     world: world({ user: { keys: { open: ["o"] } } }),
-    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle",
-      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
-      { key: "o", effects: TO_TYPE, model: { mode: "type" } }],
-  },
-  {
-    name: "A layer that sets both \"pick\" and \"open\": pick wins, and open is still listed",
-    world: world({ user: { keys: { open: ["o"], pick: ["p"] } } }),
     steps: [...IN, { key: "o", effects: [], handled: false, model: { mode: "whistle",
-      problems: [{ source: "whistle.json", detail: 'keys › open is now "pick": rename it' }] } },
-      { key: "p", effects: TO_TYPE, model: { mode: "type" } }],
-  },
-  {
-    name: "\"open\" set to null in a layer takes pick's keys away",
-    world: world({ props: { keys: { open: null } } }),
-    steps: [...IN, { key: "enter", effects: [], handled: false, model: { mode: "whistle" } }],
+      problems: [{ source: "whistle.json", detail: "keys › open: unknown action" }] } },
+      { key: "enter", effects: TO_TYPE, model: { mode: "type" } }],
   },
   {
     name: "Own keys are claimed from the layers too",
@@ -144,13 +132,13 @@ const SCENARIOS = [
       { key: "q", effects: [], handled: false }],
   },
   {
-    name: "A layer setting back is ignored and listed: the key is gone, and a sequence has no step back",
+    name: "A layer setting back sets an unknown action: it's listed, and a sequence has no step back",
     world: world({ keys: { ...TEST_DEFAULTS.keys, cancel: ["escape"] },
       map: { w: { name: "Panes", map: { m: { name: "More", map: { z: ["Zoom pane", "pane.zoom"] } } } } },
       user: { keys: { back: ["backspace"] } } }),
     steps: [...IN, { key: "w" }, { key: "m" },
       { key: "backspace", handled: true, effects: [], bar: { label: "w m ⌫ is not mapped" }, model: { sequence: null,
-        problems: [{ source: "whistle.json", detail: "keys › back: whistle has no back key any more; it's ignored (Escape ends a key sequence)" }] } },
+        problems: [{ source: "whistle.json", detail: "keys › back: unknown action" }] } },
       { key: "w" }, { key: "escape", handled: true, model: { sequence: null } }],
   },
   {
