@@ -83,21 +83,33 @@ export function hintsColumns(items, width) {
 
 // The bar's height when the shell hasn't measured it (mod.json's size), and the window's width.
 const BAR_HEIGHT = 22, WIDTH = 900;
+// The hints box with no bar spot at all: its width, and its distance from the window's bottom
+// and right edges (px).
+const CORNER = 480, EDGE = 6;
 
 // Where the hints window docks: on top of the bar and as wide as it, { width, height, at? }.
-// Whistle measures only the window (world.viewport) and its own bar (world.barSize, inside any
-// border); the layout says the rest. The bar block (the bar and a border hintsAlignBorder wide
-// around it) ends hintsAlignRight px from the window's right edge, and the box sits hintsGap
-// (6) above the block's top, border included. Without a viewport, Herdr places the window.
-export function hintsBox(items, place, world) {
+// bar: the bar it lines up with, { place: its place props, size: its drawn size { width,
+// height }, inside any border | null (not measured) }, or null with no bar spot at all.
+// Whistle measures only the window (world.viewport) and its bars; the layout says the rest. The
+// bar block (the bar and a border hintsAlignBorder wide around it) ends hintsAlignRight px from
+// the window's right edge, and the box sits hintsGap (6) above the block's top, border
+// included. A bar not measured is taken as reaching from the window's left edge, along the
+// bottom, BAR_HEIGHT high. With no bar, the box is CORNER px wide (the window's width, if
+// narrower) at the window's bottom right, EDGE px in. Without a viewport, Herdr places it.
+export function hintsBox(items, world, bar) {
   const vp = world.viewport ?? null;
-  const right = place.hintsAlignRight ?? 0, border = place.hintsAlignBorder ?? 0, gap = place.hintsGap ?? 6;
-  const barWidth = world.barSize?.width ?? vp?.width ?? WIDTH;
-  const width = Math.round(barWidth + 2 * border);
+  if (!bar) {
+    const width = Math.min(CORNER, vp?.width ?? CORNER);
+    const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
+    if (!vp) return { width, height };
+    return { width, height, at: { x: Math.max(0, vp.width - EDGE - width), y: Math.max(8, vp.height - EDGE - height) } };
+  }
+  const right = bar.place.hintsAlignRight ?? 0, border = bar.place.hintsAlignBorder ?? 0, gap = bar.place.hintsGap ?? 6;
+  const inner = bar.size ?? { width: vp ? Math.max(0, vp.width - right - 2 * border) : WIDTH, height: BAR_HEIGHT };
+  const width = Math.round(inner.width + 2 * border);
   const height = HEAD + hintsColumns(items, width).rows * ROW + 10;
   if (!vp) return { width, height };
-  const blockHeight = (world.barSize?.height ?? BAR_HEIGHT) + 2 * border;
-  const at = { x: Math.max(0, vp.width - right - width), y: Math.max(8, vp.height - blockHeight - height - gap) };
+  const at = { x: Math.max(0, vp.width - right - width), y: Math.max(8, vp.height - (inner.height + 2 * border) - height - gap) };
   return { width, height, at };
 }
 

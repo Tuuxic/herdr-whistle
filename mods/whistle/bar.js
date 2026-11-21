@@ -1,4 +1,5 @@
-// The bar: draws the bar's view model (step.js bar()) and nothing else.
+// The bar: draws the bar's view model (step.js bar(), which the core sets in its folder's bar key)
+// and nothing else.
 
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";

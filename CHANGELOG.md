@@ -4,6 +4,65 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v1.2.0 (2026-11-21)
+
+### Upgrading
+
+1. **The anchor**: for each of the person's layouts that has whistle's bar but no whistle
+   block with `anchor: true`, offer to add the anchor (RECIPE.md, Install step 7), by its
+   result: "the bar becomes optional: you can hide it and whistle keeps working". Yes: add it
+   just before the bar, as Integrate does, and move the bar's `mappings`, `keys`, `mods`,
+   `enabled`, `hints` and `nav` to the anchor (each from the first whistle block that has it),
+   taking them off every bar, so whistle works exactly as before. Herdr's own layouts are
+   never edited.
+
+### You
+
+- **New**: Install and Integrate put an anchor into your layout next to the bar: an invisible
+  block whistle runs in, so the bar is only an aid and can be hidden. Uninstall takes the
+  anchor out again.
+- **New**: in a layout with an anchor, the bar is optional. Hide every bar and whistle works
+  the same: Ctrl+Space enters WHISTLE, mappings run, Ctrl+H/J/K/L select fields, jump keys
+  work, and the whistle state is still published. Hiding the bar in WHISTLE keeps the mode,
+  the selected field and the key sequence; a bar shown again shows the current state.
+  whistle.json's `bar` still picks which spot shows. Layouts without an anchor work as before:
+  hiding their bar rests whistle.
+- **New**: when whistle stands aside (inert: Herdr too old, or another copy runs), one Herdr
+  notification says why, so you learn it with the bar hidden too. It comes again only if the
+  reason changes; the bar still says why as well (docs/guide.md, When whistle stands aside).
+- **New**: with every bar hidden, the hints box still opens inside a group, docked where the
+  picked bar spot would sit (at the size that spot had when it last showed), or at the
+  window's bottom right in a layout with no bar spot. With a bar shown, the box docks on it
+  in a layout with an anchor too.
+
+### Layout authors
+
+- **New**: the whistle block prop `anchor: true` marks the anchor, the block whistle runs in;
+  size it 0 px and never hide it (docs/contracts/layout-block.md, The anchor). In a layout with
+  an anchor, a bar's copy only draws: it acts on no command or key. The rule that a hidden
+  spot's copy rests now holds only for layouts without an anchor.
+- **New**: a layout with more than one anchor keeps working: the first in layout order runs
+  whistle, and each other anchor is left out and listed as a config problem in settings.
+  Anchors with the same props can't tell which comes first, so all of them are left out, a
+  bar stands in, and settings list them; keep one.
+- **Changed**: in a layout with an anchor, the layout's config layer (`mappings`, `keys`,
+  `mods`, `enabled`, `hints`, `nav`) is read from the anchor alone; on a bar these props are
+  skipped and listed as a config problem. Bars keep `bar` and the hints' place props
+  (`hintsAlignRight`, `hintsAlignBorder`, `hintsGap`), which on the anchor are skipped and
+  listed. Layouts without an anchor read them all from the bar, as before
+  (docs/contracts/layout-block.md, rule 14).
+
+### Mod authors
+
+- The whistle state (docs/contracts/state.md) is published whether or not a bar shows: in a
+  layout with an anchor, the anchor publishes it, so whistle-aware behaviour no longer depends
+  on the bar. Nothing in the state's shape changes.
+
+### Keynav authors
+
+- Whistle drives your field the same with every bar hidden: in a layout with an anchor, the
+  anchor sends the requests and selects fields. Nothing in the keynav contract changes.
+
 ## v1.1.0 (2026-11-20)
 
 ### Upgrading

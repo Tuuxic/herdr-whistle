@@ -15,11 +15,18 @@
 //   one row with "none" in Key and empty Label and command.
 // Pick's table is tagged `<!-- table integrate-pick -->`:
 //   | Block | Herdr command | Then |   Then: `whistle.type` when whistle is there.
+//
+// The anchor (issue #52, ADR 0018): the blocks Install adds are one fenced block tagged
+// ```json whistle-blocks``` (a JSON array). Put in a layout, block.js (the layout-block contract)
+// must read them as an anchor (anchor: true, 0 px) that drives and a bar that only draws, with no
+// config problem, and the hints box docking at the bar's spot while it is hidden. Integrate adds
+// the same anchor to a layout that has whistle's bar but no anchor, and Uninstall removes it.
 
 import { suite } from "./harness.js";
 import { taggedRows } from "./guide.test.js";
 import texts from "./texts.js";
 import * as herdr from "herdr";
+import { bars, blockProps, viewing, dock, isAnchor, BEHAVIOUR } from "./block.js";
 
 const code = (cell) => [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 const recipe = texts["RECIPE.md"];
@@ -50,6 +57,12 @@ const lines = () => rows().map(([block, key, _label, command]) => {
   return k ? `${b} · ${k} · ${c}` : `${b} · ${key}`;
 });
 
+// The JSON arrays in fenced blocks tagged `json whistle-blocks`, concatenated.
+const whistleBlocks = (text) => [...String(text).replace(/\r\n/g, "\n").matchAll(/^ *```json whistle-blocks\n([\s\S]*?)^ *```$/gm)]
+  .flatMap((m) => JSON.parse(m[1]));
+// A RECIPE section's text: from its `## ` heading to the next.
+const recipeSection = (name) => (recipe ?? "").split(new RegExp(`^## ${name}$`, "m"))[1]?.split(/^## /m)[0] ?? "";
+
 // `herdr-app do <command>` anywhere in the text.
 const doCommands = (text) => [...String(text).matchAll(/herdr-app do ([a-z_]+\.[a-z_]+)/g)].map((m) => m[1]);
 
@@ -68,6 +81,39 @@ export default suite("integrate", (t) => {
   t.check("Show holds", section.includes('after: "hold"') && section.includes("keepKeys"), true);
   t.check("Show never goes to the terminal", /\bnever[^.]*`\{ after: "terminal" \}`/.test(section), true);
   t.check("RECIPE offers no Aside", /\bAside\b|shift-space|Shift\+Space/.test(recipe ?? ""), false);
+
+  // The anchor (issue #52).
+  const added = whistleBlocks(recipeSection("Install"));
+  const layout = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } }, ...added] };
+  const anchor = added.find((b) => isAnchor(b.content?.props));
+  const bar = added.find((b) => b.content?.mod === "whistle" && b !== anchor);
+  t.check("Install adds an anchor and a bar", [Boolean(anchor), Boolean(bar)], [true, true]);
+  t.check("the anchor is sized 0 px", anchor?.size, { px: 0 });
+  t.check("the blocks are whistle's", bars(layout, "whistle").map((b) => b.id), added.map((b) => b.id));
+  t.check("the blocks have no config problem", blockProps(layout, "whistle").problems, []);
+  t.check("the anchor runs whistle, the bar only draws",
+    [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
+  const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
+  t.check("with the bar hidden, the hints box docks at its spot", [dock(hidden, "whistle", null).spot?.id, dock(hidden, "whistle", null).shown], [bar?.id, false]);
+  t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
+  // Story 16 (#46): adding the anchor to a layout whose bar holds the layout's config moves
+  // those props onto the anchor, so whistle reads the same config with no problem.
+  const moves = (text) => /move[^.]*(to|onto) the anchor/i.test(text)
+    && BEHAVIOUR.every((p) => text.includes(`\`${p}\``));
+  t.check("Install moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Install")), true);
+  t.check("Integrate moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Integrate")), true);
+  t.check("CHANGELOG's Upgrading moves them too", moves(texts["CHANGELOG.md"].split(/^## /m)[1] ?? ""), true);
+  const bar2 = (props) => ({ id: "whistle", type: "block", content: { mod: "whistle", props } });
+  const before = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } },
+    bar2({ mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false, hintsGap: 4 })] };
+  const after = { ...before, children: [before.children[0],
+    { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true, mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false } } },
+    bar2({ hintsGap: 4 })] };
+  t.check("moved onto the anchor, the layout's config reads as before, with no problem",
+    [blockProps(after, "whistle").props, blockProps(after, "whistle").problems], [blockProps(before, "whistle").props, []]);
+  t.check("Uninstall removes the anchor", /`anchor: true`/.test(recipeSection("Uninstall")), true);
+  t.check("Done when: the hand check with the bar hidden",
+    /bar hidden[\s\S]{0,80}?`ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl\+H selects\s+a field, and `i` goes back to TYPE/.test(recipeSection("Done when")), true);
 
   const known = new Set((herdr.commands?.() ?? []).map((c) => c.name));
   t.check("Herdr lists its commands under check", known.size > 0, true);

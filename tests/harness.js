@@ -18,13 +18,16 @@
 //         // What it should produce; each is checked only when given:
 //         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it)
-//                                          // the views' models (`shared` checks them) and
-//                                          // the hints window (`hintsWindow` checks it)
+//                                          // the views' models, the bar's included
+//                                          // (`shared` checks them) and
+//                                          // the hints window (`hintsWindow` checks it) and
+//                                          // notifications (`notified` checks them)
 //         published: { v: 1, mode: "whistle", ... },  // the whistle state published
 //                                          // (shared("whistle")), or null: none
 //         shared: { "whistle.hints": null }, // what these private shared keys were set to
 //                                          // in this step; a key given as undefined: not set
 //         hintsWindow: [{ closeOverlay: "hints" }],  // exactly these hints window effects
+//         notified: [{ title, body, level }],  // exactly these Herdr notifications posted
 //         model: { mode: "whistle" },      // these model fields (deep equal per field)
 //         bar: { badge: "WHISTLE" },       // these fields of the bar's view model
 //         hints: { title: "Panes" },       // these fields of the hints' view model (null: none)
@@ -65,6 +68,9 @@ export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "obje
 // keys the views' models go in (step.js VIEWS): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
 const VIEW_KEYS = ["whistle.hints", "whistle.settings"];
+// The bar's model goes in a key per folder (step.js barKey), and so does the reason an inert
+// whistle told (toldKey): `shared` checks them, `effects` leaves them out.
+const isBarKey = (k) => typeof k === "string" && (k.startsWith("whistle.bar:") || k.startsWith("whistle.told:"));
 
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 
@@ -105,9 +111,12 @@ export function runScenario(sc, core) {
       try { out = core.step(model, next.input, world); }
       catch (e) { if (e instanceof TypeError && /read-only|frozen|not extensible/i.test(String(e?.message))) { fails.push(`${at}: step changed the model it was given (${e.message})`); return; } throw e; }
       const isState = (e) => e?.setShared === STATE;
-      const isView = (e) => VIEW_KEYS.includes(e?.setShared);
+      const isView = (e) => VIEW_KEYS.includes(e?.setShared) || isBarKey(e?.setShared);
       const isWindow = (e) => e?.openOverlay === "hints" || e?.closeOverlay === "hints";
-      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e));
+      const isNotify = (e) => e && "notify" in e;
+      const effects = out.effects.filter((e) => !isState(e) && !isView(e) && !isWindow(e) && !isNotify(e));
+      if ("notified" in s && show(out.effects.filter(isNotify).map((e) => e.notify)) !== show(s.notified))
+        fails.push(`${at}: notified ${show(out.effects.filter(isNotify).map((e) => e.notify))}, want ${show(s.notified)}`);
       if ("hintsWindow" in s && show(out.effects.filter(isWindow)) !== show(s.hintsWindow))
         fails.push(`${at}: hintsWindow ${show(out.effects.filter(isWindow))}, want ${show(s.hintsWindow)}`);
       if ("effects" in s && show(effects) !== show(s.effects))

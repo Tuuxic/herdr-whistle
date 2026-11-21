@@ -2,7 +2,7 @@
 // choices of the current key sequence; settings list config problems, mapping conflicts and
 // labelled overrides, and the mods whose mappings can be switched off (issue #7, issue #10).
 
-import { suite, TEST_DEFAULTS } from "./harness.js";
+import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
 import { switchMod, keepMapping } from "./config.js";
 import { HINTS_BOX, labelWidth, keyWidth, columnWidth } from "./views.js";
@@ -33,6 +33,16 @@ const HINTS = (width, height, at) => ({ openOverlay: "hints", spec: { mod: "whis
 const MEASURED = { viewport: { width: 1000, height: 600 }, barSize: { width: 1000, height: 22 } };
 // The Panes group's two items fit on one row: the window is 22 (title) + 18 (row) + 10 high.
 const ONE_ROW = 50;
+// An anchored layout (ADR 0018) seen from the anchor's copy: a Side spot (ending 700 px from the
+// window's right edge, 1 px border, gap 4) and a Top spot (100 px in, gap 2), each hidden or not.
+const ANCHOR = { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } };
+const spot = (id, hidden, props) => ({ id, type: "block", hidden, content: { mod: "whistle", props } });
+const anchored = ({ side, top }) => ({
+  layout: { id: "root", type: "column", children: [term("main"),
+    spot("side-bar", side, { bar: "Side", hintsAlignRight: 700, hintsAlignBorder: 1, hintsGap: 4 }),
+    spot("top-bar", top, { bar: "Top", hintsAlignRight: 100, hintsGap: 2 }), ANCHOR] },
+  props: { anchor: true }, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }],
+});
 
 const SCENARIOS = [
   // The hints window: the core opens, docks and closes it; the shell only measures.
@@ -91,7 +101,35 @@ const SCENARIOS = [
     steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW)] }],
   },
   {
-    name: "An inert copy closes its hints window and sets no views' models",
+    // ADR 0018: with every bar hidden, the box docks where whistle.json's spot would sit, by
+    // that spot's own place props (the first spot's are ignored).
+    name: "Anchored with every bar hidden, the hints window docks on the place of the spot whistle.json picks",
+    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(900, ONE_ROW, { x: 0, y: 600 - 22 - 2 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with a bar shown, the hints window docks on that bar as without an anchor",
+    // The anchor draws no bar, so it docks by the size the shown bar's copy published.
+    world: { ...anchored({ side: false, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Side: { width: 296, height: 22 } },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(298, ONE_ROW, { x: 1000 - 700 - 298, y: 600 - 24 - 4 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with every bar hidden, the hints window docks by the size the picked spot's bar last published",
+    world: { ...anchored({ side: true, top: true }), viewport: { width: 1000, height: 600 }, barSizes: { Top: { width: 500, height: 30 } },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: json({ bar: "Top" }) } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(500, ONE_ROW, { x: 1000 - 100 - 500, y: 600 - 30 - 2 - ONE_ROW })] }],
+  },
+  {
+    name: "Anchored with no bar spot, the hints window docks at the window's bottom right, no wider than the window",
+    world: { layout: { id: "root", type: "column", children: [term("main"), ANCHOR] }, props: { anchor: true },
+      focused: { pane: "p1", terminal: "t1" }, viewport: { width: 300, height: 600 },
+      configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: PANES }), user: null } },
+    steps: [...IN, { key: "w", hintsWindow: [HINTS(300, ONE_ROW, { x: 0, y: 600 - 6 - ONE_ROW })] }],
+  },
+  {
+    name: "An inert copy closes its hints window and sets no hints' or settings' models",
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { world: { herdr: "0.0.1" }, tick: 120,
       effects: [{ run: "pane.focus", args: { pane: "p1" } }], hintsWindow: [{ closeOverlay: "hints" }],
@@ -105,6 +143,18 @@ const SCENARIOS = [
       { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
       { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
+    ],
+  },
+  {
+    // The bar draws this key (#47), working out only where the keyboard is from `where`;
+    // each folder's copy has its own key.
+    name: "The bar's model goes in its private shared key when it changes, and only then",
+    world: world(),
+    steps: [
+      { tick: 120, shared: { "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } },
+      { tick: 120, shared: { "whistle.bar:whistle": undefined } },
+      { command: "whistle", shared: { "whistle.bar:whistle": { badge: "WHISTLE", marker: null,
+        where: { mode: "whistle", field: "main", recent: ["main"], pane: "p1" } } } },
     ],
   },
   {
@@ -242,8 +292,31 @@ SCENARIOS.push({
     { key: "g", effects: [{ run: "alpha.go", args: {} }, { focusBar: true }] }],
 });
 
+// The bar's model as the core last set it in its shared key, after these inputs in world w.
+function barShared(w, inputs) {
+  let model = core.start(), value;
+  for (const input of inputs) {
+    const out = core.step(model, input, w);
+    model = out.model;
+    value = out.effects.findLast((e) => e.setShared === core.barKey("whistle"))?.value ?? value;
+  }
+  return value;
+}
+
 export default suite("views", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
+
+  // The bar works out its label from the world it draws in (#47 review), which Herdr redraws on
+  // every focus or terminal change: a change shows at once, not on the core's next tick.
+  const w = { ...DEFAULT_WORLD, ...world() };
+  const typing = barShared(w, [{ tick: true }]);
+  t.check("In TYPE, the bar's label follows focus with no step between",
+    [core.drawnBar(typing, w).label, core.drawnBar(typing, { ...w, focused: null }).label], ["Terminal", ""]);
+  const whistling = barShared(w, [{ tick: true }, { command: "whistle" }]);
+  t.check("In WHISTLE, the bar's label follows the terminal's title with no step between",
+    core.drawnBar(whistling, { ...w, panes: [{ pane: "p1", title: "vim" }] }).label, "Terminal · vim");
+  t.check("The bar draws a flash as the core set it", core.drawnBar({ badge: "WHISTLE", label: "x: not mapped", marker: null }, w).label, "x: not mapped");
+  t.check("Before the core sets it, the bar draws empty", core.drawnBar(null, w), { badge: null, label: "", marker: null });
 
   // The hand pass (#33) saw "Rename" drawn "Rena…" in the Spaces field's hints. "Rename" at
   // 12 px is about 43 px in Segoe UI and 46 px in Inter; a column must leave it at least 48.

@@ -14,24 +14,34 @@
 // Two more copies of this mod, known by their "part" prop, draw the views and run no core: the
 // hints window (part "hints") and the settings dialog (part "settings"). The core hands them
 // their view models (views.js) in private shared keys (ADR 0010) and opens and docks the hints
-// window, all as effects; the shell measures the window and the bar for it. A part copy draws
-// on each render, which Herdr reruns when shared state changes. Settings change things by
+// window, all as effects; the shell measures the window and the bar for it (a bar's copy
+// publishes its size, as an effect, for the anchor, which draws no bar). The bar draws the
+// same way: from the model the core sets in this folder's bar key (step.js barKey), never its
+// own, working out only where the keyboard is (step.js drawnBar) from what Herdr shows as it
+// draws. A view draws on each render, which Herdr reruns when shared state, focus or terminals
+// change. Settings change things by
 // writing whistle.json through config.js; the bar picks the change up on its next read
 // (ADR 0011).
+//
+// The anchor (ADR 0018), a whistle block with the prop `anchor: true` sized 0 px, draws nothing:
+// it runs the core and holds the keyboard in WHISTLE. In a layout with an anchor, a bar's copy
+// only draws; its core returns no effects (step.js), as Herdr hands it the anchor's commands too.
 
 import { View } from "gpui-kit";
 import { layout, focused, panes, run, theme, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, openOverlay, closeOverlay, exec, props } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
-import { start, step, bar, VIEWS } from "./step.js";
+import { start, step, VIEWS, barKey, barSizeKey, toldKey, drawnBar } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { switchMod, keepMapping } from "./config.js";
 import { renderBar } from "./bar.js";
+import { renderAnchor } from "./anchor.js";
 import { renderHints } from "./hints.js";
 import { renderSettings } from "./settings.js";
 import { HOME } from "./version.js";
 import { folderOf, COPIES } from "./inert.js";
 import { modBlocks, entryKey, requestKey } from "./fields.js";
+import { isAnchor, bars, spotName } from "./block.js";
 
 const FOLDER = folderOf(HOME);
 const call = (f) => { try { return f(); } catch { return null; } };
@@ -103,6 +113,13 @@ export default class Whistle extends View {
     return out;
   }
 
+  // The size each of this folder's bars last published (step.js barSizeKey), by spot.
+  barSizes(tree) {
+    const out = {};
+    for (const b of bars(tree, FOLDER)) if (!isAnchor(b.props)) out[spotName(b.props)] = shared(barSizeKey(FOLDER, b.props)) ?? null;
+    return out;
+  }
+
   // Herdr as the core sees it.
   world() {
     const tree = layout();
@@ -114,6 +131,7 @@ export default class Whistle extends View {
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
       configFiles: this.configFiles, commands: this.commands, modMappings: shared("whistle.mappings") ?? {},
       viewport: call(() => globalThis.window?.viewport_size?.()) ?? this.viewport ?? null, barSize: this.barSize ?? null,
+      barSizes: this.barSizes(tree), told: shared(toldKey(FOLDER)) ?? null,
       props: call(() => props() ?? {}) ?? undefined, home: call(() => appHome()) ?? undefined,
     };
   }
@@ -182,6 +200,9 @@ export default class Whistle extends View {
     }
     else if ("closeOverlay" in e) this.closeOverlay(e.closeOverlay);
     else if ("typeKey" in e) exec("hc", ["keys", e.terminal, hcKey(e.typeKey)]).catch(() => {});
+    // Through the namespace and guarded: notify() is in every Herdr from 0.1.10 to 0.1.16 (checked), but
+    // a Herdr without it, or one that throws, must leave an inert whistle quiet, not broken.
+    else if ("notify" in e) call(() => herdr.notify?.(e.notify));
   }
 
   render(_cx) {
@@ -189,11 +210,17 @@ export default class Whistle extends View {
     if (this.part === "settings") return renderSettings(shared(VIEWS.settings) ?? null, theme(), this.act, this.note);
     // Measured while drawing, where it is sure to be legal: the window's size, for the hints.
     this.viewport = call(() => globalThis.window?.viewport_size?.()) ?? this.viewport;
-    return renderBar(bar(this.model, this.world()), theme(), this.handle, (e, cx) => {
+    const onKey = (e, cx) => {
       if (this.model.mode !== "whistle") return;
       const out = this.feed({ key: keyName(e) });
       if (out.handled) cx.stop_propagation();
       cx.notify();
-    }, (size) => { this.barSize = { width: size.width, height: size.height }; });
+    };
+    if (isAnchor(call(() => props()))) return renderAnchor(this.handle, onKey);
+    // The model the core sets (empty until its first step), its label worked out from what
+    // Herdr shows now: render reruns on every focus or terminal change, so it never lags.
+    const tree = layout();
+    const vm = drawnBar(shared(barKey(FOLDER)) ?? null, { layout: tree, focused: focused(), panes: panes(), shared: this.keynavShared(tree) });
+    return renderBar(vm, theme(), this.handle, onKey, (size) => { this.barSize = { width: size.width, height: size.height }; });
   }
 }

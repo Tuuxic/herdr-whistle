@@ -1,5 +1,5 @@
 // Inert (ADR 0012): whistle stands aside on a Herdr older than MIN_HERDR, or when another copy
-// of whistle runs, and the bar says why.
+// of whistle runs, and the bar and one Herdr notification say why.
 
 import { suite } from "./harness.js";
 import * as core from "./step.js";
@@ -18,9 +18,53 @@ const TWO = {
   copies: { "whistle": "1.0.0", "whistle-2": "1.0.0" },
 };
 // Herdr hands the copy in mods/whistle-2/ only the lines named after its folder.
-const RENAMED = { ...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
+// mods/whistle-2/'s anchor (ADR 0018).
+const ANCHOR2 = { id: "anchor2", type: "block", content: { mod: "whistle-2", props: { anchor: true } } };
+const RENAMED = {...TWO, folder: "whistle-2", keys: [{ section: "global", keys: "ctrl-space", action: "whistle-2.whistle" }] };
+
+// The notification an inert whistle posts on a Herdr that's too old (0.1.14).
+const TOLD_OLD = { title: "Whistle stands aside", body: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14). Update Herdr.", level: "error" };
+const spotBlock = (id, name, hidden) => ({ id, type: "block", hidden, content: { mod: "whistle", props: { bar: name } } });
 
 const SCENARIOS = [
+  {
+    name: "Inert again after running, whistle posts its notification again",
+    world: OLD,
+    steps: [
+      { command: "type", notified: [TOLD_OLD] },
+      { world: { herdr: "0.1.15" }, command: "type", notified: [] },
+      { world: { herdr: "0.1.14" }, command: "type", notified: [TOLD_OLD] },
+    ],
+  },
+  {
+    // Herdr makes a new copy whenever the layout changes or is shown again: the reason told
+    // lives in a private shared key of the folder, so a new copy doesn't post it again.
+    name: "Inert, a new copy doesn't post the notification an earlier copy of its folder posted",
+    world: { ...OLD, told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" },
+    steps: [{ command: "type", notified: [] }],
+  },
+  {
+    name: "Inert, whistle records the reason it told in its folder's private key, and clears it once it runs",
+    world: OLD,
+    steps: [
+      { command: "type", shared: { "whistle.told:whistle": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
+      { world: { herdr: "0.1.15", told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" }, command: "type", shared: { "whistle.told:whistle": null } },
+    ],
+  },
+  {
+    // Only the copy that would run posts it: one notification, however many blocks.
+    name: "Inert, a hidden spot's copy posts no notification",
+    world: { ...OLD, props: { bar: "Top" },
+      layout: { id: "root", type: "column", children: [spotBlock("top", "Top", true), term("main"), spotBlock("bottom", "Bottom", false)] } },
+    steps: [{ command: "type", notified: [] }],
+  },
+  {
+    name: "Inert, a bar's copy in a layout with an anchor posts no notification: the anchor's does",
+    world: { ...OLD, props: { bar: "Bottom" },
+      layout: { id: "root", type: "column", children: [term("main"), spotBlock("bottom", "Bottom", false),
+        { id: "anchor", type: "block", content: { mod: "whistle", props: { anchor: true } } }] } },
+    steps: [{ command: "type", notified: [] }, { world: { props: { anchor: true } }, command: "type", notified: [TOLD_OLD] }],
+  },
   {
     name: "On a Herdr older than the minimum, Ctrl+Space types through and whistle stays in TYPE",
     world: OLD,
@@ -29,6 +73,21 @@ const SCENARIOS = [
         effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
         bar: { badge: null, problem: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
     ],
+  },
+  {
+    // The bar draws only what its copy sets in its folder's key (#47), so an inert copy sets it too.
+    name: "An inert copy sets its bar's model, saying why, in its own folder's key, once",
+    world: OLD,
+    steps: [
+      { tick: 120, shared: { "whistle.bar:whistle": { badge: null, label: "", marker: null, problem: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } } },
+      { tick: 120, shared: { "whistle.bar:whistle": undefined } },
+    ],
+  },
+  {
+    name: "A copy standing aside for another sets its own folder's bar key, never the running copy's",
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION } },
+    steps: [{ tick: 120, shared: { "whistle.bar:whistle": undefined,
+      "whistle.bar:whistle-2": { badge: null, label: "", marker: null, problem: "Another whistle runs, from mods/whistle/" } } }],
   },
   {
     name: "On a Herdr older than the minimum, keys and a click on the bar don't enter WHISTLE",
@@ -107,6 +166,17 @@ const SCENARIOS = [
         tick: 120, effects: [] },
       { world: { layout: { id: "root", type: "column", children: [term("main"), { ...bar2, hidden: true }] } },
         tick: 120, effects: [{ run: "layout.show", args: { id: "bar2" } }], bar: { badge: "TYPE" } },
+    ],
+  },
+  {
+    // ADR 0018: Herdr doesn't run a hidden block's copy, so a hidden anchor could never come back.
+    name: "An anchor standing aside hides its bars but never itself, and shows them again once it runs",
+    world: { ...RENAMED, copies: { "whistle": "1.0.0", "whistle-2": VERSION }, props: { anchor: true },
+      layout: { id: "root", type: "column", children: [term("main"), bar, bar2, ANCHOR2] } },
+    steps: [
+      { tick: 120, effects: [{ run: "layout.hide", args: { id: "bar2" } }] },
+      { world: { layout: { id: "root", type: "column", children: [term("main"), { ...bar2, hidden: true }, ANCHOR2] } },
+        tick: 120, effects: [{ run: "layout.show", args: { id: "bar2" } }] },
     ],
   },
   {

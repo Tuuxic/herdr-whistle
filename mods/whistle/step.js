@@ -22,10 +22,11 @@
 //          keynavActive: what whistle last wrote as shared("keynav").active, requestAt: the
 //          selected field's requests count after this ms, fieldProblems: keynav fields'
 //          problems [{ source: "keynav", detail }],
+//          told: why whistle is inert, as the notification this copy posted said it | null,
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null,
 //          sent: the views' models last set in their shared keys and the hints window last
-//          opened, as JSON ({ hints, settings, box }; null: none yet / not open), and leftOpen:
+//          opened, as JSON ({ bar, hints, settings, box }; null: none yet / not open), and leftOpen:
 //          a hints window an earlier copy may have left open (Herdr makes a new copy when the
 //          layout changes), true when a copy starts, so its first step closes it }
 //
@@ -54,7 +55,13 @@
 //          props: this copy's block props (props()), which tell the bar spots' copies apart
 //                 | undefined (unknown),
 //          viewport: the window's drawable size { width, height } | null (not measured),
-//          barSize: the bar's drawn size { width, height } | null (not measured),
+//          told: shared(toldKey(folder)): why whistle is inert, as the notification an earlier
+//                copy of this folder posted said it | null (Herdr makes a new copy whenever the
+//                layout changes or shows again),
+//          barSize: this copy's bar's drawn size { width, height } | null (not measured, or
+//                   no bar: the anchor draws none),
+//          barSizes: the size each of this copy's bars last published, by its spot (spotName:
+//                    its `bar`, "" for none): { "<spot>": { width, height } | null },
 //          home: Herdr's home folder (appHome()) | undefined (unknown) }
 //
 // effects, a closed set of data:
@@ -68,6 +75,7 @@
 //                                       under that name first)
 //   { closeOverlay: name }              close it
 //   { typeKey: key, terminal }          type a key into a terminal
+//   { notify: { title, body, level } }  post a Herdr notification (notify())
 //
 // handled: for a key, whether whistle used it (else it goes on to whatever else wants it).
 
@@ -76,15 +84,15 @@ import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs } from "./config.js";
 import { resolve } from "./keymap.js";
-import { blockProps, settings as blockSettings, spots, resting } from "./block.js";
+import { blockProps, settings as blockSettings, spots, resting, viewing, dock, placeOf, spotName, isAnchor } from "./block.js";
 import { inert, announce, ownBars, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { problems, hints, settings, hintsBox } from "./views.js";
 
 export const start = () => ({
-  mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [],
+  mode: "type", field: null, recent: [], pane: null, holdUntil: 0, claims: CLAIMS, claimProblem: null, aside: false, hid: [], told: null,
   files: { defaults: null, user: null }, config: null, problems: [], conflicts: [], overrides: [], mods: [], sequence: null, flash: null, flashUntil: 0, waitFor: null,
-  enabled: true, published: null, sent: { hints: null, settings: null, box: null, leftOpen: true },
+  enabled: true, published: null, sent: { bar: null, hints: null, settings: null, box: null, size: null, leftOpen: true },
 });
 
 // This copy's folder (world.folder), its blocks' mod name.
@@ -542,10 +550,21 @@ function copiesTick(out, world, why) {
 }
 
 export function step(model, input, world) {
+  // What the views were last sent (model.sent) is read after every step below: a model from
+  // before it was kept gets it here, once.
+  const m = model.sent ? model : { ...model, sent: start().sent };
+  return sizeSent(routed(m, input, world), world);
+}
+
+function routed(model, input, world) {
+  // A bar's copy in a layout with an anchor only draws (ADR 0018): Herdr hands it every command
+  // and claimed key the anchor gets, so it acts on none of them.
+  if (viewing(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
-  if (why) return hintsClosed(stepped(model, input, world, why));
-  if (resting(world.layout, folderOf(world), world.props, model.hid)) return rest(hintsClosed({ model, effects: [] }), input, world);
-  return publish(viewsSent(stepped(model, input, world, why), world), world);
+  if (why) return barSent(told(hintsClosed(stepped(model, input, world, why)), world, why), world);
+  const m = model.told ? { ...model, told: null } : model;
+  if (resting(world.layout, folderOf(world), world.props, m.hid)) return rest(hintsClosed({ model: m, effects: [] }), input, world);
+  return untold(publish(viewsSent(stepped(m, input, world, why), world), world), world);
 }
 
 // A hidden bar copy rests while another spot's copy runs: in TYPE, it claims, publishes and
@@ -556,7 +575,7 @@ function rest(closed, input, world) {
   const out = "wrote" in input ? wrote(closed.model, world, input) : { model: closed.model, effects: [] };
   const m = out.model;
   const quiet = m.mode === "type" && m.published === null && m.sent.hints === null && m.sent.settings === null;
-  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, leftOpen: false } };
+  const model = quiet ? m : { ...m, mode: "type", holdUntil: 0, sequence: null, published: null, sent: { ...start().sent, size: m.sent.size, leftOpen: false } };
   return { model, effects: [...closed.effects, ...out.effects], handled: false };
 }
 
@@ -570,34 +589,83 @@ function stepped(model, input, world, why) {
 }
 
 // The private shared keys the views' models go in (ADR 0010): the hints window and the
-// settings dialog, whistle's own overlay copies, draw them.
+// settings dialog, whistle's own overlay copies, draw them. The bar draws its folder's key
+// (barKey): an inert copy sets its own, so it never overwrites the running copy's.
 export const VIEWS = { hints: "whistle.hints", settings: "whistle.settings" };
+export const barKey = (folder) => `whistle.bar:${folder}`;
+// The private shared key holding why the folder's copies are inert, as told (told()).
+export const toldKey = (folder) => `whistle.told:${folder}`;
+// The private shared key a bar's copy publishes its drawn size in, by its spot (block.js
+// spotName), for the copy that docks the hints box on it (the anchor's).
+export const barSizeKey = (folder, props) => `whistle.barsize:${folder}:${spotName(props)}`;
 // The hints window's overlay name.
 const HINTS_OVERLAY = "hints";
 
 // After a step: the views' models set in their shared keys when they change, and the hints
 // window opened, moved or closed to match the hints (docked on the bar: views.js hintsBox).
 function viewsSent(out, world) {
-  const m = out.model, sent = m.sent ?? start().sent, effects = [...out.effects];
+  const barred = barSent(out, world);
+  const m = barred.model, sent = m.sent, effects = [...barred.effects];
   const h = hints(m, world), s = settings(m, world), hs = JSON.stringify(h), ss = JSON.stringify(s);
   if (hs !== sent.hints) effects.push({ setShared: VIEWS.hints, value: h });
   if (ss !== sent.settings) effects.push({ setShared: VIEWS.settings, value: s });
   let box = null;
   if (h) {
-    const b = hintsBox(h.items, m.config?.place ?? {}, world);
+    const d = dock(world.layout, folderOf(world), m.config?.bar);
+    const b = hintsBox(h.items, world, d.spot && { place: d.shown ? m.config?.place ?? {} : placeOf(d.spot.props), size: sizeOf(d.spot, world) });
     const spec = { mod: folderOf(world), kind: "window", frame: "none", width: b.width, height: b.height,
       ...(b.at ? { at: b.at } : {}), props: { part: "hints", width: b.width } };
     box = JSON.stringify(spec);
     if (box !== sent.box) effects.push({ openOverlay: HINTS_OVERLAY, spec });
   } else if (sent.box || sent.leftOpen) effects.push({ closeOverlay: HINTS_OVERLAY });
-  if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return out;
-  return { ...out, model: { ...m, sent: { hints: hs, settings: ss, box, leftOpen: false } }, effects };
+  if (hs === sent.hints && ss === sent.settings && box === sent.box && !sent.leftOpen) return barred;
+  return { ...barred, model: { ...m, sent: { ...sent, hints: hs, settings: ss, box, leftOpen: false } }, effects };
 }
 
-// An inert copy sets no shared keys; it only closes its hints window, if open.
+// A bar's drawn size: this copy's own, measured, unless it is the anchor (which draws no bar),
+// else the size the spot's copy last published.
+const sizeOf = (spot, world) => (!isAnchor(world.props) && world.barSize) || world.barSizes?.[spotName(spot.props)] || null;
+
+// After every step of a bar's copy (whatever it does: running, resting, inert or only
+// drawing): its measured size published in its spot's key when it changes.
+function sizeSent(out, world) {
+  if (!world.barSize || isAnchor(world.props)) return out;
+  const sent = out.model.sent, size = JSON.stringify(world.barSize);
+  if (size === sent.size) return out;
+  return { ...out, model: { ...out.model, sent: { ...sent, size } },
+    effects: [...out.effects, { setShared: barSizeKey(folderOf(world), world.props), value: world.barSize }] };
+}
+
+// After a step: the bar's model (barModel()) set in this folder's bar key when it changes.
+function barSent(out, world) {
+  const sent = out.model.sent;
+  const b = barModel(out.model, world), bs = JSON.stringify(b);
+  if (bs === sent.bar) return out;
+  return { ...out, model: { ...out.model, sent: { ...sent, bar: bs } }, effects: [...out.effects, { setShared: barKey(folderOf(world)), value: b }] };
+}
+
+// Inert, one Herdr notification says why (ADR 0018: the bar may be hidden, or the layout shows
+// none), when whistle stands aside and again only when the reason changes, never per step.
+// A hidden spot's copy, which would rest, posts none: the shown one does.
+// The reason told is kept in the folder's private key too (toldKey), so a new copy of the
+// folder, which Herdr makes whenever the layout changes, doesn't post it again.
+function told(out, world, why) {
+  if (out.model.told === why.problem) return out;
+  const model = { ...out.model, told: why.problem };
+  if (world.told === why.problem || resting(world.layout, folderOf(world), world.props, model.hid)) return { ...out, model };
+  return { ...out, model, effects: [...out.effects,
+    { notify: { title: "Whistle stands aside", body: `${why.problem}. ${why.fix}`, level: "error" } },
+    { setShared: toldKey(folderOf(world)), value: why.problem }] };
+}
+
+// Running again: the reason told cleared, so standing aside later tells again.
+const untold = (out, world) => (world.told == null ? out
+  : { ...out, effects: [...out.effects, { setShared: toldKey(folderOf(world)), value: null }] });
+
+// An inert copy sets no shared keys but its bar's model (barSent); it closes its hints window, if open.
 function hintsClosed(out) {
   const sent = out.model.sent;
-  if (!sent?.box && !sent?.leftOpen) return out;
+  if (!sent.box && !sent.leftOpen) return out;
   return { ...out, model: { ...out.model, sent: { ...sent, box: null, leftOpen: false } }, effects: [...out.effects, { closeOverlay: HINTS_OVERLAY }] };
 }
 
@@ -682,14 +750,30 @@ function where(model, world) {
   return name ? `Terminal · ${name}` : "Terminal";
 }
 
-// The bar's view model: { badge: "TYPE" | "WHISTLE" | null (inert, switched off), label: where the keyboard
-// is, or a flash, marker: "⚠ <count>" while there are config problems | null, problem: why
-// whistle is inert, if it is }.
-export function bar(model, world) {
+// The bar's model as the core sets it in this folder's bar key (barSent): { badge: "TYPE" |
+// "WHISTLE" | null (inert, switched off), marker: "⚠ <count>" while there are config problems |
+// null, problem: why whistle is inert, if it is, and either label: what the core decides the
+// bar says (a flash, "Whistle off") or where: what the bar works out where the keyboard is from
+// ({ mode, field, recent, pane }: drawnBar), so it follows focus and titles with no step between }.
+function barModel(model, world) {
   const why = inert(world);
   if (why) return { badge: null, label: "", marker: null, problem: why.problem };
   const n = problems(model).length;
   const marker = n ? `⚠ ${n}` : null;
   if (model.enabled === false) return { badge: null, label: model.flash ?? "Whistle off", marker };
-  return { badge: model.mode === "whistle" ? "WHISTLE" : "TYPE", label: model.flash ?? where(model, world), marker };
+  const badge = model.mode === "whistle" ? "WHISTLE" : "TYPE";
+  if (model.flash) return { badge, label: model.flash, marker };
+  return { badge, marker, where: { mode: model.mode, field: model.field ?? null, recent: model.recent ?? [], pane: model.pane ?? null } };
 }
+
+// The bar as it draws, from its shared model (barModel; null: not set yet, drawn empty) and the
+// world it draws in: { badge, label, marker, problem? }.
+export function drawnBar(vm, world) {
+  if (!vm) return { badge: null, label: "", marker: null };
+  if (!vm.where) return vm;
+  const { where: at, ...rest } = vm;
+  return { ...rest, label: where(at, world) };
+}
+
+// The bar's view model, as it draws in this world: drawnBar of barModel.
+export const bar = (model, world) => drawnBar(barModel(model, world), world);

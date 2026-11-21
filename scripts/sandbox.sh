@@ -88,7 +88,7 @@ merge_keys() {
 
 # Herdr docks a new mod by itself only once its welcome is done, so the bar gets a layout: a clone
 # of Herdr's main (block ids unchanged, so the shipped jump keys find agents and spaces) with a
-# whistle block under the status bar.
+# whistle anchor and bar under the status bar, as RECIPE.md's Install adds them.
 show_whistle() {
   home_env
   herdr-app do layout.clone '{"name":"main","as":"whistle-sandbox"}' >/dev/null
@@ -97,6 +97,8 @@ show_whistle() {
     const fs = require("fs"), f = process.argv[1], l = JSON.parse(fs.readFileSync(f, "utf8"));
     const find = (n) => n.id === "work" ? n : (n.children || []).map(find).find(Boolean);
     const work = find(l) || l;
+    work.children.push({ id: "whistle-anchor", type: "block", size: { px: 0 }, resizable: false,
+      content: { mod: "whistle", props: { anchor: true } } });
     work.children.push({ id: "whistle", type: "block", size: { px: 22 }, resizable: false,
       background: "chrome", content: { mod: "whistle" } });
     fs.writeFileSync(f, JSON.stringify(l, null, 2) + "\n");
