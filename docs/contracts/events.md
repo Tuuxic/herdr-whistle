@@ -100,7 +100,7 @@ run('whistle.subscribe:{"mod":"my-mod","groups":["mode"]}');
 Then whistle runs `<mod>.whistle-event:<event as JSON>` for each event the filter passes, the
 same event object the feed holds, **only while the mod has a block that shows** in the layout.
 Your mod answers it like any of its commands (`nextCommand()`), and the event is everything after
-the first colon. A bad argument raises `command-failed`.
+the first colon. A bad argument raises `command-failed` (and on a keys.json line is a config problem).
 
 - A subscription is per mod, not per copy: Herdr delivers `<mod>.whistle-event` to every copy
   that shows, in order, with nothing lost.

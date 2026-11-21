@@ -8,6 +8,7 @@
 const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
 const NONE = { arg: "none" }, PLAIN = { arg: "plain" };
 const nonEmpty = (s) => typeof s === "string" && s !== "";
+const strings = (v) => Array.isArray(v) && v.every((x) => typeof x === "string");
 const COMMANDS = {
   "switch-mode": NONE, mode: { arg: ["type", "whistle"] }, on: NONE, off: NONE,
   field: PLAIN, focus: PLAIN, toggle: PLAIN, "toggle-keep-mode": PLAIN,
@@ -15,8 +16,9 @@ const COMMANDS = {
   // { "mod": "claude-hints", "keys": ["g", "q"] }: the keys in Herdr's key names.
   "keep-mapping": { arg: "json", valid: (v) => isObject(v) && nonEmpty(v.mod) && Array.isArray(v.keys) && v.keys.length > 0 && v.keys.every(nonEmpty) },
   // { "mod": "notes", "groups": ["mode"], "kinds": ["field-selected"] }: groups and kinds
-  // optional (events.js subscription says what a good one is; a bad one fails there).
-  subscribe: { arg: "json", valid: () => true },
+  // optional, each a list of strings.
+  subscribe: { arg: "json", valid: (v) => isObject(v) && nonEmpty(v.mod)
+    && (v.groups === undefined || strings(v.groups)) && (v.kinds === undefined || strings(v.kinds)) },
   unsubscribe: PLAIN,
 };
 

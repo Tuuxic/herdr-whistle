@@ -86,7 +86,7 @@ import { blockProps, settings as blockSettings, leftOut } from "./block.js";
 import { inert, announce, runningCopy, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { hints, config as configFacts, offered } from "./facts.js";
-import { raised, changes, pushes, subscription, sequenceStarted, sequenceEnded, EVENTS_KEPT } from "./events.js";
+import { raised, changes, pushes, filterOf, sequenceStarted, sequenceEnded, EVENTS_KEPT } from "./events.js";
 
 export { EVENTS_KEPT };
 
@@ -388,10 +388,9 @@ function subscribed(model, world, next) {
 }
 
 // whistle.subscribe:{ mod, groups?, kinds? }: the mod's whole filter, replacing any earlier one.
-function subscribe(model, world, c, arg) {
-  const s = subscription(arg);
-  if (!s) return failed(model, world, c, `${folderOf(world)}.subscribe needs {"mod":"<mod>","groups":[…],"kinds":[…]}`);
-  return subscribed(model, world, { ...subscribersOf(world), [s.mod]: s.filter });
+// A bad argument is an unknown command (commands.js parseCommand), as for any command.
+function subscribe(model, world, arg) {
+  return subscribed(model, world, { ...subscribersOf(world), [arg.mod]: filterOf(arg) });
 }
 
 // whistle.unsubscribe:<mod>: the mod's filter removed.
@@ -413,7 +412,7 @@ function command(model, world, c) {
     case "mode": return p.arg === "type" ? (inWhistle ? type(model, world) : none) : (inWhistle ? none : whistle(model, world));
     case "mappings-on": case "mappings-off": return userWrite(model, world, (text) => switchMod(text, p.arg, p.name === "mappings-on"));
     case "keep-mapping": return keepMod(model, world, c, p.arg);
-    case "subscribe": return subscribe(model, world, c, p.arg);
+    case "subscribe": return subscribe(model, world, p.arg);
     case "unsubscribe": return unsubscribe(model, world, p.arg);
     default: return unknown(model, world, c);
   }

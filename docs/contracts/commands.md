@@ -18,7 +18,8 @@ argument is:
 
 A command whistle doesn't know is a config problem on a keys.json line, and a `command-failed`
 [event](events.md) when it runs. So is a known one with the wrong argument: a word it doesn't
-take (`whistle.mode:foo`), JSON that doesn't parse, or JSON missing a field.
+take (`whistle.mode:foo`), JSON that doesn't parse, or JSON missing a field or holding one of
+the wrong kind (`whistle.subscribe:{"mod":"a","groups":"mode"}`).
 
 **JSON from Windows PowerShell 5.1.** PowerShell 5.1 strips the double quotes inside an argument
 it passes to a program, so `herdr-app do 'whistle.keep-mapping:{"mod":"a","keys":["g"]}'` reaches
@@ -126,7 +127,8 @@ A mod subscribes to get [events](events.md#subscriptions) pushed to it as
 - Subscriptions are per mod, not per copy, and outlive layout changes.
 - They work whether WHISTLE is on or off, and leave the mode as it is.
 - A bad argument (no `mod`, `groups` or `kinds` that aren't lists of strings) raises
-  `command-failed`.
+  `command-failed` when it runs, and is a config problem on a keys.json line, as for any
+  command with the wrong argument ([Spelling](#spelling)).
 
 ## Rules
 
@@ -378,16 +380,17 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
 }
 ```
 
-```json example keys.json lines with a mode that isn't one, or a keep-mapping with bad JSON, are config problems
+```json example keys.json lines with a mode that isn't one, a keep-mapping with bad JSON, or a subscribe without a mod, are config problems
 {
   "world": {
     "focused": { "pane": "p1" },
-    "keysFile": { "text": "{ \"global\": { \"f1\": \"whistle.mode:foo\", \"f2\": \"whistle.keep-mapping:{nope\", \"f3\": \"whistle.mode:type\" } }", "error": null, "at": 0 }
+    "keysFile": { "text": "{ \"global\": { \"f1\": \"whistle.mode:foo\", \"f2\": \"whistle.keep-mapping:{nope\", \"f3\": \"whistle.mode:type\", \"f4\": \"whistle.subscribe:{}\" } }", "error": null, "at": 0 }
   },
   "steps": [
     { "tick": 120, "model": { "problems": [
       { "source": "keys.json", "detail": "global › f1: unknown whistle command whistle.mode:foo" },
-      { "source": "keys.json", "detail": "global › f2: unknown whistle command whistle.keep-mapping:{nope" }] } }
+      { "source": "keys.json", "detail": "global › f2: unknown whistle command whistle.keep-mapping:{nope" },
+      { "source": "keys.json", "detail": "global › f4: unknown whistle command whistle.subscribe:{}" }] } }
   ]
 }
 ```

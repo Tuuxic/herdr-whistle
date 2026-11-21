@@ -61,14 +61,8 @@ export function changes(before, after) {
   return out;
 }
 
-const strings = (v) => Array.isArray(v) && v.every((x) => typeof x === "string");
-
-// A subscribe argument ({ mod, groups?, kinds? }) as a filter, or null: not one.
-export function subscription(v) {
-  if (!v || typeof v !== "object" || Array.isArray(v) || typeof v.mod !== "string" || v.mod === "") return null;
-  if ((v.groups !== undefined && !strings(v.groups)) || (v.kinds !== undefined && !strings(v.kinds))) return null;
-  return { mod: v.mod, filter: { ...(v.groups ? { groups: v.groups } : {}), ...(v.kinds ? { kinds: v.kinds } : {}) } };
-}
+// A subscribe argument ({ mod, groups?, kinds? }, as commands.js checks it) as the mod's filter.
+export const filterOf = (v) => ({ ...(v.groups ? { groups: v.groups } : {}), ...(v.kinds ? { kinds: v.kinds } : {}) });
 
 // Whether an event passes a subscriber's filter ({ groups, kinds }; neither: every event).
 export function passes(filter, event) {
