@@ -5,7 +5,6 @@
 import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { term, anchor } from "./worlds.js";
-import { settingsCommandFor } from "./config.js";
 import { VERSION, MIN_HERDR } from "./version.js";
 import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
 
@@ -137,13 +136,13 @@ const SCENARIOS = [
   {
     name: "The switch-mod command writes the mod off into whistle.json, keeping the rest, even while switched off",
     world: world({ mods: ["alpha"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }) }, user: { enabled: false } }),
-    steps: [{ tick: 120 }, { command: settingsCommandFor.switchMod("alpha", false), effects: [
+    steps: [{ tick: 120 }, { command: "mappings-off:alpha", effects: [
       { write: "whistle.json", text: `${JSON.stringify({ enabled: false, mods: { alpha: false } }, null, 2)}\n`, expected: json({ enabled: false }) }] }],
   },
   {
     name: "The switch-mod command writes the mod on into a whistle.json that isn't there yet",
     world: world(),
-    steps: [{ command: settingsCommandFor.switchMod("alpha", true), effects: [
+    steps: [{ command: "mappings-on:alpha", effects: [
       { write: "whistle.json", text: `${JSON.stringify({ mods: { alpha: true } }, null, 2)}\n`, expected: null }] }],
   },
   {
@@ -152,20 +151,20 @@ const SCENARIOS = [
       alpha: entry({ g: { name: "Alpha", map: { "Ctrl-d": ["D", "alpha.d"] } } }),
       beta: entry({ g: { name: "Beta", map: { "ctrl-d": ["D", "beta.d"] } } }),
     } }), platform: "linux" },
-    steps: [{ tick: 120 }, { command: settingsCommandFor.keep("alpha", ["g", "ctrl-d"]), effects: [
+    steps: [{ tick: 120 }, { command: 'keep-mapping:{"mod":"alpha","keys":["g","ctrl-d"]}', effects: [
       { write: "whistle.json", text: `${JSON.stringify({ map: { g: { map: { "ctrl-d": ["D", "alpha.d"] } } } }, null, 2)}\n`, expected: null }] }],
   },
   {
     name: "The keep command on a key sequence the mod doesn't map raises command-failed and writes nothing",
     world: world({ mods: ["alpha"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
-    steps: [{ tick: 120 }, { command: settingsCommandFor.keep("alpha", ["x", "y"]), effects: [],
-      shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "command-failed", command: `whistle.${settingsCommandFor.keep("alpha", ["x", "y"])}`,
+    steps: [{ tick: 120 }, { command: 'keep-mapping:{"mod":"alpha","keys":["x","y"]}', effects: [],
+      shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "command-failed", command: 'whistle.keep-mapping:{"mod":"alpha","keys":["x","y"]}',
         error: "alpha maps nothing at x y", text: "alpha maps nothing at x y" }] } } }],
   },
   {
     name: "A settings command on a whistle.json that doesn't parse raises settings-broken and writes nothing",
     world: world({ user: "[1]" }),
-    steps: [{ command: settingsCommandFor.switchMod("alpha", false), effects: [], shared: { "whistle.events": { v: 1, events: [
+    steps: [{ command: "mappings-off:alpha", effects: [], shared: { "whistle.events": { v: 1, events: [
       { seq: 1, kind: "settings-broken", detail: "isn't a JSON object", text: "whistle.json isn't a JSON object; fix it first" }] } } }],
   },
   {
@@ -188,7 +187,7 @@ const SCENARIOS = [
   {
     name: "keys.json may bind the settings commands; a keep-mapping with bad JSON and a mode that isn't one are config problems",
     world: { ...world(), keysFile: { text: json({ global: {
-      "f7": `whistle.${settingsCommandFor.switchMod("alpha", false)}`, "f8": `whistle.${settingsCommandFor.keep("alpha", ["g", "d"])}`,
+      "f7": "whistle.mappings-off:alpha", "f8": 'whistle.keep-mapping:{"mod":"alpha","keys":["g","d"]}',
       "f9": "whistle.keep-mapping:{nope", "f10": "whistle.mode:foo", "f11": "whistle.mode:whistle" } }), error: null, at: 0 } },
     steps: [{ tick: 120, shared: { "whistle.config": { v: 1, problems: [
       { source: "keys.json", detail: "global › f9: unknown whistle command whistle.keep-mapping:{nope" },

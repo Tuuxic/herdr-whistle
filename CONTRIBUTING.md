@@ -17,7 +17,8 @@ In `mods/whistle/` ([ADR 0004](docs/adr/0004-pure-step-core-behind-one-effects-s
 - **The core**, pure and synchronous, imports nothing from Herdr: `step.js` (`step(model,
   input, world) -> { model, effects, handled }`), with `fields.js` (fields from the layout:
   the terminal, stock fields, keynav fields), `config.js` (the config layers, own keys apart
-  from mappings), `keymap.js` (what a key does), `claims.js` (claimed keys in keys.json),
+  from mappings), `commands.js` (the commands whistle answers to and their arguments),
+  `keymap.js` (what a key does), `claims.js` (claimed keys in keys.json),
   `block.js` (the layout's whistle blocks, each the anchor), `inert.js`, `keynames.js`,
   `facts.js` (the hint items and config whistle publishes) and `version.js`. Whistle decides no
   looks ([ADR 0006](docs/adr/0006-whistle-publishes-facts-clients-show-them.md)).

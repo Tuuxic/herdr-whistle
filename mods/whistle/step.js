@@ -31,7 +31,7 @@
 //
 // input: { command: "switch-mode" }      a whistle.<command>[:<argument>] from Herdr (keys.json,
 //                                          run()): "mode:type", 'keep-mapping:{"mod":…}'
-//                                          (config.js parseCommand)
+//                                          (commands.js parseCommand)
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
 //        { command: "<verb>:<block>" }     a jump key (ADR 0007): "whistle.focus:agents"
 //        { key: "ctrl-l" }                 a key pressed on the anchor in WHISTLE (keynames.js)
@@ -75,7 +75,8 @@
 import { fieldAt, fields, terminal, neighbour, eachNode, declaredKeys, requestKey, requestOf, AFTER_TERMINAL, TERMINAL, STOCK, STOCK_FIELDS, KEYNAV, KEYNAV_V, has, showing, reveal, hideTarget, within, terminalOutside } from "./fields.js";
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
-import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, parseCommand, switchMod, keepMapping } from "./config.js";
+import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, switchMod, keepMapping } from "./config.js";
+import { parseCommand } from "./commands.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, leftOut } from "./block.js";
 import { inert, announce, runningCopy, COPIES } from "./inert.js";
@@ -341,7 +342,7 @@ const setUser = (model, world, key, value) => userWrite(model, world, (text) => 
 // A command that failed, as the command-failed event it raises (c: as Herdr hands it over).
 const failed = (model, world, c, error) => ({ model: raised(model, { kind: "command-failed", command: `${folderOf(world)}.${c}`, error, text: error }), effects: [] });
 
-// A command whistle doesn't know (config.js parseCommand), its argument included: it fails.
+// A command whistle doesn't know (commands.js parseCommand), its argument included: it fails.
 const unknown = (model, world, c) => failed(model, world, c, `unknown whistle command ${folderOf(world)}.${c}`);
 
 // whistle.keep-mapping:{ mod, keys } as a write of whistle.json (docs/contracts/commands.md):
@@ -363,7 +364,7 @@ function leaving(model, world, out) {
 
 
 // The commands that work whether whistle is on or off: on, off and the settings
-// commands (config.js parseCommand names).
+// commands (commands.js parseCommand names).
 const ANY_TIME = ["on", "off", "mappings-on", "mappings-off", "keep-mapping"];
 
 // One of whistle's commands but the verbs (docs/contracts/commands.md), as Herdr hands it over
