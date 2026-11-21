@@ -18,7 +18,8 @@ argument is:
 
 A command whistle doesn't know is a config problem on a keys.json line, and a `command-failed`
 [event](events.md) when it runs. So is a known one with the wrong argument: a word it doesn't
-take (`whistle.mode:foo`), JSON that doesn't parse, or JSON missing a field.
+take (`whistle.mode:foo`), JSON that doesn't parse, or JSON missing a field or holding one of
+the wrong kind (`whistle.subscribe:{"mod":"a","groups":"mode"}`).
 
 **JSON from Windows PowerShell 5.1.** PowerShell 5.1 strips the double quotes inside an argument
 it passes to a program, so `herdr-app do 'whistle.keep-mapping:{"mod":"a","keys":["g"]}'` reaches
@@ -112,6 +113,22 @@ may bind them too.
   alone), a failed write (`settings-write-failed`), and a `keep-mapping` for a mod that maps
   nothing there (`command-failed`).
 - A renamed copy answers under its folder's name, as for the other commands.
+
+### Event subscriptions
+
+A mod subscribes to get [events](events.md#subscriptions) pushed to it as
+`<mod>.whistle-event:<event>` commands, only while it has a block that shows.
+
+| Command | Argument | Does |
+|---|---|---|
+| `whistle.subscribe:{"mod":"<mod>","groups":[…],"kinds":[…]}` | JSON: `mod` the mod's name, `groups` and `kinds` optional lists of strings | Sets the mod's whole filter, replacing any earlier one; with neither `groups` nor `kinds`, every event. Sending it again is harmless. |
+| `whistle.unsubscribe:<mod>` | plain: the mod's name | Removes the mod's filter (nothing if it has none). |
+
+- Subscriptions are per mod, not per copy, and outlive layout changes.
+- They work whether WHISTLE is on or off, and leave the mode as it is.
+- A bad argument (no `mod`, `groups` or `kinds` that aren't lists of strings) raises
+  `command-failed` when it runs, and is a config problem on a keys.json line, as for any
+  command with the wrong argument ([Spelling](#spelling)).
 
 ## Rules
 
@@ -357,22 +374,23 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
   "steps": [
     { "tick": 120 },
     { "command": "nope", "model": { "mode": "type" }, "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
-      { "seq": 1, "kind": "command-failed", "command": "whistle.nope", "error": "unknown whistle command whistle.nope", "text": "unknown whistle command whistle.nope" }] } } },
+      { "seq": 1, "kind": "command-failed", "groups": ["command", "problem"], "command": "whistle.nope", "error": "unknown whistle command whistle.nope", "text": "unknown whistle command whistle.nope" }] } } },
     { "command": "mode:foo", "model": { "mode": "type" }, "effects": [] }
   ]
 }
 ```
 
-```json example keys.json lines with a mode that isn't one, or a keep-mapping with bad JSON, are config problems
+```json example keys.json lines with a mode that isn't one, a keep-mapping with bad JSON, or a subscribe without a mod, are config problems
 {
   "world": {
     "focused": { "pane": "p1" },
-    "keysFile": { "text": "{ \"global\": { \"f1\": \"whistle.mode:foo\", \"f2\": \"whistle.keep-mapping:{nope\", \"f3\": \"whistle.mode:type\" } }", "error": null, "at": 0 }
+    "keysFile": { "text": "{ \"global\": { \"f1\": \"whistle.mode:foo\", \"f2\": \"whistle.keep-mapping:{nope\", \"f3\": \"whistle.mode:type\", \"f4\": \"whistle.subscribe:{}\" } }", "error": null, "at": 0 }
   },
   "steps": [
     { "tick": 120, "model": { "problems": [
       { "source": "keys.json", "detail": "global › f1: unknown whistle command whistle.mode:foo" },
-      { "source": "keys.json", "detail": "global › f2: unknown whistle command whistle.keep-mapping:{nope" }] } }
+      { "source": "keys.json", "detail": "global › f2: unknown whistle command whistle.keep-mapping:{nope" },
+      { "source": "keys.json", "detail": "global › f4: unknown whistle command whistle.subscribe:{}" }] } }
   ]
 }
 ```
@@ -433,7 +451,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
   "steps": [
     { "tick": 120 },
     { "command": "keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"x\"]}", "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
-      { "seq": 1, "kind": "command-failed", "command": "whistle.keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"x\"]}", "error": "alpha maps nothing at x", "text": "alpha maps nothing at x" }] } } }
+      { "seq": 1, "kind": "command-failed", "groups": ["command", "problem"], "command": "whistle.keep-mapping:{\"mod\":\"alpha\",\"keys\":[\"x\"]}", "error": "alpha maps nothing at x", "text": "alpha maps nothing at x" }] } } }
   ]
 }
 ```
@@ -441,6 +459,9 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
 ## Stable and may change
 
 - Stable: every command and verb above, its argument's kind, the jump-key spelling
-  `whistle.<verb>:<block>` (ADR 0007), and the settings commands' spellings.
+  `whistle.<verb>:<block>` (ADR 0007), the settings commands' spellings, and `subscribe`,
+  `unsubscribe` and the `<mod>.whistle-event:<event>` whistle pushes.
+- `whistle.subscribers`, where whistle keeps the subscriptions, is private: don't read or write
+  it.
 - `whistle.key-<key>` is the form whistle writes for the keys it claims in keys.json
   (see the guide). It may change; don't bind it yourself.

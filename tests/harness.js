@@ -40,8 +40,10 @@
 //         handled: true },                 // whether a key was handled
 //     ],
 //
+// whistle.subscribers set in a step is world.subscribers in the next, as Herdr's shared state is.
+//
 // Whatever a scenario checks, a step that sets a private shared key of whistle's (any
-// "whistle.<name>" but the public keys and whistle.copies) or opens or closes an overlay fails:
+// "whistle.<name>" but the public keys, whistle.copies and whistle.subscribers) or opens or closes an overlay fails:
 // whistle draws nothing and keeps no view state (ADR 0006).
 //   }
 
@@ -77,8 +79,9 @@ export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "obje
 // keys beside it (step.js PUBLIC): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
 const PUBLIC_KEYS = ["whistle.hints", "whistle.events", "whistle.config"];
-// The shared keys whistle may set: the public ones, whistle.copies (inert.js) and keynav's.
-const ALLOWED = [STATE, ...PUBLIC_KEYS, "whistle.copies"];
+// The shared keys whistle may set: the public ones, whistle.copies (inert.js),
+// whistle.subscribers (step.js SUBSCRIBERS) and keynav's.
+const ALLOWED = [STATE, ...PUBLIC_KEYS, "whistle.copies", "whistle.subscribers"];
 const isPrivate = (e) => typeof e?.setShared === "string" && e.setShared.startsWith("whistle.") && !ALLOWED.includes(e.setShared);
 const isOverlay = (e) => Boolean(e) && ("openOverlay" in e || "closeOverlay" in e);
 
@@ -173,6 +176,10 @@ export function runScenario(sc, core) {
       if ("handled" in s && Boolean(out.handled) !== s.handled)
         fails.push(`${at}: handled ${Boolean(out.handled)}, want ${s.handled}`);
       model = out.model;
+      // Herdr's shared state is live: whistle.subscribers as whistle set it is what the next
+      // step reads back (world.subscribers), as main.js reads it each step.
+      const subs = out.effects.filter((e) => e?.setShared === "whistle.subscribers");
+      if (subs.length) world = { ...world, subscribers: subs.at(-1).value };
     } catch (e) {
       fails.push(`${at}: threw ${e?.message ?? e}`);
     }

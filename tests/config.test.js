@@ -137,7 +137,7 @@ const SCENARIOS = [
       map: { w: { name: "Panes", map: { m: { name: "More", map: { z: ["Zoom pane", "pane.zoom"] } } } } },
       user: { keys: { back: ["backspace"] } } }),
     steps: [...IN, { key: "w" }, { key: "m" },
-      { key: "backspace", handled: true, effects: [], raised: [{ text: "w m ⌫ is not mapped" }], model: { sequence: null,
+      { key: "backspace", handled: true, effects: [], raised: [{ kind: "key-unmapped", text: "w m ⌫ is not mapped" }, { kind: "sequence-ended", by: "unmapped" }], model: { sequence: null,
         problems: [{ source: "whistle.json", detail: "keys › back: unknown action" }] } },
       { key: "w" }, { key: "escape", handled: true, model: { sequence: null } }],
   },

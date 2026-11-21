@@ -13,7 +13,7 @@ contracts. Pick the one that fits your job.
 | give your mod's commands whistle keys (mappings and groups, added while your mod shows) | [Mod mappings](contracts/mod-mappings.md) | [`whistle.js`](../mods/whistle/whistle.js) |
 | know what whistle is doing: the mode, the key sequence, the terminal it has selected, why it stands aside | [Whistle state](contracts/state.md) | [`whistle.js`](../mods/whistle/whistle.js) |
 | show what the next key does: the choices of the key sequence, or the selected field's declared keys | [Whistle hints](contracts/hints.md) | [`whistle.js`](../mods/whistle/whistle.js) |
-| tell people what just happened: an unmapped key, a failed command, a new conflict (kind, data, default text) | [Whistle events](contracts/events.md) | [`whistle.js`](../mods/whistle/whistle.js) |
+| know what just happened: a mode switch, a field selected, a mapping that ran, an unmapped key, a failed command, a new conflict (kind, groups, data, default text); read the feed, or subscribe to have them pushed | [Whistle events](contracts/events.md) | [`whistle.js`](../mods/whistle/whistle.js) |
 | show whistle's settings: config problems, conflicts, overrides, mods on or off (and change them with the settings commands) | [Whistle config](contracts/config.md) | [`whistle.js`](../mods/whistle/whistle.js) |
 | place whistle-ui's bar and hints box, or replace its bar, hints box or settings dialog with your own client | [whistle-ui](contracts/whistle-ui.md) | [`mods/whistle-ui/`](../mods/whistle-ui), as a reference |
 | bind whistle's commands in keys.json, run them from your mod (the settings commands included), or map its verbs | [Whistle's commands](contracts/commands.md) | nothing |

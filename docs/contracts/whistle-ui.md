@@ -111,10 +111,12 @@ focus. In WHISTLE it names the terminal's selected pane, the selected keynav fie
 }
 ```
 
-### 4. Each event flashes once, for 2 s or until the key sequence changes
+### 4. Each problem event flashes once, for 2 s or until the key sequence changes
 
-A bar shows the text of each event that came since it last drew, in place of its label; several
-at once show together. A copy remembers the last event's `seq` it handled and keeps it in
+A bar shows the text of each event in the `problem` group ([events.md](events.md#kinds)) that
+came since it last drew, in place of its label; several at once show together. Other events
+(a mode switch, a field selected) flash nothing. whistle-ui reads the feed and doesn't
+subscribe. A copy remembers the last event's `seq` it handled and keeps it in
 `whistle-ui.seen`, so a new copy (Herdr makes one when the layout changes) goes on from there.
 With nothing kept yet, a new copy flashes none of the events already in the feed. When the
 newest `seq` is lower than the one kept, whistle started again and every event is new.
@@ -123,10 +125,22 @@ newest `seq` is lower than the one kept, whistle started again and every event i
 {
   "published": {
     "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null },
-    "events": { "v": 1, "events": [{ "seq": 4, "kind": "unmapped", "keys": ["w", "x"], "text": "w x is not mapped" }] }
+    "events": { "v": 1, "events": [{ "seq": 4, "kind": "key-unmapped", "groups": ["sequence", "problem"], "keys": ["w", "x"], "text": "w x is not mapped" }] }
   },
   "world": { "last": 3 },
   "bar": { "badge": "WHISTLE", "label": "w x is not mapped", "marker": null }
+}
+```
+
+```json ui-example An event outside the problem group doesn't flash
+{
+  "published": {
+    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null },
+    "events": { "v": 1, "events": [{ "seq": 4, "kind": "mode-switched", "groups": ["mode"], "from": "type", "to": "whistle", "text": "WHISTLE" }] }
+  },
+  "world": { "last": 3 },
+  "bar": { "badge": "WHISTLE", "label": "", "marker": null },
+  "effects": [{ "seen": 4 }]
 }
 ```
 

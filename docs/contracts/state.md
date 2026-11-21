@@ -269,7 +269,8 @@ A copy of whistle that stands aside while another copy runs writes nothing, so t
 always the running copy's. When no copy runs (on a Herdr older than whistle needs, or with
 whistle blocks that share their props, every copy stands aside), the copy that would run writes
 the state once with `inert`: `problem` says why it stands aside and `fix` what the person can do,
-so any mod can show it. While whistle runs, `inert` is `null`.
+so any mod can show it, and raises `whistle-inert` in the [event feed](events.md#6-who-writes-the-feed).
+While whistle runs, `inert` is `null`.
 
 ```json example A copy standing aside on an old Herdr publishes why, once
 {

@@ -101,7 +101,7 @@ const SCENARIOS = [
         state: { onTerminal: true } },
       { key: "a", effects: ran("alpha.a") },
       { key: "g" }, { key: "b", effects: ran("beta.b") },
-      { key: "g" }, { key: "d", effects: [], raised: [{ text: "g d is not mapped" }] }],
+      { key: "g" }, { key: "d", effects: [], raised: [{ kind: "key-unmapped", text: "g d is not mapped" }, { kind: "sequence-ended", by: "unmapped" }] }],
   },
   {
     name: "A mapping conflict inside merged groups raises an event with its key sequence",

@@ -164,17 +164,17 @@ const SCENARIOS = [
       { key: "j", state: { onTerminal: true } }],
   },
   {
-    name: "An event is raised once: the switch key raises none",
+    name: "An event is raised once: the switch key then raises only mode-switched",
     world: world(null),
     steps: [...IN, { key: "n" }, { ran: "tab.next", error: "no next tab" },
-      { command: "switch-mode", state: { mode: "type" }, raised: [] }],
+      { command: "switch-mode", state: { mode: "type" }, raised: [{ kind: "mode-switched", to: "type" }] }],
   },
   {
     name: "A key that isn't mapped in a key sequence raises an event and ends it",
     world: world({ map: { w: { name: "Panes", map: { q: ["Close pane", "pane.close"] } } } }),
     steps: [...IN,
       { key: "w", model: { sequence: ["w"] } },
-      { key: "x", effects: [], handled: true, model: { sequence: null }, raised: [{ text: "w x is not mapped" }] }],
+      { key: "x", effects: [], handled: true, model: { sequence: null }, raised: [{ kind: "key-unmapped", text: "w x is not mapped" }, { kind: "sequence-ended", by: "unmapped" }] }],
   },
 
   // keys.json.

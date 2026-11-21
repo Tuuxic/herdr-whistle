@@ -47,7 +47,7 @@ const SCENARIOS = [
     world,
     steps: [...IN,
       { key: "w", model: { sequence: ["w"] }, hints: { keys: "w", exit: "Esc cancels" } },
-      { key: "backspace", handled: true, effects: [], model: { sequence: null }, raised: [{ text: "w ⌫ is not mapped" }] },
+      { key: "backspace", handled: true, effects: [], model: { sequence: null }, raised: [{ kind: "key-unmapped", text: "w ⌫ is not mapped" }, { kind: "sequence-ended", by: "unmapped" }] },
       { key: "w" }, { key: "escape", handled: true, effects: [], model: { sequence: null }, hints: null }],
   },
 ];

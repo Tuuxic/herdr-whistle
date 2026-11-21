@@ -21,15 +21,30 @@ export function hintsOf(value) {
   return { keys, title, items, exit };
 }
 
+// Whether an event passes a filter: { groups, kinds } (an event in any listed group, or of any
+// listed kind; with neither given, every event) or a predicate (event) => boolean. With no
+// filter, every event does.
+export function matches(filter, event) {
+  if (typeof filter === "function") return Boolean(filter(event));
+  if (!filter || typeof filter !== "object") return true;
+  const { groups, kinds } = filter;
+  if (!Array.isArray(groups) && !Array.isArray(kinds)) return true;
+  return (Array.isArray(groups) && Array.isArray(event.groups) && event.groups.some((g) => groups.includes(g)))
+    || (Array.isArray(kinds) && kinds.includes(event.kind));
+}
+
 // The events in a shared("whistle.events") value that came after the last one you handled
-// (last: its seq, 0 for none), and the new last: { events, last }. Seqs rise for as long as
-// whistle runs; when they went back (whistle started again), every event in the feed is new.
-// Keep `last` between draws and show each event once.
-export function eventsSince(value, last = 0) {
-  if (!v1(value) || !Array.isArray(value.events) || !value.events.length) return { events: [], last };
-  const newest = value.events.at(-1).seq;
-  const events = newest < last ? value.events : value.events.filter((e) => e.seq > last);
-  return { events, last: newest };
+// (last: its seq, 0 for none) and pass filter (matches), the new last, and how many fell out of
+// the feed before you read them: { events, last, missed }. `last` moves past every event read,
+// matched or not, so keep it between draws and handle each event once. Seqs rise for as long as
+// whistle runs; when they went back (whistle started again), every event in the feed is new and
+// none were missed.
+export function eventsSince(value, last = 0, filter) {
+  if (!v1(value) || !Array.isArray(value.events) || !value.events.length) return { events: [], last, missed: 0 };
+  const all = value.events, newest = all.at(-1).seq;
+  const again = newest < last;
+  const fresh = again ? all : all.filter((e) => e.seq > last);
+  return { events: fresh.filter((e) => matches(filter, e)), last: newest, missed: again ? 0 : Math.max(0, all[0].seq - last - 1) };
 }
 
 // The config of a shared("whistle.config") value, { problems, mods, conflicts, overrides }, or

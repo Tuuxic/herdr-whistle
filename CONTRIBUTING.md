@@ -19,7 +19,8 @@ In `mods/whistle/` ([ADR 0004](docs/adr/0004-pure-step-core-behind-one-effects-s
   the terminal, stock fields, keynav fields), `config.js` (the config layers, own keys apart
   from mappings), `commands.js` (the commands whistle answers to and their arguments),
   `keymap.js` (what a key does), `claims.js` (claimed keys in keys.json),
-  `block.js` (the layout's whistle blocks, each the anchor), `inert.js`, `keynames.js`,
+  `block.js` (the layout's whistle blocks, each the anchor), `events.js` (the event kinds and
+  their groups, and the pushes to subscribers), `inert.js`, `keynames.js`,
   `facts.js` (the hint items and config whistle publishes) and `version.js`. Whistle decides no
   looks ([ADR 0006](docs/adr/0006-whistle-publishes-facts-clients-show-them.md)).
 - **The shell**, `main.js`: reads Herdr into `world`, feeds `step` its inputs (commands, keys,
