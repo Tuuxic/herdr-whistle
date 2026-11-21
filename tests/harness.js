@@ -68,8 +68,9 @@ export const show = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "obje
 // keys the views' models go in (step.js VIEWS): set on most steps, so `effects` leaves them out.
 const STATE = "whistle";
 const VIEW_KEYS = ["whistle.hints", "whistle.settings"];
-// The bar's model goes in a key per folder (step.js barKey).
-const isBarKey = (k) => typeof k === "string" && k.startsWith("whistle.bar:");
+// The bar's model goes in a key per folder (step.js barKey), and so does the reason an inert
+// whistle told (toldKey): `shared` checks them, `effects` leaves them out.
+const isBarKey = (k) => typeof k === "string" && (k.startsWith("whistle.bar:") || k.startsWith("whistle.told:"));
 
 const INPUTS = ["command", "key", "tick", "wrote", "ran"];
 

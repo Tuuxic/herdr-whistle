@@ -37,6 +37,21 @@ const SCENARIOS = [
     ],
   },
   {
+    // Herdr makes a new copy whenever the layout changes or is shown again: the reason told
+    // lives in a private shared key of the folder, so a new copy doesn't post it again.
+    name: "Inert, a new copy doesn't post the notification an earlier copy of its folder posted",
+    world: { ...OLD, told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" },
+    steps: [{ command: "type", notified: [] }],
+  },
+  {
+    name: "Inert, whistle records the reason it told in its folder's private key, and clears it once it runs",
+    world: OLD,
+    steps: [
+      { command: "type", shared: { "whistle.told:whistle": "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" } },
+      { world: { herdr: "0.1.15", told: "Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)" }, command: "type", shared: { "whistle.told:whistle": null } },
+    ],
+  },
+  {
     // Only the copy that would run posts it: one notification, however many blocks.
     name: "Inert, a hidden spot's copy posts no notification",
     world: { ...OLD, props: { bar: "Top" },
