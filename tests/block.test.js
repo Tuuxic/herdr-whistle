@@ -140,14 +140,12 @@ const SCENARIOS = [
       model: { problems: [{ source: "whistle.json", detail: "enabled should be true or false" }] } }],
   },
 
-  // Bar spots (ADR 0019): the layout shows and hides them; whistle.json's bar is ignored and listed,
-  // whatever its value.
-  ...[["names a spot", "Top"], ["names no spot", "Left"], ["isn't a string", 3], ["is false", false]].map(([what, v]) => ({
-    name: `whistle.json's bar that ${what} moves no bar and is listed`,
-    world: spots({ bar: v }),
-    steps: [{ tick: 120, effects: [],
-      model: { problems: [{ source: "whistle.json", detail: "bar: whistle no longer picks the bar's spot; show or hide bars in the layout (Herdr remembers it)" }] } }],
-  })),
+  // Bar spots (ADR 0019): the layout shows and hides them; whistle.json has no bar.
+  {
+    name: "A bar in whistle.json is a key whistle doesn't know: it moves no bar and lists nothing",
+    world: spots({ bar: "Top" }),
+    steps: [{ tick: 120, effects: [], bar: { marker: null } }],
+  },
   {
     name: "With whistle.json's bar set, a bar the layout shows stays shown and one it hides stays hidden",
     world: spots({ bar: "Top" }),

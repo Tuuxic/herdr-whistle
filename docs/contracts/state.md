@@ -27,12 +27,10 @@ const label = w?.mode === "whistle" ? "whistling" : "";
 | `sequence` | `null` \| `{ keys, group }` | The key sequence so far: `keys` a list of key names, `group` the name of the group it has reached. `null` outside a sequence. |
 | `pane` | string \| `null` | The terminal pane whistle has selected, `null` until it has selected one. |
 | `onTerminal` | boolean | Whether the terminal is the selected field: `true` only in WHISTLE with the terminal selected. |
-| `inert` | `{ problem, fix }`, missing while whistle runs | Why whistle stands aside, and what the person can do about it (rule 7). Since whistle 2.0.0. |
+| `inert` | `{ problem, fix }`, missing while whistle runs | Why whistle stands aside, and what the person can do about it (rule 7). |
 
-Whistle 1.0.0 writes every field above but `inert`. Fields added later under `v: 1` are
-optional; ignore fields you don't know. (`onTerminal` came in during 1.0's work: `whistle.js`
-reads it as `false` when it's missing. `inert` came in 2.0.0: `whistle.js` reads it as `null`
-when it's missing.)
+Fields added later under `v: 1` are optional; ignore fields you don't know. `whistle.js`
+reads a missing `onTerminal` as `false` and a missing `inert` as `null`.
 
 ## Rules
 
@@ -283,7 +281,7 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
 
 - Stable: `shared("whistle")` and everything above.
 - Also public, each with its own page: `shared("whistle.mappings")`, for offering mappings
-  ([mod-mappings.md](mod-mappings.md)), and since 2.0.0 the hint items
+  ([mod-mappings.md](mod-mappings.md)), the hint items
   ([hints.md](hints.md)), the event feed ([events.md](events.md)) and the config
   ([config.md](config.md)).
 - Private: every other `whistle.*` key (such as `whistle.copies`). It may change or go in any
@@ -291,7 +289,5 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
 
 ## History
 
-- `v: 1` (whistle 1.0.0): first version. Replaces the undocumented `whistle.enabled` and
-  `whistle.sequence` keys, which are gone.
-- Whistle 2.0.0: the optional `inert` field. A copy standing aside with no other copy running
-  now writes the state with it (before, it wrote nothing).
+- `v: 1` (whistle 1.0.0): first version.
+- whistle 2.0.0: the optional `inert` field.

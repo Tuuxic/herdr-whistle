@@ -98,7 +98,7 @@ Ctrl+Shift+, would be `ctrl-<` on a US layout and `ctrl-;` on a German one: henc
 **Settings commands** change what whistle's settings change, without knowing whistle.json's
 format: whistle writes whistle.json itself, keeping the rest of it. A client (a mod that shows
 [whistle's config](config.md)) runs them with `run("whistle.mappings-off:alpha")`; keys.json
-may bind them too. Since whistle 2.0.0.
+may bind them too.
 
 | Command | Argument | Does |
 |---|---|---|
@@ -378,8 +378,8 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
   "world": { "focused": { "pane": "p1" } },
   "steps": [
     { "tick": 120 },
-    { "command": "whistle", "model": { "mode": "type" }, "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
-      { "seq": 1, "kind": "command-failed", "command": "whistle.whistle", "error": "unknown whistle command whistle.whistle", "text": "unknown whistle command whistle.whistle" }] } } },
+    { "command": "nope", "model": { "mode": "type" }, "effects": [], "shared": { "whistle.events": { "v": 1, "events": [
+      { "seq": 1, "kind": "command-failed", "command": "whistle.nope", "error": "unknown whistle command whistle.nope", "text": "unknown whistle command whistle.nope" }] } } },
     { "command": "mode:foo", "model": { "mode": "type" }, "effects": [] }
   ]
 }
@@ -466,14 +466,10 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
   `whistle.<verb>:<block>` (ADR 0014), and the settings commands' spellings.
 - `whistle.key-<key>` is the form whistle writes for the keys it claims in keys.json
   (see the guide). It may change; don't bind it yourself.
-- Gone in 2.0: `whistle.whistle` (now `whistle.switch-mode`) and `whistle.type` (now
-  `whistle.mode:type`). They are unknown commands.
-- Gone in 1.0: `whistle.enter`, `whistle.focus` (without a block) and the direction commands.
 
 ## History
 
 - whistle 1.0.0: first version of this list, with jump keys and `toggle-keep-mode`.
 - whistle 2.0.0: the spelling `whistle.<command>[:<argument>]`, each command declaring its
-  argument; `whistle.whistle` renamed `whistle.switch-mode`, `whistle.type` renamed
-  `whistle.mode:type`, and `whistle.mode:whistle` new; the settings commands,
-  `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and `whistle.keep-mapping:<JSON>`.
+  argument; `whistle.mode:<mode>` and the settings commands, `whistle.mappings-on:<mod>`,
+  `whistle.mappings-off:<mod>` and `whistle.keep-mapping:<JSON>`.
