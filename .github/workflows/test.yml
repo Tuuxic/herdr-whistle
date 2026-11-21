@@ -49,3 +49,8 @@ jobs:
         run: |
           if [ "$RUNNER_OS" = Linux ]; then "$HERDR_APP" check mods/whistle || xvfb-run -a "$HERDR_APP" check mods/whistle
           else "$HERDR_APP" check mods/whistle; fi
+
+      - name: whistle-ui check
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then "$HERDR_APP" check mods/whistle-ui || xvfb-run -a "$HERDR_APP" check mods/whistle-ui
+          else "$HERDR_APP" check mods/whistle-ui; fi

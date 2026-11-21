@@ -27,6 +27,13 @@ In `mods/whistle/` ([ADR 0011](docs/adr/0011-pure-step-core-behind-one-effects-s
   neither.
 - `mappings.json`: the default map.
 
+`mods/whistle-ui/` is whistle-ui, a client of whistle's public keys and commands
+([docs/contracts/whistle-ui.md](docs/contracts/whistle-ui.md)), built the same way: `ui.js` is
+its pure core (`ui(published, world) -> { model, effects }`), with `read.js` (whistle.js's
+readers, copied word for word) and `box.js` (the hints box's measures); `main.js` is its shell;
+`bar.js`, `hints.js` and `settings.js` draw; `keys.json` holds the line it adds. It imports
+nothing from `mods/whistle/`, and its tests (`tests/ui.test.js`) never run whistle's core.
+
 ## Tests
 
 ```sh
@@ -57,8 +64,8 @@ Then it runs the keynav checker and `scripts/release.sh` end to end.
 - `suite`s read files from `texts.js`, which `run.sh` writes (repo path → text): add a file
   there when a suite needs it. `check` never sees an async failure, so suites can't await.
 
-CI ([.github/workflows/test.yml](.github/workflows/test.yml)) runs `run.sh` and
-`herdr-app check mods/whistle` on Linux and macOS (blocking) and Windows (not blocking), each
+CI ([.github/workflows/test.yml](.github/workflows/test.yml)) runs `run.sh`,
+`herdr-app check mods/whistle` and `herdr-app check mods/whistle-ui` on Linux and macOS (blocking) and Windows (not blocking), each
 on the latest Herdr and on the minimum whistle declares (`MIN_HERDR` in
 `mods/whistle/version.js`, installed by `tests/install-herdr.sh`).
 
@@ -71,8 +78,8 @@ as yours, so test in a space of its own.
 | Command | Does |
 |---|---|
 | `scripts/sandbox.sh reset` | delete the sandbox, make a fresh home and open its window |
-| `scripts/sandbox.sh reset --whistle` | the same, with this checkout's whistle copied in, its keys.json merged and a layout `whistle-sandbox` showing it |
-| `scripts/sandbox.sh sync` | copy this checkout's `mods/whistle/` into the sandbox again |
+| `scripts/sandbox.sh reset --whistle` | the same, with this checkout's whistle and whistle-ui copied in, their keys.json merged and a layout `whistle-sandbox` showing whistle's anchor and whistle-ui's bar and corner block |
+| `scripts/sandbox.sh sync` | copy this checkout's `mods/whistle/` and `mods/whistle-ui/` into the sandbox again |
 | `scripts/sandbox.sh agent [task]` | start Claude with the sandbox as Herdr's home; with no task it installs whistle by RECIPE.md, as a person's agent would |
 | `scripts/sandbox.sh open`, `close`, `status`, `path` | open or close its window, its `herdr-app status`, its folder |
 
