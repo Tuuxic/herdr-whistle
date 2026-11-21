@@ -45,8 +45,11 @@ const keysText = (keys) => keys.map(keyLabel).join(" ");
 // reached (not an event group: those are `groups`).
 export const sequenceStarted = (keys, mappingGroup) => ({ kind: "sequence-started", keys: [...keys], mappingGroup, text: `${keysText(keys)}: ${mappingGroup ?? "group"}` });
 
-// A key sequence that ended, by: "ran" (a mapping ran), "unmapped" (a key it doesn't map) or
-// "left" (cancelled, or left another way).
+// How a key sequence ends (sequence-ended's `by`), the only values it takes: a mapping ran, a
+// key it doesn't map, or left (cancelled, or left another way).
+export const ENDED_BY = Object.freeze({ ran: "ran", unmapped: "unmapped", left: "left" });
+
+// A key sequence that ended, by one of ENDED_BY.
 export const sequenceEnded = (keys, by) => ({ kind: "sequence-ended", keys: [...keys], by, text: `${keysText(keys)}: ${by}` });
 
 // The events a change of the whistle state is (state() in step.js; before: the state published
@@ -66,6 +69,8 @@ export function changes(before, after) {
 export const filterOf = (v) => ({ ...(v.groups ? { groups: v.groups } : {}), ...(v.kinds ? { kinds: v.kinds } : {}) });
 
 // Whether an event passes a subscriber's filter ({ groups, kinds }; neither: every event).
+// The same test as whistle.js matches() (which whistle may not import: CONTRIBUTING), for the
+// filter forms a subscription can hold; change both together (contract.test.js checks they agree).
 export function passes(filter, event) {
   const { groups, kinds } = filter ?? {};
   if (!groups && !kinds) return true;

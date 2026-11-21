@@ -6,7 +6,8 @@ import { suite, TEST_DEFAULTS } from "./harness.js";
 import * as core from "./step.js";
 import { term, anchor } from "./worlds.js";
 import { VERSION, MIN_HERDR } from "./version.js";
-import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
+import { readState, hintsOf, eventsSince, configOf, matches } from "./whistle.js";
+import { passes } from "./events.js";
 
 // Each kind's groups, as docs/contracts/events.md lists them.
 const G = {
@@ -385,4 +386,8 @@ export default suite("contract", (t) => {
     eventsSince(mixed, 0, { groups: ["problem"], kinds: ["mode-switched"] }).events, [MODE(1), EV(2), MODE(3)]);
   t.check("a filter naming neither groups nor kinds keeps every event", eventsSince(mixed, 0, {}).events, [MODE(1), EV(2), MODE(3)]);
   t.check("a predicate filter keeps the events it returns true for", eventsSince(mixed, 0, (e) => e.seq % 2 === 1).events, [MODE(1), MODE(3)]);
+  // whistle may not import whistle.js, so events.js passes() repeats matches(): they must agree.
+  const FILTERS = [{}, { groups: ["problem"] }, { kinds: ["mode-switched"] }, { groups: ["problem"], kinds: ["mode-switched"] }, { groups: [] }, { kinds: [] }];
+  t.check("whistle's pushes (events.js passes) filter as whistle.js matches does",
+    FILTERS.map((f) => mixed.events.map((e) => passes(f, e))), FILTERS.map((f) => mixed.events.map((e) => matches(f, e))));
 });

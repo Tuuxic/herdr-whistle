@@ -46,7 +46,8 @@ export const readHints = () => hintsOf(shared("whistle.hints"));
 
 // Whether an event passes a filter: { groups, kinds } (an event in any listed group, or of any
 // listed kind; with neither given, every event) or a predicate (event) => boolean. With no
-// filter, every event does.
+// filter, every event does. (Whistle's pushes test subscriptions the same way in its own
+// events.js passes(); change both together.)
 export function matches(filter, event) {
   if (typeof filter === "function") return Boolean(filter(event));
   if (!filter || typeof filter !== "object") return true;

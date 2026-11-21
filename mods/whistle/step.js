@@ -80,15 +80,13 @@ import { fieldAt, fields, terminal, neighbour, eachNode, declaredKeys, requestKe
 import { canonicalKey, keyLabel } from "./keynames.js";
 import { claimsTick, claimWrote, CLAIMS } from "./claims.js";
 import { compose, readFile, groupAt, ACTIONS, SAFETY, DEFAULTS, USER, LAYOUT, MODS, BLOCK_VERBS, JUMP_VERBS, KEEP_MODE, keysProblems, verbAndBlock, runsAs, switchMod, keepMapping } from "./config.js";
-import { parseCommand } from "./commands.js";
+import { parseCommand, KEPT_INERT } from "./commands.js";
 import { resolve } from "./keymap.js";
 import { blockProps, settings as blockSettings, leftOut } from "./block.js";
 import { inert, announce, runningCopy, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { hints, config as configFacts, offered } from "./facts.js";
-import { raised, changes, pushes, filterOf, sequenceStarted, sequenceEnded, EVENTS_KEPT } from "./events.js";
-
-export { EVENTS_KEPT };
+import { raised, changes, pushes, filterOf, sequenceStarted, sequenceEnded, ENDED_BY } from "./events.js";
 
 // The public keys (PUBLIC) as last written, as JSON: none yet.
 const NOTHING_SENT = { hints: null, events: null, config: null };
@@ -316,7 +314,7 @@ function whistleMapping(model, world, v, block) {
 function jump(model, world, c) {
   const { verb, block } = verbAndBlock(c);
   const v = runsAs(verb);
-  if (model.mode === "whistle") return whistleMapping(sequenceLeft(model), world, v, block);
+  if (model.mode === "whistle") return whistleMapping(sequenceEnd(model, ENDED_BY.left), world, v, block);
   const why = cantRun(model, world, v, block);
   if (why) return { model: raised(model, why), effects: [] };
   if (verb === KEEP_MODE) return toggled(model, world, block);
@@ -355,8 +353,9 @@ function keepMod(model, world, c, { mod, keys: written }) {
   return userWrite(model, world, (text) => keepMapping(text, keys, value));
 }
 
-// The model with its key sequence ended another way than a key: sequence-ended, by "left".
-const sequenceLeft = (model) => (model.sequence?.length ? raised({ ...model, sequence: null }, sequenceEnded(model.sequence, "left")) : model);
+// The model with its key sequence ended and sequence-ended raised, by one of ENDED_BY; unchanged
+// with no sequence. Every way a sequence ends goes through here.
+const sequenceEnd = (model, by) => (model.sequence?.length ? raised({ ...model, sequence: null }, sequenceEnded(model.sequence, by)) : model);
 
 // In WHISTLE, back to TYPE before out (whistle switches off).
 function leaving(model, world, out) {
@@ -366,13 +365,6 @@ function leaving(model, world, out) {
   return { model: o.model, effects: [...t.effects, ...o.effects] };
 }
 
-
-// The commands that work whether whistle is on or off: on, off and the settings
-// commands (commands.js parseCommand names).
-const ANY_TIME = ["on", "off", "mappings-on", "mappings-off", "keep-mapping", "subscribe", "unsubscribe"];
-
-// The commands kept while whistle is inert, by the copy that would run: the subscriptions.
-const KEPT_INERT = ["subscribe", "unsubscribe"];
 
 // The private shared key the subscriptions are kept in, so a new copy reads them back.
 export const SUBSCRIBERS = "whistle.subscribers";
@@ -473,10 +465,10 @@ function key(model, world, name) {
   const field = fieldAt(world.layout, ready.field, ready.recent, world.shared);
   const declared = field?.kind === KEYNAV ? declaredKeys(field, ready.config.own, world.platform).keys : null;
   const { sequence, act } = resolve(ready.config, ready.sequence, name, declared);
-  let m = { ...ready, sequence };
-  if (act?.flash) m = raised(m, { kind: "key-unmapped", keys: [...(ready.sequence ?? []), name], text: act.flash });
+  let m = act?.flash ? raised(ready, { kind: "key-unmapped", keys: [...(ready.sequence ?? []), name], text: act.flash }) : ready;
+  if (ready.sequence?.length && !sequence?.length) m = sequenceEnd(m, act?.run ? ENDED_BY.ran : act?.flash ? ENDED_BY.unmapped : ENDED_BY.left);
+  else m = { ...m, sequence };
   if (!ready.sequence?.length && sequence?.length) m = raised(m, sequenceStarted(sequence, groupAt(ready.config.map, sequence)?.name ?? null));
-  if (ready.sequence?.length && !sequence?.length) m = raised(m, sequenceEnded(ready.sequence, act?.run ? "ran" : act?.flash ? "unmapped" : "left"));
   if (!act) return { model: m, effects: [], handled: false };
   if (act.declared !== undefined) return toField(m, world, field, `key-${act.declared}`);
   if (act.run) return runMapping(m, world, act.run);
@@ -612,9 +604,9 @@ function stepped(model, input, world, why) {
     const error = input.error ?? "unknown error";
     return { model: raised(model, { kind: "command-failed", command: input.ran, error, text: `${input.ran} failed: ${error}` }), effects: [] };
   }
-  // Inert, the copy that would run keeps the subscriptions (events.md rule 6); a copy standing
-  // aside for another copy leaves them to it.
-  if (why && KEPT_INERT.includes(parseCommand(input.command)?.name))
+  // Inert, the copy that would run keeps the commands KEPT_INERT (the subscriptions, events.md
+  // rule 6); a copy standing aside for another copy leaves them to it.
+  if (why && parseCommand(input.command)?.when === KEPT_INERT)
     return runningCopy(world) === folderOf(world) ? command(model, world, input.command) : { model, effects: [], handled: false };
   const out = why ? standAside(model, input, world) : active(model, input, world);
   return input.tick ? copiesTick(out, world) : out;
@@ -744,7 +736,8 @@ function running(model, input, world) {
   const named = typeof c === "string" && !c.startsWith("key-") && !isJump(c);
   // A command whistle doesn't know fails, whether whistle is on or off.
   if (named && !parseCommand(c)) return unknown(model, world, c);
-  if (named && ANY_TIME.includes(parseCommand(c).name)) return command(model, world, c);
+  // Commands that work switched off too (commands.js `when`).
+  if (named && parseCommand(c).when) return command(model, world, c);
   // Switched off: standing aside, but still keeping its claims.
   if (model.enabled === false) {
     if (input.tick && model.mode !== "whistle") return claimsTick(model, world);
