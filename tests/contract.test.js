@@ -254,7 +254,8 @@ const SCENARIOS = [
   },
 ];
 
-const EV = (seq) => ({ seq, kind: "unmapped", keys: ["x"], text: "x is not mapped" });
+const EV = (seq) => ({ seq, kind: "key-unmapped", groups: ["sequence", "problem"], keys: ["x"], text: "x is not mapped" });
+const MODE = (seq) => ({ seq, kind: "mode-switched", groups: ["mode"], from: "type", to: "whistle", text: "WHISTLE" });
 
 export default suite("contract", (t) => {
   for (const sc of SCENARIOS) t.scenario(sc, core);
@@ -269,9 +270,18 @@ export default suite("contract", (t) => {
   t.check("configOf gives the v1 config, else null", [configOf({ v: 1, problems: [], mods: [], conflicts: [], overrides: [], later: 1 }), configOf({ v: 2 })],
     [{ problems: [], mods: [], conflicts: [], overrides: [] }, null]);
   const feed = { v: 1, events: [EV(3), EV(4), EV(5)] };
-  t.check("eventsSince gives the events after the last seq handled, and the new last", eventsSince(feed, 3), { events: [EV(4), EV(5)], last: 5 });
-  t.check("eventsSince gives nothing new when nothing came", eventsSince(feed, 5), { events: [], last: 5 });
-  t.check("eventsSince starts over when the seqs went back (whistle started again)", eventsSince({ v: 1, events: [EV(1)] }, 5), { events: [EV(1)], last: 1 });
+  t.check("eventsSince gives the events after the last seq handled, the new last, and none missed", eventsSince(feed, 3), { events: [EV(4), EV(5)], last: 5, missed: 0 });
+  t.check("eventsSince gives nothing new when nothing came", eventsSince(feed, 5), { events: [], last: 5, missed: 0 });
+  t.check("eventsSince counts the events that fell out of the window before they were read", eventsSince(feed, 0), { events: [EV(3), EV(4), EV(5)], last: 5, missed: 2 });
+  t.check("eventsSince starts over when the seqs went back (whistle started again), missing none", eventsSince({ v: 1, events: [EV(4)] }, 9), { events: [EV(4)], last: 4, missed: 0 });
   t.check("eventsSince gives nothing for no feed or another v, keeping the last", [eventsSince(null, 4), eventsSince({ v: 2, events: [EV(9)] }, 4)],
-    [{ events: [], last: 4 }, { events: [], last: 4 }]);
+    [{ events: [], last: 4, missed: 0 }, { events: [], last: 4, missed: 0 }]);
+  const mixed = { v: 1, events: [MODE(1), EV(2), MODE(3)] };
+  t.check("a groups filter keeps the events in any listed group, and last moves past every event read",
+    eventsSince(mixed, 0, { groups: ["problem"] }), { events: [EV(2)], last: 3, missed: 0 });
+  t.check("a kinds filter keeps the events of any listed kind", eventsSince(mixed, 1, { kinds: ["mode-switched"] }), { events: [MODE(3)], last: 3, missed: 0 });
+  t.check("groups and kinds together keep an event that matches either",
+    eventsSince(mixed, 0, { groups: ["problem"], kinds: ["mode-switched"] }).events, [MODE(1), EV(2), MODE(3)]);
+  t.check("a filter naming neither groups nor kinds keeps every event", eventsSince(mixed, 0, {}).events, [MODE(1), EV(2), MODE(3)]);
+  t.check("a predicate filter keeps the events it returns true for", eventsSince(mixed, 0, (e) => e.seq % 2 === 1).events, [MODE(1), MODE(3)]);
 });

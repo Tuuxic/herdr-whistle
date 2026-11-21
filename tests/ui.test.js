@@ -163,7 +163,7 @@ export default suite("whistle-ui", (t) => {
   const whistleJs = texts["mods/whistle/whistle.js"] ?? "";
   const readSource = texts["mods/whistle-ui/read.js"] ?? "";
   const copied = [...readSource.matchAll(/^export (?:function|const) (\w+)[\s\S]*?^}$/gm)];
-  t.check("read.js copies whistle.js's readers", copied.map((m) => m[1]), ["readState", "hintsOf", "eventsSince", "configOf"]);
+  t.check("read.js copies whistle.js's readers", copied.map((m) => m[1]), ["readState", "hintsOf", "matches", "eventsSince", "configOf"]);
   for (const m of copied) t.check(`read.js's ${m[1]} is whistle.js's, word for word`, whistleJs.replace(/\r\n/g, "\n").includes(m[0].replace(/\r\n/g, "\n")), true);
   t.check("the readers are there", typeof read.eventsSince, "function");
   for (const [path, text] of Object.entries(texts).filter(([p]) => p.startsWith("mods/whistle-ui/") && p.endsWith(".js"))) {
