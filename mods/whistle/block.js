@@ -16,7 +16,7 @@ import { FOLDER } from "./version.js";
 export const DIRS = ["left", "down", "up", "right"];
 const BOOLEANS = ["enabled", "hints"];
 const NUMBERS = ["hintsAlignRight", "hintsAlignBorder", "hintsGap"];
-const BEHAVIOUR = ["mappings", "keys", "mods", "enabled", "hints", "nav"];
+export const BEHAVIOUR = ["mappings", "keys", "mods", "enabled", "hints", "nav"];
 const KNOWN = [...BEHAVIOUR, "bar", ...NUMBERS, "part", "anchor"];
 
 // Whether a block's props make it the anchor (ADR 0018): `anchor: true`.

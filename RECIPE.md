@@ -285,6 +285,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    them; Herdr's own: as below). Otherwise whistle won't show: on Herdr's own layouts
    (read-only; `main` for most new users) Herdr never places a new mod's block, not after the
    welcome and not after a restart.
+
+   **Move the layout's config onto the anchor** as you add it next to an existing bar: in a
+   layout with an anchor, whistle reads `mappings`, `keys`, `mods`, `enabled`, `hints` and
+   `nav` from the anchor alone and skips them on a bar (docs/contracts/layout-block.md, rule
+   14). So move each of these props to the anchor from the first whistle block, in layout
+   order, that has it (the one whistle read it from), and take them off every bar; `bar` and
+   the `hints*` place props stay on the bars. Whistle then works exactly as before.
    - **Herdr's own layout** (in `installed.json` as `layout:<name>`): ask, for example "Herdr's
      standard window layout can't show whistle's bar by itself. I can make your own copy of
      the layout with the bar at the bottom and switch to it; everything else stays as it is.
@@ -361,8 +368,10 @@ Then, without asking more:
    person's own now. Taken by something else, pick another free name and say so afterwards.
    The person's own layout is changed in place. **The anchor**: if the layout has whistle's
    bar but no whistle block with `anchor: true`, add the anchor from [Install](#install)
-   step 7 just before the bar, and leave the bar where it is; a layout without whistle's bar
-   gets both blocks. Tell the person afterwards that the bar can now be hidden without
+   step 7 just before the bar, and leave the bar where it is, and move the bar's config onto
+   it as Install step 7 says: move `mappings`, `keys`, `mods`, `enabled`, `hints` and `nav`
+   to the anchor from the first whistle block that has each, and take them off every bar. A
+   layout without whistle's bar gets both blocks. Tell the person afterwards that the bar can now be hidden without
    switching whistle off.
 2. **The mods.** For each block to adapt: Herdr's mods and third-party mods are cloned,
    `herdr-app do mod.clone '{"name":"<mod>","as":"<mod>-whistle"}'`, and the block's

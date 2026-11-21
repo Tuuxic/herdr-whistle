@@ -11,7 +11,10 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 1. **The anchor**: for each of the person's layouts that has whistle's bar but no whistle
    block with `anchor: true`, offer to add the anchor (RECIPE.md, Install step 7), by its
    result: "the bar becomes optional: you can hide it and whistle keeps working". Yes: add it
-   just before the bar, as Integrate does. Herdr's own layouts are never edited.
+   just before the bar, as Integrate does, and move the bar's `mappings`, `keys`, `mods`,
+   `enabled`, `hints` and `nav` to the anchor (each from the first whistle block that has it),
+   taking them off every bar, so whistle works exactly as before. Herdr's own layouts are
+   never edited.
 
 ### You
 

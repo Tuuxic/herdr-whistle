@@ -26,7 +26,7 @@ import { suite } from "./harness.js";
 import { taggedRows } from "./guide.test.js";
 import texts from "./texts.js";
 import * as herdr from "herdr";
-import { bars, blockProps, viewing, dock, isAnchor } from "./block.js";
+import { bars, blockProps, viewing, dock, isAnchor, BEHAVIOUR } from "./block.js";
 
 const code = (cell) => [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 const recipe = texts["RECIPE.md"];
@@ -96,6 +96,21 @@ export default suite("integrate", (t) => {
   const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
   t.check("with the bar hidden, the hints box docks at its spot", [dock(hidden, "whistle", null).spot?.id, dock(hidden, "whistle", null).shown], [bar?.id, false]);
   t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
+  // Story 16 (#46): adding the anchor to a layout whose bar holds the layout's config moves
+  // those props onto the anchor, so whistle reads the same config with no problem.
+  const moves = (text) => /move[^.]*(to|onto) the anchor/i.test(text)
+    && BEHAVIOUR.every((p) => text.includes(`\`${p}\``));
+  t.check("Install moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Install")), true);
+  t.check("Integrate moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Integrate")), true);
+  t.check("CHANGELOG's Upgrading moves them too", moves(texts["CHANGELOG.md"].split(/^## /m)[1] ?? ""), true);
+  const bar2 = (props) => ({ id: "whistle", type: "block", content: { mod: "whistle", props } });
+  const before = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } },
+    bar2({ mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false, hintsGap: 4 })] };
+  const after = { ...before, children: [before.children[0],
+    { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true, mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false } } },
+    bar2({ hintsGap: 4 })] };
+  t.check("moved onto the anchor, the layout's config reads as before, with no problem",
+    [blockProps(after, "whistle").props, blockProps(after, "whistle").problems], [blockProps(before, "whistle").props, []]);
   t.check("Uninstall removes the anchor", /`anchor: true`/.test(recipeSection("Uninstall")), true);
   t.check("Done when: the hand check with the bar hidden",
     /bar hidden[\s\S]{0,80}?`ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl\+H selects\s+a field, and `i` goes back to TYPE/.test(recipeSection("Done when")), true);
