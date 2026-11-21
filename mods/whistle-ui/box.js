@@ -1,5 +1,5 @@
 // The hints box's measures and where it goes, pure: hints.js draws by these, ui.js docks the box
-// with hintsBox. The same measures as whistle 1.3.0's hints box.
+// with hintsBox.
 
 // The box's measures (px): a row, the side padding, the title row, the gap between columns, the
 // arrow's width and the gap on each side of it.

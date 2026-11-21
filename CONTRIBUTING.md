@@ -50,12 +50,16 @@ than about half a second, so `run.sh` prints each suite's time; split a suite th
 Then it runs the keynav checker and `scripts/release.sh` end to end.
 
 - **Step scenarios as data**: a scenario is a world, a starting model and steps (a command, a
-  key, a tick or a write result), each with what it expects (effects, model fields, the bar,
-  the hints, settings). `tests/harness.js` runs them through `step`; `tests/worlds.js` has
+  key, a tick, a write result or a failed run), each with what it expects: effects, the whistle
+  state published, shared keys set, events raised, notifications, model fields, the hint items,
+  the config and its problem count, and whether a key was handled. `tests/harness.js` runs them through `step`; `tests/worlds.js` has
   shared layouts.
 - **Spec examples are fixtures**: every fenced block tagged `json example <name>` in
   `docs/contracts/*.md`, `docs/guide.md` and `tests/fixtures/*.md` runs as a scenario
-  (`tests/examples.test.js`), so the docs say exactly what whistle does.
+  (`tests/examples.test.js`), so the docs say exactly what whistle does. Blocks tagged
+  `json ui-example <name>` in `docs/contracts/whistle-ui.md` run through whistle-ui's core
+  (`tests/ui.test.js`): each gives `published` and `world`, and the `bar` and `effects` it
+  expects, or a `command` and the effects it carries out.
 - **Tagged tables**: the guide's default map and own keys, under `<!-- table map -->` and
   `<!-- table keys -->`, are checked both ways against `mappings.json`
   (`tests/guide.test.js`); RECIPE's Integrate keys against Herdr's commands.
@@ -103,7 +107,7 @@ affects. `next` reaches `main` only by a release.
    `mods/whistle/mod.json` agree (a test checks), semver over every public surface: a break in
    a contract, a helper, keys.json's lines or whistle.json is a major version. A whistle.json
    key that stops having an effect, while it still parses and is listed as a config problem,
-   is minor (as `back` in 1.1.0 and `bar` in 1.3.0), marked **Changed** or **Removed**. Raise
+   is minor, marked **Changed** or **Removed**. Raise
    `MIN_HERDR` and `"herdr"` together if whistle now needs a newer Herdr.
 2. **CHANGELOG.md** has the version's entry, `## v<version> (<date>)` with the date of the
    release, grouped by audience: **Upgrading** (the installing agent's steps, if any), **You**,

@@ -117,7 +117,7 @@ function whistleCommand(written, args) {
 
 // What's wrong with keys.json's lines that run this copy's commands (<folder>.<command>), as
 // config problems: a command whistle doesn't answer to, such as a jump key with an unknown verb
-// (ADR 0007). A block the layout lacks is not one (pressed, it flashes). A keys.json that
+// (ADR 0007). A block the layout lacks is not one (pressed, it raises an event). A keys.json that
 // doesn't parse is the claims' problem, not listed here.
 // Also a switch key in global that names another folder's switch command while none names this
 // copy's: Herdr hands an action to the mod its prefix names, so a renamed copy (mods/whistle-2/)

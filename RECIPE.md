@@ -268,9 +268,9 @@ text) takes the label for 2 s, or until the key sequence changes. A command
    point them at their layout's ids.
 6. `herdr-app check mods/whistle` and `herdr-app check mods/whistle-ui`.
 7. **Make sure whistle shows, after asking.** Whistle runs in its block, the **anchor**, sized
-   0 px, which draws nothing; whistle-ui shows its mode in the **bar**, which is only an aid
-   and can be hidden, and its **corner block** (0 px) shows the hints when no bar shows
-   (ADR 0006). The blocks, in this order, along the layout's bottom (on `main`: the last
+   0 px, which draws nothing (ADR 0005); whistle-ui shows its mode in the **bar**, which is
+   only an aid and can be hidden (ADR 0006), and its **corner block** (0 px) shows the hints
+   when no bar shows. The blocks, in this order, along the layout's bottom (on `main`: the last
    children of the `work` column):
 
    ```json whistle-blocks

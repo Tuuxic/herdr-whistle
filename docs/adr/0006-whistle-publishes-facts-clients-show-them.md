@@ -1,7 +1,7 @@
 # Whistle publishes facts; clients show them
 
-If whistle decided its views' text, timing and geometry, its bar couldn't be replaced, and every
-view copy would run whistle only to draw. We decided that whistle publishes facts and takes
+If whistle decided the text, timing and geometry of what it shows, its bar couldn't be replaced,
+and every copy drawing a bar would run whistle only to draw. We decided that whistle publishes facts and takes
 commands, and **clients**, mods such as whistle-ui, decide what to show and how. Whistle draws
 nothing: no bar, no hints box, no dialog, no flash text with a lifetime, no problem marker, no
 docking. It publishes four public keys and takes the settings commands, which write whistle.json
