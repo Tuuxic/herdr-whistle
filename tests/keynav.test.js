@@ -19,7 +19,7 @@ const entry = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 3
 // The same field on a copy of keynav.js still at v 2.
 const entry2 = (keys = {}, label = "Files") => ({ [`keynav.field:${KEY}`]: { v: 2, label, keys } });
 const WORLD = { layout: LAYOUT, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 // Defaults with one mapping on d, over the test defaults' own keys.
 const MAPPED = { configFiles: { defaults: JSON.stringify({ keys: TEST_DEFAULTS.keys, map: { d: ["Next tab", "tab.next"] } }), user: null } };
 // The shipped defaults (mappings.json), no whistle.json.
@@ -229,7 +229,7 @@ const SCENARIOS = [
     name: "Back to TYPE, keynav names no field",
     world: { ...WORLD, shared: entry() },
     steps: [...IN, { key: "ctrl-l" },
-      { command: "whistle", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { setShared: "keynav", value: { v: 3, active: null } }] }],
+      { command: "switch-mode", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { setShared: "keynav", value: { v: 3, active: null } }] }],
   },
   {
     name: "A field another driver left named active is set straight on the first step",

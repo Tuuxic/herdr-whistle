@@ -9,7 +9,7 @@ import { STOCK, term, bar, stock } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
 const IN_STOCK = { layout: STOCK, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const HOLD = { focusBar: true };
 // Blocks whose ids hold colons: "test" and "test:stay" (ADR 0014's example).
 const COLONS = { id: "root", type: "column", children: [
@@ -17,7 +17,7 @@ const COLONS = { id: "root", type: "column", children: [
 // Herdr's stock layout with a hidden "log" terminal under it.
 const WITH_LOG = { ...STOCK, children: [STOCK.children[0], { ...term("log"), hidden: true }, bar] };
 // Herdr's key bindings (keys()): the switch key and a jump key.
-const KEYS = [{ section: "global", keys: "ctrl-space", action: "whistle.whistle" },
+const KEYS = [{ section: "global", keys: "ctrl-space", action: "whistle.switch-mode" },
   { section: "global", keys: "alt-a", action: "whistle.focus:agents" }];
 const keysFile = (keys) => ({ text: json(keys), error: null, at: 0 });
 const files = (map, user = null) => ({ configFiles: { defaults: json({ ...TEST_DEFAULTS, map }), user } });

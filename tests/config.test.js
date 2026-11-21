@@ -14,7 +14,7 @@ const world = ({ map = {}, keys, props, user } = {}) => ({
   configFiles: { defaults: json({ keys: keys ?? TEST_DEFAULTS.keys, map }), user: user === undefined ? null : json(user) },
 });
 // Into WHISTLE, the bar holding the keyboard.
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }];
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 
@@ -24,7 +24,7 @@ const SCENARIOS = [
     world: world({ user: { keys: Object.fromEntries(Object.keys(ACTIONS).map((a) => [a, null])) } }),
     steps: [...IN,
       ...["enter", "i", "j", "ctrl-l", "escape", "backspace"].map((key) => ({ key, handled: false, effects: [], model: { mode: "whistle", problems: [] } })),
-      { command: "whistle", effects: TO_TYPE, model: { mode: "type" } }],
+      { command: "switch-mode", effects: TO_TYPE, model: { mode: "type" } }],
   },
   {
     name: "A mapping in the defaults runs its command",

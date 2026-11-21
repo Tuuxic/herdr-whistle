@@ -11,7 +11,7 @@ import { term, bar } from "./worlds.js";
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}
 `;
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const block = (mod) => ({ id: mod, type: "block", content: { mod } });
 const entry = (map) => ({ v: 1, map });
 // A world in a terminal: the mods shown, their entries, the defaults' map, the layout's whistle
@@ -139,15 +139,15 @@ const SCENARIOS = [
     world: { ...world({ map: PANES }), ...MEASURED },
     steps: [...IN, { key: "w" }, { world: { herdr: "0.0.1" }, tick: 120,
       effects: [{ run: "pane.focus", args: { pane: "p1" } }], hintsWindow: [{ closeOverlay: "hints" }],
-      shared: { "whistle.hints": undefined, "whistle.settings": undefined } }],
+      shared: { "whistle.hintsbox": undefined, "whistle.settings": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } }],
   },
   {
     name: "The hints' and settings' models go in their private shared keys when they change, and only then",
     world: world({ map: PANES }),
     steps: [
-      { tick: 120, shared: { "whistle.hints": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
-      { command: "whistle", shared: { "whistle.hints": undefined, "whistle.settings": undefined } },
-      { world: { barFocused: true }, key: "w", shared: { "whistle.hints": { keys: "w", title: "Panes", exit: null, items: [
+      { tick: 120, shared: { "whistle.hintsbox": null, "whistle.settings": { file: "whistle.json in Herdr's home", problems: [], mods: [], conflicts: [], overrides: [] } } },
+      { command: "switch-mode", shared: { "whistle.hintsbox": undefined, "whistle.settings": undefined } },
+      { world: { barFocused: true }, key: "w", shared: { "whistle.hintsbox": { keys: "w", title: "Panes", exit: null, items: [
         { key: "v", label: "Split right", group: false }, { key: "m", label: "Move", group: true }] } } },
     ],
   },
@@ -159,7 +159,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, shared: { "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } },
       { tick: 120, shared: { "whistle.bar:whistle": undefined } },
-      { command: "whistle", shared: { "whistle.bar:whistle": { badge: "WHISTLE", marker: null,
+      { command: "switch-mode", shared: { "whistle.bar:whistle": { badge: "WHISTLE", marker: null,
         where: { mode: "whistle", field: "main", recent: ["main"], pane: "p1" } } } },
     ],
   },
@@ -318,7 +318,7 @@ export default suite("views", (t) => {
   const typing = barShared(w, [{ tick: true }]);
   t.check("In TYPE, the bar's label follows focus with no step between",
     [core.drawnBar(typing, w).label, core.drawnBar(typing, { ...w, focused: null }).label], ["Terminal", ""]);
-  const whistling = barShared(w, [{ tick: true }, { command: "whistle" }]);
+  const whistling = barShared(w, [{ tick: true }, { command: "switch-mode" }]);
   t.check("In WHISTLE, the bar's label follows the terminal's title with no step between",
     core.drawnBar(whistling, { ...w, panes: [{ pane: "p1", title: "vim" }] }).label, "Terminal · vim");
   t.check("The bar draws a flash as the core set it", core.drawnBar({ badge: "WHISTLE", label: "x: not mapped", marker: null }, w).label, "x: not mapped");

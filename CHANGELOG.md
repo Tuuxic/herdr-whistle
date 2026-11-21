@@ -4,6 +4,59 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
+## v2.0.0 (unreleased)
+
+### Upgrading
+
+1. **Renamed commands (breaking)**: `whistle.whistle` is now `whistle.switch-mode`, and
+   `whistle.type` is now `whistle.mode:type`. The old names are gone: whistle treats them as
+   unknown commands, lists each keys.json line that still names one as a config problem, and
+   does nothing when one runs. In the person's keys.json, replace `whistle.whistle` with
+   `whistle.switch-mode` (in `global`, by default on `ctrl-space`) and `whistle.type` with
+   `whistle.mode:type` (in `mod:whistle`, by default on `ctrl-space`), keeping their keys. Do
+   the same in any mapping (whistle.json, a layout's whistle block) that runs them.
+
+### You
+
+- **Changed**: the switch key's command is `whistle.switch-mode`, and the key that leaves
+  WHISTLE runs `whistle.mode:type` (see Upgrading). The keys stay the same.
+- **New**: `whistle.mode:whistle` goes to WHISTLE (and stays there), for a key that should only
+  ever enter it.
+
+### Layout authors
+
+- **Changed**: a mapping that runs `whistle.whistle` or `whistle.type` is a config problem; run
+  `whistle.switch-mode` or `whistle.mode:type` instead.
+
+### Mod authors
+
+- **Breaking**: commands are spelled `whistle.<command>[:<argument>]`, with at most one argument
+  whose kind each command declares (none, plain, or JSON where it needs several values).
+  `whistle.whistle` became `whistle.switch-mode` and `whistle.type` became `whistle.mode:type`;
+  `whistle.mode:whistle` is new. A command whistle doesn't know, or one with the wrong argument,
+  raises a `command-failed` event ([commands.md](docs/contracts/commands.md#spelling)). From
+  Windows PowerShell 5.1, pass a JSON argument with `herdr-app do --% "…"`.
+- **New**: three public keys, each with its contract page and `whistle.js` reader:
+  `whistle.hints`, the hint items whether or not whistle's hints box is on
+  ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the last 8 events,
+  each with a stable kind, its data and a default English text, numbered by `seq`
+  ([events.md](docs/contracts/events.md), `readEvents(last)`); `whistle.config`, what the
+  settings show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy
+  writes them, and only when they change.
+- **New**: the whistle state's optional `inert` field, `{ problem, fix }`. A copy standing
+  aside on an old Herdr, with no other copy running, now writes the state with it (it wrote
+  nothing before) ([state.md](docs/contracts/state.md), rule 7). `readState` gives `inert`,
+  `null` while whistle runs.
+- **New**: the settings commands, `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and
+  `whistle.keep-mapping:{"mod":"<mod>","keys":[…]}`: whistle writes whistle.json itself
+  ([commands.md](docs/contracts/commands.md#settings-commands)).
+- The private key that held the hints box's view model under the name `whistle.hints` moved;
+  `whistle.hints` is now the public key above.
+
+### Keynav authors
+
+- Nothing changes for you.
+
 ## v1.3.0 (2026-11-21)
 
 ### Upgrading

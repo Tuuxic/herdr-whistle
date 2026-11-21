@@ -22,14 +22,18 @@ export function problems(model) {
 const seqLabel = (seq) => seq.map(keyLabel).join(" ");
 
 // The hints' model in WHISTLE while hints are on (the layout's whistle block, whistle.json),
-// else null. While a key sequence has reached a group, its keys:
+// else null: hintItems.
+export const hints = (model, world) => (model.config?.hints === false ? null : hintItems(model, world));
+
+// The hint items in WHISTLE, whether or not hints are on (the public whistle.hints, without its
+// v), else null. While a key sequence has reached a group, its keys:
 // { keys: the sequence so far ("w m"), title: the group's name, items: [{ key, label, group }]
 //   in the group's order, exit: what ends it ("Esc cancels") | null }.
 // Outside a sequence, the selected keynav field's declared keys (ADR 0009), if it has any that
 // count: { keys: "", title: the field's label, items: [{ key, label: the field's, group: false }],
 // exit: null }.
-export function hints(model, world) {
-  if (model.mode !== "whistle" || model.config?.hints === false) return null;
+export function hintItems(model, world) {
+  if (model.mode !== "whistle") return null;
   if (!model.sequence?.length) return declaredHints(model, world);
   const group = groupAt(model.config?.map, model.sequence);
   if (!group) return null;
@@ -118,7 +122,7 @@ const names = (mods) => (mods.length > 1 ? `${mods.slice(0, -1).join(", ")} and 
 const WHO = { [USER]: "you", [LAYOUT]: "the layout" };
 
 // What a mod offers at a key sequence, as it wrote it (its keys in any spelling), or undefined.
-function offered(world, mod, seq) {
+export function offered(world, mod, seq) {
   let map = world.modMappings?.[mod]?.map;
   let v;
   for (const k of seq) {

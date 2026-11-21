@@ -11,7 +11,7 @@ import texts from "./texts.js";
 
 const SHIPPED = texts["mods/whistle/mappings.json"];
 const world = { ...IN_TERMINAL, configFiles: { defaults: SHIPPED, user: null } };
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const FOCUS = { run: "pane.focus", args: { pane: "p1" } };
 const HOLD = { focusBar: true };
 
@@ -72,7 +72,7 @@ export default suite("shipped defaults", (t) => {
   try { keys = JSON.parse(texts["keys.json"]); } catch (e) { t.fail("keys.json parses", String(e?.message ?? e)); }
   t.check("the shipped keys.json binds ctrl-space, the switch key, the jump keys alt-a and alt-s (ids from Herdr's main layout), and alt-, for whistle's settings",
     keys && { global: keys.global, terminal: keys.terminal ?? null },
-    { global: { "ctrl-space": "whistle.whistle", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces", "alt-,": "whistle.settings" }, terminal: null });
+    { global: { "ctrl-space": "whistle.switch-mode", "alt-a": "whistle.focus:agents", "alt-s": "whistle.focus:spaces", "alt-,": "whistle.settings" }, terminal: null });
   t.check("the shipped keys.json has no config problem", keysProblems(texts["keys.json"], "whistle"), []);
 
   for (const sc of SCENARIOS) t.scenario(sc, core);

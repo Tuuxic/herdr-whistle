@@ -24,7 +24,7 @@ const world = ({ mods = ["alpha", "beta"], entries = {}, map = {}, keys, props, 
   configFiles: { defaults: json({ keys: keys ?? TEST_DEFAULTS.keys, map }), user: user === undefined ? null : json(user) },
 });
 const entry = (map) => ({ v: 1, map });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }];
 
 const SCENARIOS = [
@@ -72,7 +72,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, bar: { label: "g: 2 mods want it, see settings" } },
       { tick: 120, bar: { label: "g: 2 mods want it, see settings" } },
-      { command: "whistle", bar: { label: "Terminal · zsh" } },
+      { command: "switch-mode", bar: { label: "Terminal · zsh" } },
       { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
     ],
   },
@@ -258,7 +258,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, bar: { label: "alpha's mappings have a problem, see settings", marker: null } },
       { tick: 120, bar: { label: "alpha's mappings have a problem, see settings" } },
-      { command: "whistle", bar: { label: "Terminal · zsh" } },
+      { command: "switch-mode", bar: { label: "Terminal · zsh" } },
       { world: { barFocused: true }, tick: 120, bar: { label: "Terminal · zsh" } },
     ],
   },
@@ -269,7 +269,7 @@ const SCENARIOS = [
       { tick: 120, bar: { label: "Terminal" } },
       { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"], x: ["X", 5] }) } }, tick: 120,
         bar: { label: "alpha's mappings have a problem, see settings" } },
-      { command: "whistle" },
+      { command: "switch-mode" },
       { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, bar: { label: "Terminal · zsh" } },
     ],
   },

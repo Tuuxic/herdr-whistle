@@ -10,7 +10,7 @@ const SAMPLE = [
   "# A spec",
   "",
   `${FENCE}json example Ctrl+Space enters WHISTLE`,
-  '{ "steps": [{ "command": "whistle" }] }',
+  '{ "steps": [{ "command": "switch-mode" }] }',
   FENCE,
   "",
   `${FENCE}json`,
@@ -30,7 +30,7 @@ export default suite("spec examples", (t) => {
   const found = examples(SAMPLE);
   t.check("the reader finds only `json example` blocks", found.map((x) => x.name), ["Ctrl+Space enters WHISTLE", "Broken"]);
   t.check("the reader names the scenario by its tag", found[0].scenario,
-    { name: "Ctrl+Space enters WHISTLE", steps: [{ command: "whistle" }] });
+    { name: "Ctrl+Space enters WHISTLE", steps: [{ command: "switch-mode" }] });
   t.check("a block that doesn't parse comes back with an error", typeof found[1].error, "string");
 
   t.check("the fixture file has an example", examples(texts["tests/fixtures/example.md"] ?? "").length > 0, true);

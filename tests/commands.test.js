@@ -1,4 +1,4 @@
-// The stable command set (docs/contracts/commands.md): whistle.whistle and whistle.type (modes
+// The stable command set (docs/contracts/commands.md): whistle.switch-mode and whistle.mode:type (modes
 // suite), whistle.on, whistle.off and whistle.settings, and the verbs whistle.field,
 // whistle.focus and whistle.toggle run by mappings (jump keys: the jump keys suite).
 
@@ -9,7 +9,7 @@ import { IN_TERMINAL, term, bar } from "./worlds.js";
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
 const files = (u, map = {}) => ({ configFiles: { defaults: json({ ...TEST_DEFAULTS, map }), user: u } });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 const TO_TYPE = { run: "pane.focus", args: { pane: "p1" } };
 const SETTINGS = { openOverlay: "settings", spec: { mod: "whistle", kind: "dialog", width: 640, height: 0.8, props: { part: "settings" } } };
 

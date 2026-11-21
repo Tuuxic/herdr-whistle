@@ -73,7 +73,7 @@ const SCENARIOS = [
   {
     name: "Entering WHISTLE goes to the terminal, not a stock field",
     world: IN_STOCK,
-    steps: [{ command: "whistle", model: { mode: "whistle", field: "main" } }],
+    steps: [{ command: "switch-mode", model: { mode: "whistle", field: "main" } }],
   },
   {
     name: "A mapping on a stock field runs as usual, with no pane focused first",

@@ -6,9 +6,9 @@ import { suite, TEST_DEFAULTS, DEFAULT_WORLD } from "./harness.js";
 import * as core from "./step.js";
 import { IN_TERMINAL, withProps, term, bar } from "./worlds.js";
 
-const SWITCH = [{ section: "global", keys: "ctrl-space", action: "whistle.whistle" }];
+const SWITCH = [{ section: "global", keys: "ctrl-space", action: "whistle.switch-mode" }];
 const inTerminal = (props, extra = {}) => ({ ...IN_TERMINAL, layout: withProps(props), keys: SWITCH, ...extra });
-const IN = [{ command: "whistle" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
 
 const user = (v) => ({ configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: JSON.stringify(v) } });
 
@@ -31,7 +31,7 @@ const SCENARIOS = [
   {
     name: "enabled: false sends the switch key to the terminal",
     world: inTerminal({ enabled: false }),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }], model: { mode: "type" } }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }], model: { mode: "type" } }],
   },
   {
     name: "Switched off, the bar shows no mode badge",
@@ -41,12 +41,12 @@ const SCENARIOS = [
   {
     name: "whistle.json's enabled goes over the layout's",
     world: inTerminal({ enabled: false }, user({ enabled: true })),
-    steps: [{ command: "whistle", effects: [{ focusBar: true }], model: { mode: "whistle" } }],
+    steps: [{ command: "switch-mode", effects: [{ focusBar: true }], model: { mode: "whistle" } }],
   },
   {
     name: "whistle.json can switch whistle off in a layout that has it on",
     world: inTerminal({ enabled: true }, user({ enabled: false })),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }] }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }] }],
   },
   {
     name: "Switched off while in WHISTLE, whistle goes back to TYPE",
@@ -63,39 +63,39 @@ const SCENARIOS = [
     name: "A nav override picks the field in that direction",
     world: onA({ nav: { a: { down: "b" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle", model: { field: "a" } }, { key: "ctrl-j", model: { field: "b" } }],
+    steps: [{ command: "switch-mode", model: { field: "a" } }, { key: "ctrl-j", model: { field: "b" } }],
   },
   {
     name: "Directions a nav override leaves out follow the layout",
     world: onA({ nav: { a: { down: "b" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle" }, { key: "ctrl-l", model: { field: "b" } }, { key: "ctrl-j", model: { field: "c" } }],
+    steps: [{ command: "switch-mode" }, { key: "ctrl-l", model: { field: "b" } }, { key: "ctrl-j", model: { field: "c" } }],
   },
   {
     name: "A nav override on a group counts for the fields inside it",
     world: onA({ nav: { top: { up: "c" } } }),
     model: { recent: ["b"] },
-    steps: [{ command: "whistle", model: { field: "b" } }, { key: "ctrl-k", model: { field: "c" } }],
+    steps: [{ command: "switch-mode", model: { field: "b" } }, { key: "ctrl-k", model: { field: "c" } }],
   },
   {
     name: "A nav override to a block with no field doesn't move",
     world: onA({ nav: { a: { down: "bar" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle" }, { key: "ctrl-j", model: { field: "a" } }],
+    steps: [{ command: "switch-mode" }, { key: "ctrl-j", model: { field: "a" } }],
   },
 
   // A bad prop is skipped and listed; the rest of the block still counts.
   {
     name: "A bad enabled prop is skipped and listed, and whistle stays on",
     world: inTerminal({ enabled: "no" }),
-    steps: [{ command: "whistle", effects: [{ focusBar: true }],
+    steps: [{ command: "switch-mode", effects: [{ focusBar: true }],
       model: { problems: [{ source: "layout", detail: "enabled should be true or false" }] }, bar: { marker: "⚠ 1" } }],
   },
   {
     name: "A bad nav entry is skipped and listed, the good ones still count",
     world: onA({ nav: { a: { down: "b", below: "c", right: 3, up: "nowhere" }, ghost: { down: "c" } } }),
     model: { recent: ["a"] },
-    steps: [{ command: "whistle", model: { problems: [
+    steps: [{ command: "switch-mode", model: { problems: [
       { source: "layout", detail: "nav › a › below: unknown direction (left, down, up, right)" },
       { source: "layout", detail: "nav › a › right: should be a block id" },
       { source: "layout", detail: "nav › a › up: no block nowhere in this layout" },
@@ -136,7 +136,7 @@ const SCENARIOS = [
   {
     name: "A bad enabled in whistle.json is listed and the layout's counts",
     world: inTerminal({ enabled: false }, user({ enabled: "yes" })),
-    steps: [{ command: "whistle", effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
+    steps: [{ command: "switch-mode", effects: [{ typeKey: "ctrl-space", terminal: "t1" }],
       model: { problems: [{ source: "whistle.json", detail: "enabled should be true or false" }] } }],
   },
 
@@ -160,7 +160,7 @@ const SCENARIOS = [
   {
     name: "A hidden bar copy rests: it claims nothing, publishes nothing and sets no views, the bar's included",
     world: { ...spots({}), props: { bar: "Top" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
-    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined } }],
+    steps: [{ tick: 120, effects: [], published: null, shared: { "whistle.settings": undefined, "whistle.hintsbox": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined, "whistle.bar:whistle": undefined } }],
   },
   {
     name: "The shown bar copy runs: it claims its keys and publishes",
@@ -186,7 +186,7 @@ const SCENARIOS = [
     steps: [{ tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false } },
       { world: { layout: { ...TWO_SPOTS, children: [spot("top-bar", "Top", false), term("main"), spot("bottom-bar", "Bottom", true)] } }, tick: 120, published: null },
       { world: { layout: TWO_SPOTS }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false },
-        shared: { "whistle.hints": null, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
+        shared: { "whistle.hintsbox": null, "whistle.hints": null, "whistle.events": { v: 1, events: [] }, "whistle.bar:whistle": { badge: "TYPE", marker: null, where: { mode: "type", field: null, recent: [], pane: null } } } }],
   },
   {
     name: "A bar copy shown again stops resting",
@@ -201,7 +201,7 @@ const SCENARIOS = [
     name: "A bar's copy in an anchored layout sets no shared key, the bar's and the views' included",
     world: { ...ANCHORED, props: { bar: "Bottom" }, platform: "linux", keysFile: { text: "{}", error: null, at: 0 } },
     steps: [{ tick: 120, effects: [], published: null, hintsWindow: [],
-      shared: { "whistle.settings": undefined, "whistle.hints": undefined, "whistle.bar:whistle": undefined, keynav: undefined, "whistle.copies": undefined } }],
+      shared: { "whistle.settings": undefined, "whistle.hintsbox": undefined, "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined, "whistle.bar:whistle": undefined, keynav: undefined, "whistle.copies": undefined } }],
   },
 ];
 
