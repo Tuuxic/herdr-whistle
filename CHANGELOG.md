@@ -4,7 +4,7 @@ Whistle's releases, newest first ([Keep a Changelog](https://keepachangelog.com)
 every public surface: ADR 0012). Agents relay these entries when they update whistle
 (RECIPE.md, Update), and follow each entry's **Upgrading** note.
 
-## v1.2.0 (unreleased)
+## v1.2.0 (2026-11-21)
 
 ### Upgrading
 
@@ -51,6 +51,17 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   (`hintsAlignRight`, `hintsAlignBorder`, `hintsGap`), which on the anchor are skipped and
   listed. Layouts without an anchor read them all from the bar, as before
   (docs/contracts/layout-block.md, rule 14).
+
+### Mod authors
+
+- The whistle state (docs/contracts/state.md) is published whether or not a bar shows: in a
+  layout with an anchor, the anchor publishes it, so whistle-aware behaviour no longer depends
+  on the bar. Nothing in the state's shape changes.
+
+### Keynav authors
+
+- Whistle drives your field the same with every bar hidden: in a layout with an anchor, the
+  anchor sends the requests and selects fields. Nothing in the keynav contract changes.
 
 ## v1.1.0 (2026-11-20)
 
