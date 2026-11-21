@@ -53,7 +53,7 @@ Each event:
 | `key-unmapped` | `keys`: the key names of the sequence, the last one unmapped | sequence, problem | In a key sequence, a key the group doesn't map. |
 | `field-selected` | `block`: the field's block id | field | Another field is selected in WHISTLE (entering WHISTLE included). |
 | `cant-select` | `block`, `reason`: `"missing"` (no such block in the shown layout), `"hidden"` (it doesn't show) or `"no-field"` (no field in it) | field, problem | `whistle.field:<block>`, or a jump key to it, can't select it. |
-| `command-ran` | `command`: the command's name | command | A mapping ran its command for you: Herdr's (`pane.split`) or a mod's. Not whistle's own verbs (they show as `field-selected` or a problem), nor what whistle runs for itself (`layout.show` while revealing a block, keynav moves, writing keys.json). |
+| `command-ran` | `command`: the command's name | command | A mapping ran its command for you: Herdr's (`pane.split`) or a mod's, or you pressed a key a keynav field declares (`tree.keynav-key-d`). Not whistle's own verbs (they show as `field-selected` or a problem), nor what whistle runs for itself (`layout.show` while revealing a block, keynav moves, writing keys.json). |
 | `command-failed` | `command`, `error` | command, problem | A command whistle ran failed, a command whistle got isn't one it knows (or has the wrong argument: [commands.md](commands.md#spelling)), or a `keep-mapping` found nothing to keep ([commands.md](commands.md#settings-commands)). |
 | `verb-failed` | `block`, `reason`: `"missing"` | command, problem | `whistle.focus:` or `whistle.toggle:` on a block the shown layout lacks. |
 | `conflict-new` | `keys`: the key sequence, `mods`: the mods that want it | config, problem | A mapping conflict that wasn't there before ([mod-mappings.md](mod-mappings.md)). |
@@ -249,7 +249,7 @@ ever publishes is no change.
 A key that opens a group outside a key sequence raises `sequence-started`. The sequence ends by
 a mapping that ran (`by: "ran"`), a key it doesn't map (`"unmapped"`, after `key-unmapped`), or
 otherwise (`"left"`: cancelled, or a jump key). A mapping that runs Herdr's or a mod's command
-raises `command-ran`.
+raises `command-ran`, and so does a key a keynav field declares, pressed on that field.
 
 ```json example A mapping ends the sequence and raises command-ran
 {

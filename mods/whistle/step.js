@@ -237,8 +237,8 @@ const takesKeyboard = (name) => /^(mod\.open|app\.)/.test(name) || /rename/.test
 // A mapping pressed: its command (pane and terminal commands on the terminal's selected pane),
 // then the anchor holds the keyboard. A mapping that ends in TYPE goes to TYPE instead, and holds
 // the keyboard for the terminal (modeTick): the command may have made one, which Herdr focuses.
-// A mapping's own command raises command-ran (announce false: a keynav move or declared key,
-// which whistle sends for itself).
+// A mapping's own command raises command-ran (announce false: a keynav move, which whistle sends
+// for itself).
 function runMapping(model, world, e, announce = true) {
   if (e.run.startsWith("whistle.")) return whistleMapping(model, world, e.run.slice(8), e.args?.block);
   if (announce) model = raised(model, { kind: "command-ran", command: e.run, text: `ran ${e.run}` });
@@ -252,8 +252,9 @@ function runMapping(model, world, e, announce = true) {
 }
 
 // A move or a declared key sent to a keynav field as <mod>.keynav-<what>; the anchor holds the
-// keyboard, as after a mapping.
-const toField = (model, world, field, what) => runMapping(model, world, { run: `${field.mod}.keynav-${what}`, args: {} }, false);
+// keyboard, as after a mapping. A declared key is the mod's command the person pressed, so it
+// raises command-ran; a move is whistle's own and doesn't.
+const toField = (model, world, field, what) => runMapping(model, world, { run: `${field.mod}.keynav-${what}`, args: {} }, what.startsWith("key-"));
 
 // How long whistle.focus waits for a block it showed to show a field (ms).
 export const WAIT_MS = 1500;

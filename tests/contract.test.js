@@ -336,6 +336,14 @@ const SCENARIOS = [
     steps: [...IN, { key: "ctrl-l", raised: [{ kind: "field-selected", block: "tree" }] },
       { key: "l", effects: [{ run: "tree.keynav-right", args: {} }, { focusAnchor: true }], raised: [] }],
   },
+  {
+    name: "A keynav field's declared key, pressed, raises command-ran",
+    world: { ...world({ layout: { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree" } }] }, anchor] } }),
+      shared: { "keynav.field:tree {}": { v: 3, label: "Tree", keys: { d: "Delete" } } } },
+    steps: [...IN, { key: "ctrl-l" },
+      { key: "d", effects: [{ run: "tree.keynav-key-d", args: {} }, { focusAnchor: true }],
+        raised: [{ kind: "command-ran", groups: ["command"], command: "tree.keynav-key-d", text: "ran tree.keynav-key-d" }] }],
+  },
 ];
 
 const EV = (seq) => ({ seq, kind: "key-unmapped", groups: ["sequence", "problem"], keys: ["x"], text: "x is not mapped" });
