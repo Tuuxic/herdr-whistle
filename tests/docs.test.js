@@ -22,6 +22,7 @@ export const DOCS = [
   "docs/contracts/keynav.md", "docs/contracts/mod-mappings.md", "docs/contracts/state.md",
   "docs/contracts/layout-block.md", "docs/contracts/commands.md",
   "docs/contracts/hints.md", "docs/contracts/events.md", "docs/contracts/config.md",
+  "docs/contracts/whistle-ui.md",
 ];
 
 const unfenced = (text) => String(text).replace(/\r\n/g, "\n").replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, "");
@@ -80,13 +81,14 @@ export default suite("docs", (t) => {
     }
   }
 
-  // docs/authors.md routes every author to the eight contracts, the helpers they copy and the
+  // docs/authors.md routes every author to the nine contracts, the helpers they copy and the
   // keynav checker (issue #30, item 2).
   const routed = new Set(links(texts["docs/authors.md"] ?? "").map((l) => resolve("docs/authors.md", l.split("#")[0])));
   for (const to of [
     "docs/contracts/keynav.md", "docs/contracts/mod-mappings.md", "docs/contracts/state.md",
     "docs/contracts/layout-block.md", "docs/contracts/commands.md",
     "docs/contracts/hints.md", "docs/contracts/events.md", "docs/contracts/config.md",
+    "docs/contracts/whistle-ui.md", "mods/whistle-ui",
     "mods/whistle/keynav.js", "mods/whistle/whistle.js", "kit/keynav-checker",
   ]) t.check(`docs/authors.md links ${to}`, routed.has(to), true);
 

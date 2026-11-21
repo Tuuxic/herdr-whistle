@@ -31,6 +31,12 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   WHISTLE runs `whistle.mode:type` (see Upgrading). The keys stay the same.
 - **New**: `whistle.mode:whistle` goes to WHISTLE (and stays there), for a key that should only
   ever enter it.
+- **New**: whistle-ui, a separate mod shipped with whistle: whistle's bar, hints box and
+  settings dialog, drawn from what whistle publishes. Its bar shows the mode, where the keyboard
+  is, a `⚠ n` count of config problems, "Whistle off", why whistle stands aside, and a 2 s flash
+  for each event. Its hints box docks on the first bar that shows, or sits at the window's bottom
+  right with no bar shown. `alt-,` runs `whistle-ui.settings`, which goes back to TYPE and opens
+  its settings dialog ([whistle-ui.md](docs/contracts/whistle-ui.md)).
 - **Changed**: `open` in your whistle.json's `keys` is no longer read as `pick`; it's an
   unknown action, listed in settings. Rename it to `pick`.
 - **Changed**: whistle.json's `bar` is no longer listed in settings; whistle ignores it.
@@ -41,6 +47,9 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 - **Changed**: a mapping that runs `whistle.whistle` or `whistle.type` is a config problem; run
   `whistle.switch-mode` or `whistle.mode:type` instead.
+- **New**: whistle-ui's blocks: bars, and a 0 px corner block (`corner: true`) that shows the
+  hints box when no bar shows. Props `hints`, `hintsAlignRight`, `hintsAlignBorder` and
+  `hintsGap` ([whistle-ui.md](docs/contracts/whistle-ui.md#blocks-and-props)).
 - **Changed**: `open` in the whistle block's `keys` is an unknown action; use `pick`.
 
 ### Mod authors
@@ -65,6 +74,8 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 - **New**: the settings commands, `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and
   `whistle.keep-mapping:{"mod":"<mod>","keys":[…]}`: whistle writes whistle.json itself
   ([commands.md](docs/contracts/commands.md#settings-commands)).
+- **New**: whistle-ui (`mods/whistle-ui/`) is a reference client: it uses only the public keys
+  and commands, and any part of it can be replaced ([whistle-ui.md](docs/contracts/whistle-ui.md#replacing-a-part)).
 - The private key that held the hints box's view model under the name `whistle.hints` moved;
   `whistle.hints` is now the public key above.
 
