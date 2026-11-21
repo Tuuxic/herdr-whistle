@@ -282,7 +282,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    The shown layout is `"layout"` in `herdr-app status`. If it already has a whistle block
    with `anchor: true`, go on. If it has whistle's bar but no anchor, add only the anchor, just
    before the bar, and leave the bar where it is (the person's own layout: in place, telling
-   them; Herdr's own: as below). Otherwise whistle won't show: on Herdr's own layouts
+   them; Herdr's own: as below). Otherwise whistle won't run: on Herdr's own layouts
    (read-only; `main` for most new users) Herdr never places a new mod's block, not after the
    welcome and not after a restart.
 
@@ -293,17 +293,17 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    order, that has it (the one whistle read it from), and take them off every bar; `bar` and
    the `hints*` place props stay on the bars. Whistle then works exactly as before.
    - **Herdr's own layout** (in `installed.json` as `layout:<name>`): ask, for example "Herdr's
-     standard window layout can't show whistle's bar by itself. I can make your own copy of
-     the layout with the bar at the bottom and switch to it; everything else stays as it is.
+     standard window layout can't run whistle by itself. I can make your own copy of the
+     layout with whistle's bar at the bottom and switch to it; everything else stays as it is.
      Do that?" Yes: `herdr-app do layout.clone '{"name":"<name>","as":"<name>-whistle"}'`
      (the same copy [Integrate](#integrate) uses; it switches to it), add both blocks, and
      write the [record](#the-record) with the layout's row.
    - **The person's own layout**: ask before adding both blocks to it, in place.
    - With a yes, the rest is yours: where exactly the block goes, a taken name, a layout that
      doesn't take the edit. Check that the bar shows (`herdr-app status` lists no errors;
-     `herdr-app shot` shows the TYPE badge). With a no, whistle is installed but its bar won't
-     show: say so, and that you can add it whenever they say yes, or they can add it
-     themselves.
+     `herdr-app shot` shows the TYPE badge). With a no, whistle is installed but doesn't run
+     (Ctrl+Space types into the terminal): say so, and that you can set it up whenever they
+     say yes, or they can add the two blocks above themselves.
 8. Offer [Integrate](#integrate), by its result: "Right now whistle moves you between the
    lists, but moving inside the spaces or agents list shows what you land on, and the files
    and changes panel can't be reached. I can make copies of Herdr's sidebar lists where the
