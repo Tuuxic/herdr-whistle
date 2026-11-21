@@ -92,7 +92,7 @@ export default class Whistle extends View {
     const tree = layout();
     return {
       shared: this.keynavShared(tree),
-      now: Date.now(), layout: tree, focused: focused(), panes: panes(), barFocused: this.handle.is_focused(),
+      now: Date.now(), layout: tree, focused: focused(), panes: panes(), anchorFocused: this.handle.is_focused(),
       keys: call(() => herdr.keys()) ?? [], herdr: call(() => herdr.updates().app.version),
       folder: FOLDER, copies: shared(COPIES) ?? {},
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
@@ -119,7 +119,7 @@ export default class Whistle extends View {
       // raises command-failed for { ran, ok: false }.
       try { run(e.run, e.args ?? {}); } catch (err) { this.failed.push({ ran: e.run, ok: false, error: String(err?.message ?? err) }); }
     }
-    else if (e.focusBar) this.handle.focus();
+    else if (e.focusAnchor) this.handle.focus();
     else if ("setShared" in e) setShared(e.setShared, e.value);
     else if ("write" in e) {
       // The outcome goes back with the file read again, so the core sees what it wrote.

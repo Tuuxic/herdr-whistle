@@ -18,11 +18,12 @@ In `mods/whistle/` ([ADR 0011](docs/adr/0011-pure-step-core-behind-one-effects-s
   input, world) -> { model, effects, handled }`), with `fields.js` (fields from the layout:
   the terminal, stock fields, keynav fields), `config.js` (the config layers, own keys apart
   from mappings), `keymap.js` (what a key does), `claims.js` (claimed keys in keys.json),
-  `block.js` (the layout's whistle blocks: the anchor and the bars), `inert.js`,
-  `keynames.js`, `views.js` (what the bar, hints and settings show) and `version.js`.
+  `block.js` (the layout's whistle blocks, each the anchor), `inert.js`, `keynames.js`,
+  `facts.js` (the hint items and config whistle publishes) and `version.js`. Whistle decides no
+  looks ([ADR 0020](docs/adr/0020-whistle-publishes-facts-clients-show-them.md)).
 - **The shell**, `main.js`: reads Herdr into `world`, feeds `step` its inputs (commands, keys,
-  ticks, write results) and carries out the effects. `bar.js`, `hints.js` and `settings.js`
-  draw; `anchor.js` is the anchor's block, which draws nothing and holds the keyboard.
+  ticks, write results) and carries out the effects. `anchor.js` is the anchor's block, which
+  draws nothing and holds the keyboard.
 - **The helpers other mods copy**, `keynav.js` and `whistle.js`: whistle itself imports
   neither.
 - `mappings.json`: the default map.

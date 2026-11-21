@@ -7,9 +7,9 @@ import * as core from "./step.js";
 import { STOCK } from "./worlds.js";
 
 const HOLD = 600;
-const IN_STOCK = { layout: STOCK, barFocused: true, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
+const IN_STOCK = { layout: STOCK, anchorFocused: true, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
 const on = (field) => ({ mode: "whistle", field, recent: [field, "main"], pane: "p1" });
-const ran = (command) => [{ run: command, args: {} }, { focusBar: true }];
+const ran = (command) => [{ run: command, args: {} }, { focusAnchor: true }];
 
 // A move key on a stock field runs Herdr's command and holds the keyboard.
 const move = (field, key, command) => ({

@@ -73,7 +73,7 @@ const SCENARIOS = [
     name: "On a Herdr older than the minimum, keys and a click on the anchor don't enter WHISTLE",
     world: OLD,
     steps: [
-      { world: { barFocused: true }, tick: 120, model: { mode: "type" }, effects: [] },
+      { world: { anchorFocused: true }, tick: 120, model: { mode: "type" }, effects: [] },
       { key: "ctrl-l", handled: false, effects: [], model: { mode: "type" } },
     ],
   },
@@ -142,7 +142,7 @@ const SCENARIOS = [
     world: { ...IN_TERMINAL, keys: KEYS },
     steps: [
       { command: "switch-mode", model: { mode: "whistle" } },
-      { world: { barFocused: true, herdr: "0.1.0" }, tick: 120, model: { mode: "type" },
+      { world: { anchorFocused: true, herdr: "0.1.0" }, tick: 120, model: { mode: "type" },
         effects: [{ run: "pane.focus", args: { pane: "p1" } }] },
     ],
   },

@@ -53,7 +53,7 @@ step that changes nothing writes nothing.
   "steps": [
     { "tick": 120, "shared": { "whistle.hints": null } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": "Esc cancels",
+    { "world": { "anchorFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": "Esc cancels",
       "items": [{ "key": "v", "label": "Split right", "group": false }, { "key": "m", "label": "Move", "group": true }] } } },
     { "tick": 120, "unset": ["whistle.hints"] },
     { "key": "v", "shared": { "whistle.hints": null } }
@@ -81,34 +81,34 @@ selected and no sequence is under way: `keys` is `""` and `title` the field's la
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "ctrl-l", "shared": { "whistle.hints": { "v": 1, "keys": "", "title": "Tree", "exit": null,
+    { "world": { "anchorFocused": true }, "key": "ctrl-l", "shared": { "whistle.hints": { "v": 1, "keys": "", "title": "Tree", "exit": null,
       "items": [{ "key": "r", "label": "Rename", "group": false }] } } }
   ]
 }
 ```
 
-### 4. The hints don't depend on whether whistle's hints box is on
+### 4. The hints don't depend on whether a client shows them
 
-The hints are what *could* be shown. Switching whistle's own hints box off (`hints: false` in
-the layout's whistle block or whistle.json) changes nothing here: whether to show them is your
-call.
+The hints are what *could* be shown. Whistle draws no hints box: whether to show them is a
+client's call (whistle-ui's `hints` prop, [whistle-ui.md](whistle-ui.md)), and a `hints` key in
+whistle.json changes nothing here.
 
-```json example The hints are written with whistle's own hints box switched off
+```json example The hints are written whatever whistle.json says about hints
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "hints": false } } }
+      { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "configFiles": {
       "defaults": "{ \"keys\": { \"type\": [\"i\"] }, \"map\": { \"w\": { \"name\": \"Panes\", \"map\": { \"v\": [\"Split right\", \"pane.split\"] } } } }",
-      "user": null
+      "user": "{ \"hints\": false }"
     }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": null,
+    { "world": { "anchorFocused": true }, "key": "w", "shared": { "whistle.hints": { "v": 1, "keys": "w", "title": "Panes", "exit": null,
       "items": [{ "key": "v", "label": "Split right", "group": false }] } } }
   ]
 }
@@ -117,7 +117,7 @@ call.
 ### 5. Only the running whistle writes it
 
 A copy of whistle that stands aside writes nothing here (see the state's
-[rule 7](state.md#7-only-the-running-whistle-writes-it-with-none-running-inert-says-why)).
+[rule 8](state.md#8-only-the-running-whistle-writes-it-with-none-running-inert-says-why)).
 
 ```json example A copy standing aside writes no hints
 {
@@ -130,7 +130,7 @@ A copy of whistle that stands aside writes nothing here (see the state's
 
 ### 6. `v` goes up only on a breaking change
 
-As for the [whistle state](state.md#8-v-goes-up-only-on-a-breaking-change). `whistle.js`
+As for the [whistle state](state.md#9-v-goes-up-only-on-a-breaking-change). `whistle.js`
 reads `v: 1` only, and gives `null` for any other `v`.
 
 ## History

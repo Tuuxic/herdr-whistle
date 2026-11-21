@@ -1,6 +1,6 @@
 # Whistle config
 
-For mod authors who want to show what whistle's settings show: config problems, mapping
+For mod authors who want to show whistle's settings: config problems, mapping
 conflicts between mods, keys mapped over mods', and the mods that offer mappings with whether
 each is on. To change any of it, run whistle's
 [settings commands](commands.md#settings-commands). Current version: **`v: 1`**.
@@ -96,9 +96,9 @@ nothing).
 
 ### 4. `v` goes up only on a breaking change
 
-As for the [whistle state](state.md#8-v-goes-up-only-on-a-breaking-change). `whistle.js`
+As for the [whistle state](state.md#9-v-goes-up-only-on-a-breaking-change). `whistle.js`
 reads `v: 1` only, and gives `null` for any other `v`.
 
 ## History
 
-- `v: 1` (whistle 2.0.0): first version, the data whistle's settings dialog shows.
+- `v: 1` (whistle 2.0.0): first version.

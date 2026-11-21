@@ -35,7 +35,7 @@
 //        { command: "key-<key>" }          a claimed key (claims.js), as if pressed
 //        { command: "<verb>:<block>" }     a jump key (ADR 0014): "whistle.focus:agents"
 //        { key: "ctrl-l" }                 a key pressed on the anchor in WHISTLE (keynames.js)
-//        { tick: true }                    the shell's timer; world.now and world.barFocused
+//        { tick: true }                    the shell's timer; world.now and world.anchorFocused
 //                                          say what changed (a click away, a late focus)
 //        { wrote: path, ok, error }        a write effect's outcome
 //        { ran: command, ok: false, error }  a run effect that threw (a command-failed event;
@@ -43,7 +43,7 @@
 //                                            error toast)
 //
 // world: { now: ms, layout: Herdr's layout tree (null: unknown), focused: { pane, terminal } | null,
-//          panes: [{ pane, title, program }], barFocused: whether the anchor holds the keyboard,
+//          panes: [{ pane, title, program }], anchorFocused: whether the anchor holds the keyboard,
 //          keys: Herdr's key bindings [{ section, keys, action }], herdr: Herdr's version,
 //          folder: this copy's folder, copies: shared("whistle.copies") (inert.js),
 //          platform: "macos" | "linux" | "windows", layoutName: the shown layout's name,
@@ -61,7 +61,7 @@
 //
 // effects, a closed set of data:
 //   { run: "<command>", args }          run a Herdr command
-//   { focusBar: true }                  the anchor takes the keyboard
+//   { focusAnchor: true }                  the anchor takes the keyboard
 //   { setShared: key, value }           set shared state; step adds the public keys (PUBLIC)
 //                                       that changed, then { setShared: "whistle" } last
 //                                       whenever the whistle state changes (state())
@@ -114,7 +114,7 @@ function onTerminalPane(model, world) {
 }
 
 // WHISTLE on the terminal, its pane the one the keyboard just left.
-const whistle = (model, world) => ({ model: { ...onTerminalPane(model, world), mode: "whistle" }, effects: [{ focusBar: true }] });
+const whistle = (model, world) => ({ model: { ...onTerminalPane(model, world), mode: "whistle" }, effects: [{ focusAnchor: true }] });
 
 const onTerminal = (model, world) => fieldAt(world.layout, model.field, model.recent, world.shared)?.kind === TERMINAL;
 
@@ -129,7 +129,7 @@ function type(model, world) {
 export const HOLD_MS = 600;
 
 // The effects, then the anchor holds the keyboard for HOLD_MS (modeTick takes it back).
-const held = (model, world, effects) => ({ model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [...effects, { focusBar: true }], handled: true });
+const held = (model, world, effects) => ({ model: { ...model, holdUntil: world.now + HOLD_MS }, effects: [...effects, { focusAnchor: true }], handled: true });
 
 // h/j/k/l over split panes: from the selected pane, let pane.go find the neighbour, then hold
 // the keyboard (the tick follows the pane it lands on).
@@ -319,7 +319,7 @@ function jump(model, world, c) {
   if (why) return { model: raised(model, why), effects: [] };
   if (verb === KEEP_MODE) return toggled(model, world, block);
   const out = whistleMapping({ ...onTerminalPane(model, world), mode: "whistle" }, world, v, block);
-  return held(out.model, world, out.effects.filter((e) => !e.focusBar));
+  return held(out.model, world, out.effects.filter((e) => !e.focusAnchor));
 }
 
 // whistle.json as change(text) makes it ({ text } | { problem }: config.js edits), as a write
@@ -460,15 +460,15 @@ function modeTick(model, world) {
   const none = { model, effects: [] };
   // After a mapping that ends in TYPE: the keyboard to the pane Herdr focused, not WHISTLE.
   if (model.mode === "type" && world.now < model.holdUntil) {
-    const pane = world.barFocused && world.focused?.pane;
+    const pane = world.anchorFocused && world.focused?.pane;
     return pane ? { model, effects: [{ run: "pane.focus", args: { pane } }] } : none;
   }
   if (model.mode === "whistle" && world.now < model.holdUntil) {
     const m = onTerminal(model, world) && world.focused?.pane ? { ...model, pane: world.focused.pane } : model;
-    return { model: m, effects: world.barFocused ? [] : [{ focusBar: true }] };
+    return { model: m, effects: world.anchorFocused ? [] : [{ focusAnchor: true }] };
   }
-  if (model.mode === "whistle" && !world.barFocused) return { model: { ...model, mode: "type", holdUntil: 0 }, effects: [] };
-  if (model.mode === "type" && world.barFocused) return { ...whistle(model, world), effects: [] };
+  if (model.mode === "whistle" && !world.anchorFocused) return { model: { ...model, mode: "type", holdUntil: 0 }, effects: [] };
+  if (model.mode === "type" && world.anchorFocused) return { ...whistle(model, world), effects: [] };
   return none;
 }
 

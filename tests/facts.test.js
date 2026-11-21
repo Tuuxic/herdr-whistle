@@ -11,7 +11,7 @@ import { term, anchor } from "./worlds.js";
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}
 `;
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const block = (mod) => ({ id: mod, type: "block", content: { mod } });
 const entry = (map) => ({ v: 1, map });
 // A world in a terminal: the mods shown, their entries, the defaults' map, the layout's whistle
@@ -140,7 +140,7 @@ SCENARIOS.push({
   steps: [...IN, { key: "g", effects: [], handled: false },
     { world: { configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: {} }), user: switched.text } }, tick: 120,
       config: { conflicts: [], mods: [{ name: "alpha", on: false, problems: [] }, { name: "beta", on: true, problems: [] }] } },
-    { key: "g", effects: [{ run: "beta.go", args: {} }, { focusBar: true }] }],
+    { key: "g", effects: [{ run: "beta.go", args: {} }, { focusAnchor: true }] }],
 });
 // Keeping one mod's mapping (whistle.keep-mapping): written into whistle.json, where it settles
 // the conflict as an override of yours.
@@ -151,7 +151,7 @@ SCENARIOS.push({
   steps: [...IN,
     { world: { configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: {} }), user: kept.text } }, tick: 120,
       config: { conflicts: [], overrides: [{ keys: "g", seq: ["g"], by: "whistle.json", over: ["alpha", "beta"], text: "g: you, over alpha and beta" }] } },
-    { key: "g", effects: [{ run: "alpha.go", args: {} }, { focusBar: true }] }],
+    { key: "g", effects: [{ run: "alpha.go", args: {} }, { focusAnchor: true }] }],
 });
 
 export default suite("facts", (t) => {

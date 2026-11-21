@@ -14,11 +14,11 @@ const paneMove = (key, direction) => ({
   world: IN_TERMINAL,
   steps: [
     { command: "switch-mode" },
-    { world: { barFocused: true }, key, handled: true,
+    { world: { anchorFocused: true }, key, handled: true,
       effects: [
         { run: "pane.focus", args: { pane: "p1" } },
         { run: "pane.go", args: { direction } },
-        { focusBar: true },
+        { focusAnchor: true },
       ],
       model: { mode: "whistle", holdUntil: HOLD } },
   ],
@@ -28,7 +28,7 @@ const fieldMove = (name, from, key, to, recent = []) => ({
   name,
   world: { layout: GRID, focused: { pane: "p1" } },
   model: { mode: "whistle", field: from, recent: [from, ...recent], pane: "p1" },
-  steps: [{ world: { barFocused: true }, key, handled: true, effects: [], model: { mode: "whistle", field: to } }],
+  steps: [{ world: { anchorFocused: true }, key, handled: true, effects: [], model: { mode: "whistle", field: to } }],
 });
 
 const SCENARIOS = [
@@ -39,12 +39,12 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, key: "l" },
-      { world: { barFocused: false, focused: { pane: "p2" } }, tick: 120,
-        effects: [{ focusBar: true }], model: { mode: "whistle", pane: "p2" } },
-      { world: { barFocused: true }, tick: 120, effects: [], model: { mode: "whistle", pane: "p2" } },
-      { world: { barFocused: false }, tick: 120,
-        effects: [{ focusBar: true }], model: { mode: "whistle" } },
+      { world: { anchorFocused: true }, key: "l" },
+      { world: { anchorFocused: false, focused: { pane: "p2" } }, tick: 120,
+        effects: [{ focusAnchor: true }], model: { mode: "whistle", pane: "p2" } },
+      { world: { anchorFocused: true }, tick: 120, effects: [], model: { mode: "whistle", pane: "p2" } },
+      { world: { anchorFocused: false }, tick: 120,
+        effects: [{ focusAnchor: true }], model: { mode: "whistle" } },
     ],
   },
   {
@@ -52,9 +52,9 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, key: "l" },
+      { world: { anchorFocused: true }, key: "l" },
       { tick: HOLD, effects: [], model: { mode: "whistle" } },
-      { world: { barFocused: false }, tick: 1, effects: [], model: { mode: "type" } },
+      { world: { anchorFocused: false }, tick: 1, effects: [], model: { mode: "type" } },
     ],
   },
   {
@@ -62,10 +62,10 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, key: "l" },
+      { world: { anchorFocused: true }, key: "l" },
       { world: { focused: { pane: "p2" } }, tick: 120, model: { pane: "p2" } },
       { key: "i", effects: [{ run: "pane.focus", args: { pane: "p2" } }], model: { mode: "type", holdUntil: 0 } },
-      { world: { barFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
+      { world: { anchorFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
     ],
   },
   fieldMove("Ctrl+L moves to the field on the right", "a", "ctrl-l", "b"),
@@ -93,7 +93,7 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, key: "x", handled: false, effects: [], model: { mode: "whistle" } },
+      { world: { anchorFocused: true }, key: "x", handled: false, effects: [], model: { mode: "whistle" } },
     ],
   },
   {

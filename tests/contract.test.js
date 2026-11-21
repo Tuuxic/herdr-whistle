@@ -14,7 +14,7 @@ const UNKNOWN = (seq, c) => ({ seq, kind: "command-failed", command: `whistle.${
   error: `unknown whistle command whistle.${c}`, text: `unknown whistle command whistle.${c}` });
 
 const json = (v) => JSON.stringify(v);
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const block = (mod) => ({ id: mod, type: "block", content: { mod } });
 const entry = (map) => ({ v: 1, map });
 // A world in a terminal: the mods shown, their entries, the defaults' map, the layout's whistle
@@ -39,7 +39,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, shared: { "whistle.hints": null } },
       { command: "switch-mode", shared: { "whistle.hints": undefined } },
-      { world: { barFocused: true }, key: "w", shared: { "whistle.hints": PANES_HINTS } },
+      { world: { anchorFocused: true }, key: "w", shared: { "whistle.hints": PANES_HINTS } },
       { tick: 120, shared: { "whistle.hints": undefined } },
       { key: "v", shared: { "whistle.hints": null } },
     ],
@@ -64,7 +64,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, shared: { "whistle.events": { v: 1, events: [] } } },
       ...IN.slice(0, 1),
-      { world: { barFocused: true }, key: "w", shared: { "whistle.events": undefined } },
+      { world: { anchorFocused: true }, key: "w", shared: { "whistle.events": undefined } },
       { key: "x", raised: [{ text: "w x is not mapped" }],
         shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "unmapped", keys: ["w", "x"], text: "w x is not mapped" }] } } },
       { tick: 120, shared: { "whistle.events": undefined } },
@@ -199,15 +199,15 @@ const SCENARIOS = [
   {
     name: "mode:whistle goes to WHISTLE from TYPE, and stays in WHISTLE",
     world: world(),
-    steps: [{ command: "mode:whistle", model: { mode: "whistle" }, effects: [{ focusBar: true }] },
-      { world: { barFocused: true }, command: "mode:whistle", model: { mode: "whistle" }, effects: [] }],
+    steps: [{ command: "mode:whistle", model: { mode: "whistle" }, effects: [{ focusAnchor: true }] },
+      { world: { anchorFocused: true }, command: "mode:whistle", model: { mode: "whistle" }, effects: [] }],
   },
   {
     name: "mode:type goes to TYPE from WHISTLE, and does nothing in TYPE",
     world: world(),
-    steps: [{ command: "switch-mode" }, { world: { barFocused: true }, command: "mode:type", model: { mode: "type" },
+    steps: [{ command: "switch-mode" }, { world: { anchorFocused: true }, command: "mode:type", model: { mode: "type" },
       effects: [{ run: "pane.focus", args: { pane: "p1" } }] },
-    { world: { barFocused: false }, command: "mode:type", model: { mode: "type" }, effects: [] }],
+    { world: { anchorFocused: false }, command: "mode:type", model: { mode: "type" }, effects: [] }],
   },
   {
     name: "Switched off, mode:whistle types its key into the terminal, as switch-mode does",

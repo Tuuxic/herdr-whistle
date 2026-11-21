@@ -40,10 +40,11 @@ PowerShell's.) Bash, zsh and PowerShell 7.3 and later pass the quotes through.
 | `whistle.mode:whistle` | `whistle` | To WHISTLE (nothing in WHISTLE). Switched off, the key bound to it types into the terminal, as for `switch-mode`. |
 | `whistle.on` | none | Switches WHISTLE on: writes `"enabled": true` into whistle.json. |
 | `whistle.off` | none | Switches WHISTLE off: back to TYPE, and writes `"enabled": false` into whistle.json. |
-| `whistle.settings` | none | Opens whistle's settings (from WHISTLE, back to TYPE first). |
 
-`on`, `off` and `settings` work whether WHISTLE is on or off. `on` and `off` keep the rest of
-whistle.json; with a whistle.json that doesn't parse they only flash, and leave it alone.
+`on` and `off` work whether WHISTLE is on or off. They keep the rest of whistle.json; with a
+whistle.json that doesn't parse they only raise a `settings-broken` [event](events.md), and
+leave it alone. Whistle opens no dialog: a client such as whistle-ui shows its settings
+([whistle-ui.md](whistle-ui.md)).
 
 ### Verbs
 
@@ -80,22 +81,20 @@ takes you to a field:
 - In WHISTLE during a key sequence, a jump key ends the sequence and runs its verb. A jump key
   never goes back to TYPE: on the field already selected, it stays selected.
 - A verb that can't run (no such block in the shown layout, or a hidden block for `field`)
-  stays in the mode it was pressed in and flashes. In TYPE the flash ends after a short time,
-  since no key reaches whistle there.
+  stays in the mode it was pressed in and raises an [event](events.md) (`verb-failed` or
+  `cant-select`).
 - Switched off or inert, a jump key types into the terminal, as the switch key does.
 - A `keys.json` line naming an unknown verb (`whistle.fcous:agents`) is a config problem, listed
-  in settings. A block the shown layout lacks is not one; pressed, it only flashes.
+  in [whistle.config](config.md). A block the shown layout lacks is not one; pressed, it only
+  raises an event.
 
 Whistle ships two in the `global` section: `alt-a` (agents) and `alt-s` (spaces), with ids from
-Herdr's `main` layout. Beside them it ships `alt-,` → `whistle.settings` (next to Herdr's
-`ctrl-,`), which opens whistle's settings from either mode and while switched off. On macOS, where Option types characters, bind `ctrl-shift-a` /
-`ctrl-shift-s` / `ctrl-shift-,` instead. (Only macOS matches a shifted punctuation key by either
-spelling; elsewhere Herdr names the shifted character, which depends on the keyboard layout, so
-Ctrl+Shift+, would be `ctrl-<` on a US layout and `ctrl-;` on a German one: hence `alt-,`.)
+Herdr's `main` layout. On macOS, where Option types characters, bind `ctrl-shift-a` /
+`ctrl-shift-s` instead.
 
 ### Settings commands
 
-**Settings commands** change what whistle's settings change, without knowing whistle.json's
+**Settings commands** change whistle's settings without knowing whistle.json's
 format: whistle writes whistle.json itself, keeping the rest of it. A client (a mod that shows
 [whistle's config](config.md)) runs them with `run("whistle.mappings-off:alpha")`; keys.json
 may bind them too.
@@ -134,28 +133,7 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 2. `whistle.settings` opens the settings, leaving WHISTLE first
-
-```json example whistle.settings in WHISTLE goes back to TYPE and opens the settings
-{
-  "world": {
-    "layout": { "id": "root", "type": "column", "children": [
-      { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
-    ] },
-    "focused": { "pane": "p1" }
-  },
-  "steps": [
-    { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "command": "settings", "model": { "mode": "type" }, "effects": [
-      { "run": "pane.focus", "args": { "pane": "p1" } },
-      { "openOverlay": "settings", "spec": { "mod": "whistle", "kind": "dialog", "width": 640, "height": 0.8, "props": { "part": "settings" } } }
-    ] }
-  ]
-}
-```
-
-### 3. `whistle.field:<block>` selects; a block that doesn't show only flashes
+### 2. `whistle.field:<block>` selects; a block that doesn't show only raises an event
 
 ```json example whistle.field selects the field in a block
 {
@@ -166,20 +144,20 @@ The examples below run as tests: each is a scenario through whistle's core.
         { "id": "notes", "type": "block", "content": { "pane": {} } }
       ] },
       { "id": "log", "type": "block", "hidden": true, "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "mappings": {
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "mappings": {
         "n": ["Notes", "whistle.field:notes"], "l": ["Log", "whistle.field:log"] } } } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode", "model": { "field": "main" } },
-    { "world": { "barFocused": true }, "key": "n", "model": { "field": "notes" }, "effects": [] },
+    { "world": { "anchorFocused": true }, "key": "n", "model": { "field": "notes" }, "effects": [] },
     { "key": "l", "model": { "field": "notes" }, "raised": [{ "text": "log can't be selected now" }] }
   ]
 }
 ```
 
-### 4. `whistle.focus:<block>` shows a block and selects it once it shows
+### 3. `whistle.focus:<block>` shows a block and selects it once it shows
 
 ```json example whistle.focus shows a hidden block, then selects it
 {
@@ -187,24 +165,24 @@ The examples below run as tests: each is a scenario through whistle's core.
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
       { "id": "log", "type": "block", "hidden": true, "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "mappings": { "g": ["Log", "whistle.focus:log"] } } } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "mappings": { "g": ["Log", "whistle.focus:log"] } } } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "g",
-      "effects": [{ "run": "layout.show", "args": { "id": "log" } }, { "focusBar": true }], "model": { "field": "main" } },
+    { "world": { "anchorFocused": true }, "key": "g",
+      "effects": [{ "run": "layout.show", "args": { "id": "log" } }, { "focusAnchor": true }], "model": { "field": "main" } },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "log", "type": "block", "content": { "pane": {} } },
-        { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "mappings": { "g": ["Log", "whistle.focus:log"] } } } }
+        { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "mappings": { "g": ["Log", "whistle.focus:log"] } } } }
       ] } }, "tick": 120, "model": { "field": "log" } }
   ]
 }
 ```
 
-### 5. `whistle.toggle:<block>` hides a block that shows, and shows one that doesn't
+### 4. `whistle.toggle:<block>` hides a block that shows, and shows one that doesn't
 
 ```json example whistle.toggle hides the selected block and moves to the terminal
 {
@@ -214,21 +192,21 @@ The examples below run as tests: each is a scenario through whistle's core.
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "notes", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "mappings": {
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "mappings": {
         "n": ["Notes", "whistle.field:notes"], "b": ["Notes", "whistle.toggle:notes"] } } } }
     ] },
     "focused": { "pane": "p1" }
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "n", "model": { "field": "notes" } },
-    { "key": "b", "effects": [{ "run": "layout.hide", "args": { "id": "notes" } }, { "focusBar": true }],
+    { "world": { "anchorFocused": true }, "key": "n", "model": { "field": "notes" } },
+    { "key": "b", "effects": [{ "run": "layout.hide", "args": { "id": "notes" } }, { "focusAnchor": true }],
       "model": { "field": "main" } }
   ]
 }
 ```
 
-### 6. A jump key goes to WHISTLE with its block's field selected
+### 5. A jump key goes to WHISTLE with its block's field selected
 
 ```json example a jump key in TYPE goes to WHISTLE on the agents field
 {
@@ -238,17 +216,17 @@ The examples below run as tests: each is a scenario through whistle's core.
         { "id": "agents", "type": "block", "content": { "mod": "agents" } },
         { "id": "main", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "effects": [{ "focusBar": true }] }
+    { "command": "focus:agents", "model": { "mode": "whistle", "field": "agents" }, "effects": [{ "focusAnchor": true }] }
   ]
 }
 ```
 
-### 7. Everything after the first colon is the block id
+### 6. Everything after the first colon is the block id
 
 ```json example a jump key names a block whose id holds a colon
 {
@@ -259,7 +237,7 @@ The examples below run as tests: each is a scenario through whistle's core.
         { "id": "test", "type": "block", "content": { "pane": {} } },
         { "id": "test:stay", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
@@ -269,7 +247,7 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 8. `toggle-keep-mode` keeps the mode it was pressed in
+### 7. `toggle-keep-mode` keeps the mode it was pressed in
 
 ```json example whistle.toggle-keep-mode in TYPE hides the block and stays in TYPE
 {
@@ -279,7 +257,7 @@ The examples below run as tests: each is a scenario through whistle's core.
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "notes", "type": "block", "content": { "pane": {} } }
       ] },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
@@ -289,32 +267,32 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 9. A jump key that can't run stays in TYPE and flashes, briefly
+### 8. A jump key that can't run stays in TYPE and raises an event
 
-```json example a jump key to a block the layout lacks flashes in TYPE, then the flash ends
+```json example a jump key to a block the layout lacks raises verb-failed in TYPE
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" }
   },
   "steps": [
-    { "command": "focus:agents", "model": { "mode": "type" }, "effects": [], "state": { "mode": "type" }, "raised": [{ "text": "No agents in this layout" }] },
-    { "tick": 2500 }
+    { "command": "focus:agents", "model": { "mode": "type" }, "effects": [], "state": { "mode": "type" },
+      "raised": [{ "kind": "verb-failed", "block": "agents", "reason": "missing", "text": "No agents in this layout" }] }
   ]
 }
 ```
 
-### 10. Switched off, a jump key types into the terminal
+### 9. Switched off, a jump key types into the terminal
 
 ```json example switched off, a jump key types into the terminal
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle", "props": { "enabled": false } } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" },
     "keys": [{ "section": "global", "keys": "alt-a", "action": "whistle.focus:agents" }]
@@ -325,14 +303,14 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 11. A jump key with an unknown verb is a config problem
+### 10. A jump key with an unknown verb is a config problem
 
 ```json example a keys.json jump key with an unknown verb is listed as a config problem
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1", "terminal": "t1" },
     "keysFile": { "text": "{ \"global\": { \"alt-a\": \"whistle.fcous:agents\", \"alt-g\": \"whistle.focus:ghost\" } }", "error": null, "at": 0 }
@@ -343,14 +321,14 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 12. `whistle.mode:whistle` goes to WHISTLE; switched off, its key types through
+### 11. `whistle.mode:whistle` goes to WHISTLE; switched off, its key types through
 
 ```json example whistle.mode:whistle goes to WHISTLE, and stays there
 {
   "world": { "focused": { "pane": "p1" } },
   "steps": [
-    { "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [{ "focusBar": true }] },
-    { "world": { "barFocused": true }, "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [] }
+    { "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [{ "focusAnchor": true }] },
+    { "world": { "anchorFocused": true }, "command": "mode:whistle", "model": { "mode": "whistle" }, "effects": [] }
   ]
 }
 ```
@@ -369,7 +347,7 @@ The examples below run as tests: each is a scenario through whistle's core.
 }
 ```
 
-### 13. An unknown command, or a known one with the wrong argument, fails
+### 12. An unknown command, or a known one with the wrong argument, fails
 
 It does nothing but raise `command-failed`; on a keys.json line it's a config problem too.
 
@@ -399,7 +377,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
 }
 ```
 
-### 14. `whistle.mappings-off:<mod>` writes the mod off into whistle.json, keeping the rest
+### 13. `whistle.mappings-off:<mod>` writes the mod off into whistle.json, keeping the rest
 
 ```json example whistle.mappings-off switches a mod off in whistle.json
 {
@@ -415,7 +393,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
 }
 ```
 
-### 15. `whistle.keep-mapping:{"mod","keys"}` writes the mod's mapping there into whistle.json
+### 14. `whistle.keep-mapping:{"mod","keys"}` writes the mod's mapping there into whistle.json
 
 ```json example whistle.keep-mapping keeps one mod's mapping in a conflict
 {
@@ -424,7 +402,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
       { "id": "main", "type": "block", "content": { "pane": {} } },
       { "id": "alpha", "type": "block", "content": { "mod": "alpha" } },
       { "id": "beta", "type": "block", "content": { "mod": "beta" } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "modMappings": {
@@ -447,7 +425,7 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
     "layout": { "id": "root", "type": "column", "children": [
       { "id": "main", "type": "block", "content": { "pane": {} } },
       { "id": "alpha", "type": "block", "content": { "mod": "alpha" } },
-      { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
     ] },
     "focused": { "pane": "p1" },
     "modMappings": { "alpha": { "v": 1, "map": { "g": ["Go", "alpha.go"] } } }

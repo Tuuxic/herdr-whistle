@@ -24,9 +24,30 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
    whistle block, rename `open` to `pick`.
 4. whistle.json's `bar` is no longer listed as a config problem: whistle ignores it, like any
    key it doesn't know. Nothing to do; you may remove it.
+5. **Whistle draws nothing (breaking)**: whistle's bar, hints box and settings dialog are gone
+   from whistle; whistle-ui draws them. Copy `mods/whistle-ui/` and merge its `keys.json` as
+   Install steps 4 and 5 say. In each of the person's layouts with whistle blocks, keep exactly
+   one whistle block, sized 0 px, with the layout's `mappings`, `keys`, `mods`, `enabled` and
+   `nav` props; replace the other whistle blocks (the bars) with whistle-ui's bar, give it the
+   old bar's `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, and add whistle-ui's corner
+   block, as Install step 7 shows. Two whistle blocks with the same props make whistle stand
+   aside, so never leave two.
+6. **Props whistle doesn't take (breaking)**: on a whistle block, `anchor`, `bar`, `hints`,
+   `hintsAlignRight`, `hintsAlignBorder` and `hintsGap` are props whistle doesn't know, each
+   listed as a config problem. Remove them from the whistle block (the `hints*` props go on
+   whistle-ui's bar). whistle.json's `hints` is ignored; remove it, and put `"hints": false` on
+   whistle-ui's blocks if the person had the hints off.
+7. **`whistle.settings` (breaking)**: whistle opens no dialog. Replace keys.json's
+   `"alt-,": "whistle.settings"` (in `global`) with whistle-ui's `"alt-,": "whistle-ui.settings"`,
+   keeping its key.
 
 ### You
 
+- **Changed**: whistle draws nothing itself. whistle-ui (below) draws the bar, the hints box and
+  the settings, and you can hide its bar with whistle working the same. Alt+, runs
+  `whistle-ui.settings`.
+- **Removed**: whistle.json's `hints`. Turn the hints box off with `"hints": false` on
+  whistle-ui's blocks instead.
 - **Changed**: the switch key's command is `whistle.switch-mode`, and the key that leaves
   WHISTLE runs `whistle.mode:type` (see Upgrading). The keys stay the same.
 - **New**: `whistle.mode:whistle` goes to WHISTLE (and stays there), for a key that should only
@@ -45,6 +66,14 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
 
 ### Layout authors
 
+- **Breaking**: every whistle block is the anchor, the block whistle runs in (0 px, drawing
+  nothing), and its props are `mappings`, `keys`, `mods`, `enabled` and `nav`. The `anchor`
+  prop, the bar block, `bar` spots, `hints` and the `hints*` place props are gone from whistle's
+  block: each is listed as a prop whistle doesn't know. The first whistle block in layout order
+  runs; another is listed as a config problem and acts on nothing; blocks with the same props
+  make whistle stand aside, with one notification saying to keep one. A layout without a
+  whistle block runs no whistle: no bar stands in for the anchor, and nothing rests
+  ([layout-block.md](docs/contracts/layout-block.md)).
 - **Changed**: a mapping that runs `whistle.whistle` or `whistle.type` is a config problem; run
   `whistle.switch-mode` or `whistle.mode:type` instead.
 - **New**: whistle-ui's blocks: bars, and a 0 px corner block (`corner: true`) that shows the
@@ -61,23 +90,27 @@ every public surface: ADR 0012). Agents relay these entries when they update whi
   raises a `command-failed` event ([commands.md](docs/contracts/commands.md#spelling)). From
   Windows PowerShell 5.1, pass a JSON argument with `herdr-app do --% "…"`.
 - **New**: three public keys, each with its contract page and `whistle.js` reader:
-  `whistle.hints`, the hint items whether or not whistle's hints box is on
+  `whistle.hints`, the hint items whether or not a client shows them
   ([hints.md](docs/contracts/hints.md), `readHints()`); `whistle.events`, the last 8 events,
   each with a stable kind, its data and a default English text, numbered by `seq`
   ([events.md](docs/contracts/events.md), `readEvents(last)`); `whistle.config`, what the
   settings show ([config.md](docs/contracts/config.md), `readConfig()`). Only the running copy
   writes them, and only when they change.
-- **New**: the whistle state's optional `inert` field, `{ problem, fix }`. A copy standing
-  aside on an old Herdr, with no other copy running, now writes the state with it (it wrote
-  nothing before) ([state.md](docs/contracts/state.md), rule 7). `readState` gives `inert`,
-  `null` while whistle runs.
+- **New**: the whistle state's fields `field`, the selected field's block id in WHISTLE (else
+  `null`), and `inert`, `{ problem, fix }` while whistle stands aside (else `null`). A copy
+  standing aside on an old Herdr, or with whistle blocks that share their props, with no other
+  copy running, writes the state with `inert` ([state.md](docs/contracts/state.md), rules 7 and
+  8). `readState` gives both.
+- **Breaking**: `whistle.settings` is gone: whistle opens no dialog, and runs it as an unknown
+  command. whistle-ui's `whistle-ui.settings` opens its own.
 - **New**: the settings commands, `whistle.mappings-on:<mod>`, `whistle.mappings-off:<mod>` and
   `whistle.keep-mapping:{"mod":"<mod>","keys":[…]}`: whistle writes whistle.json itself
   ([commands.md](docs/contracts/commands.md#settings-commands)).
 - **New**: whistle-ui (`mods/whistle-ui/`) is a reference client: it uses only the public keys
   and commands, and any part of it can be replaced ([whistle-ui.md](docs/contracts/whistle-ui.md#replacing-a-part)).
-- The private key that held the hints box's view model under the name `whistle.hints` moved;
-  `whistle.hints` is now the public key above.
+- Whistle's private view keys are gone with its views: `whistle.bar:<folder>`,
+  `whistle.told:<folder>`, `whistle.barsize:<folder>:<bar>`, `whistle.overlay:<folder>:<name>`
+  and the hints and settings view models. `whistle.hints` is the public key above.
 
 ### Keynav authors
 

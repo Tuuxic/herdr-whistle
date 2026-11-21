@@ -92,7 +92,7 @@ merge_keys() {
 
 # Herdr docks a new mod by itself only once its welcome is done, so the bar gets a layout: a clone
 # of Herdr's main (block ids unchanged, so the shipped jump keys find agents and spaces) with
-# whistle's anchor (its own hints box off) and whistle-ui's bar and 0 px corner block under the
+# whistle's anchor and whistle-ui's bar and 0 px corner block under the
 # status bar.
 show_whistle() {
   home_env
@@ -103,7 +103,7 @@ show_whistle() {
     const find = (n) => n.id === "work" ? n : (n.children || []).map(find).find(Boolean);
     const work = find(l) || l;
     work.children.push({ id: "whistle-anchor", type: "block", size: { px: 0 }, resizable: false,
-      content: { mod: "whistle", props: { anchor: true, hints: false } } });
+      content: { mod: "whistle" } });
     work.children.push({ id: "whistle-bar", type: "block", size: { px: 22 }, resizable: false,
       background: "chrome", content: { mod: "whistle-ui" } });
     work.children.push({ id: "whistle-corner", type: "block", size: { px: 0 }, resizable: false,
@@ -126,7 +126,7 @@ case "${1:-}" in
     open_window
     # Herdr writes its own keys.json and stock mods on the first start; whistle goes in after.
     for _ in $(seq 1 30); do [ -f "$box/keys.json" ] && break; sleep 1; done
-    # whistle-ui's keys go in first: its alt-, wins over whistle's.
+    # whistle-ui's keys first, then whistle's.
     if [ "${2:-}" = "--whistle" ]; then copy_whistle; merge_keys "$repo/mods/whistle-ui/keys.json"; merge_keys "$repo/keys.json"; show_whistle; fi
     ;;
   open) open_window ;;

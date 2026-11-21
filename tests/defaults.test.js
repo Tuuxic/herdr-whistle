@@ -11,9 +11,9 @@ import texts from "./texts.js";
 
 const SHIPPED = texts["mods/whistle/mappings.json"];
 const world = { ...IN_TERMINAL, configFiles: { defaults: SHIPPED, user: null } };
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const FOCUS = { run: "pane.focus", args: { pane: "p1" } };
-const HOLD = { focusBar: true };
+const HOLD = { focusAnchor: true };
 
 // Keys pressed in WHISTLE on the shipped map; the last one's effects and mode.
 const press = (name, keys, effects, mode = "whistle") => ({

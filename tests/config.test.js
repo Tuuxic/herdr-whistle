@@ -14,8 +14,8 @@ const world = ({ map = {}, keys, props, user } = {}) => ({
   configFiles: { defaults: json({ keys: keys ?? TEST_DEFAULTS.keys, map }), user: user === undefined ? null : json(user) },
 });
 // Into WHISTLE, the anchor holding the keyboard.
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
-const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
+const ran = (command, args = {}) => [{ run: command, args }, { focusAnchor: true }];
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 
 const SCENARIOS = [

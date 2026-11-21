@@ -23,7 +23,7 @@ const WITH_KEYNAV = {
   shared: { [`keynav.field:${FILES_KEY}`]: { v: 3, label: "Files", keys: {} } },
 };
 // In WHISTLE with the anchor holding the keyboard, the state already published.
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 
 const SCENARIOS = [
   {
@@ -41,7 +41,7 @@ const SCENARIOS = [
     world: WORLD,
     steps: [
       { command: "switch-mode", published: WHISTLE },
-      { world: { barFocused: true }, tick: 120, published: null },
+      { world: { anchorFocused: true }, tick: 120, published: null },
       { command: "switch-mode", published: state({ pane: "p1" }) },
     ],
   },
@@ -112,7 +112,7 @@ const SCENARIOS = [
   },
   {
     name: "Switched off, whistle publishes enabled false and mode type",
-    world: { ...WORLD, barFocused: true, configFiles: { defaults: DEFAULTS, user: json({ enabled: false }) } }, model: { mode: "whistle" },
+    world: { ...WORLD, anchorFocused: true, configFiles: { defaults: DEFAULTS, user: json({ enabled: false }) } }, model: { mode: "whistle" },
     steps: [{ tick: 0, published: state({ enabled: false }) }],
   },
   {

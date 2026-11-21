@@ -9,7 +9,7 @@ import { IN_TERMINAL, term, anchor } from "./worlds.js";
 const json = (v) => JSON.stringify(v);
 const pretty = (v) => `${JSON.stringify(v, null, 2)}\n`;
 const files = (u, map = {}) => ({ configFiles: { defaults: json({ ...TEST_DEFAULTS, map }), user: u } });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 const TO_TYPE = { run: "pane.focus", args: { pane: "p1" } };
 
 // A terminal beside a sidebar (a stack of two terminals, "files" hidden behind "notes"), and
@@ -23,7 +23,7 @@ const LAYOUT = { id: "root", type: "column", children: [
   anchor,
 ] };
 const mapped = (map) => ({ ...IN_TERMINAL, layout: LAYOUT, ...files(null, map) });
-const HOLD = { focusBar: true };
+const HOLD = { focusAnchor: true };
 
 const SCENARIOS = [
   // whistle.on / whistle.off: whistle.json's enabled.

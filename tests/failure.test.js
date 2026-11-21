@@ -15,8 +15,8 @@ const DEFAULTS = json({ keys: TEST_DEFAULTS.keys, map: { n: ["Next tab", "tab.ne
 const text = (v) => (v == null || typeof v === "string" ? v : json(v));
 const files = (user, defaults = DEFAULTS) => ({ configFiles: { defaults: text(defaults), user: text(user) } });
 const world = (user, defaults) => ({ ...IN_TERMINAL, ...files(user, defaults) });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
-const ran = (command) => [{ run: command, args: {} }, { focusBar: true }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
+const ran = (command) => [{ run: command, args: {} }, { focusAnchor: true }];
 const TO_TYPE = [{ run: "pane.focus", args: { pane: "p1" } }];
 const SPACE = { map: { n: ["Next space", "space.next"] } };
 
@@ -122,7 +122,7 @@ const SCENARIOS = [
       ] } },
       { key: "x", effects: [], handled: false },
       { key: "w" }, { key: "q", effects: [{ run: "pane.focus", args: { pane: "p1" } }, ...ran("pane.close")] },
-      { key: "1", effects: [{ run: "space.select", args: { index: "1" } }, { focusBar: true }] },
+      { key: "1", effects: [{ run: "space.select", args: { index: "1" } }, { focusAnchor: true }] },
       { key: "m", effects: ran("picker.open") },
       { key: "q", effects: TO_TYPE, model: { mode: "type" } },
     ],
@@ -143,7 +143,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, state: { mode: "type" }, problems: 1 },
       { command: "switch-mode" },
-      { world: { barFocused: true }, tick: 120, state: { mode: "whistle", onTerminal: true }, problems: 1 },
+      { world: { anchorFocused: true }, tick: 120, state: { mode: "whistle", onTerminal: true }, problems: 1 },
       { world: files(null), tick: 120, problems: 0 },
     ],
   },

@@ -9,7 +9,7 @@ import { IN_TERMINAL, withProps, term, anchor } from "./worlds.js";
 
 const SWITCH = [{ section: "global", keys: "ctrl-space", action: "whistle.switch-mode" }];
 const inTerminal = (props, extra = {}) => ({ ...IN_TERMINAL, layout: withProps(props), keys: SWITCH, ...extra });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 
 const user = (v) => ({ configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: JSON.stringify(v) } });
 
@@ -44,7 +44,7 @@ const SCENARIOS = [
   {
     name: "whistle.json's enabled goes over the layout's",
     world: inTerminal({ enabled: false }, user({ enabled: true })),
-    steps: [{ command: "switch-mode", effects: [{ focusBar: true }], model: { mode: "whistle" } }],
+    steps: [{ command: "switch-mode", effects: [{ focusAnchor: true }], model: { mode: "whistle" } }],
   },
   {
     name: "whistle.json can switch whistle off in a layout that has it on",
@@ -91,7 +91,7 @@ const SCENARIOS = [
   {
     name: "A bad enabled prop is skipped and listed, and whistle stays on",
     world: inTerminal({ enabled: "no" }),
-    steps: [{ command: "switch-mode", effects: [{ focusBar: true }],
+    steps: [{ command: "switch-mode", effects: [{ focusAnchor: true }],
       model: { problems: [{ source: "layout", detail: "enabled should be true or false" }] }, problems: 1 }],
   },
   {

@@ -9,7 +9,7 @@ const SCENARIOS = [
     name: "Ctrl+Space in TYPE enters WHISTLE on the terminal and takes the keyboard",
     world: IN_TERMINAL,
     steps: [
-      { command: "switch-mode", effects: [{ focusBar: true }],
+      { command: "switch-mode", effects: [{ focusAnchor: true }],
         model: { mode: "whistle", field: "main", pane: "p1" } },
     ],
   },
@@ -18,7 +18,7 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true, focused: { pane: "p2" } }, command: "switch-mode",
+      { world: { anchorFocused: true, focused: { pane: "p2" } }, command: "switch-mode",
         effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
@@ -27,7 +27,7 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, command: "mode:type",
+      { world: { anchorFocused: true }, command: "mode:type",
         effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
@@ -41,7 +41,7 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, key: "i", handled: true,
+      { world: { anchorFocused: true }, key: "i", handled: true,
         effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
@@ -50,15 +50,15 @@ const SCENARIOS = [
     world: IN_TERMINAL,
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, tick: 120, effects: [], model: { mode: "whistle" } },
-      { world: { barFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
+      { world: { anchorFocused: true }, tick: 120, effects: [], model: { mode: "whistle" } },
+      { world: { anchorFocused: false }, tick: 120, effects: [], model: { mode: "type" } },
     ],
   },
   {
     name: "The bar taking the keyboard (a click on it) enters WHISTLE on the terminal",
     world: IN_TERMINAL,
     steps: [
-      { world: { barFocused: true }, tick: 120, effects: [], model: { mode: "whistle", field: "main", pane: "p1" } },
+      { world: { anchorFocused: true }, tick: 120, effects: [], model: { mode: "whistle", field: "main", pane: "p1" } },
     ],
   },
   {
@@ -67,7 +67,7 @@ const SCENARIOS = [
     steps: [
       { tick: 120, state: { mode: "type" } },
       { command: "switch-mode", state: { mode: "whistle", onTerminal: true } },
-      { world: { barFocused: true }, key: "i", state: { mode: "type" } },
+      { world: { anchorFocused: true }, key: "i", state: { mode: "type" } },
     ],
   },
   {

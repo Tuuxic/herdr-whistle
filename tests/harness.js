@@ -7,16 +7,16 @@
 // A scenario is data:
 //   {
 //     name: "Ctrl+Space in TYPE enters WHISTLE",
-//     world: { layout, focused, panes, barFocused, now },   // over DEFAULT_WORLD
+//     world: { layout, focused, panes, anchorFocused, now },   // over DEFAULT_WORLD
 //     model: { ... },                                       // optional, over start()
 //     steps: [
 //       // One input each: { command: "switch-mode" }, { key: "ctrl-l" }, { tick: 120 } (the
 //       // clock moves on by 120 ms, then a tick), { wrote: path, ok, error } (a write's
 //       // outcome) or { ran: command, error } (a run that failed). `world` first changes the
 //       // world (shallow, before the input).
-//       { world: { barFocused: true }, command: "switch-mode",
+//       { world: { anchorFocused: true }, command: "switch-mode",
 //         // What it should produce; each is checked only when given:
-//         effects: [{ focusBar: true }],   // exactly these effects, in order, apart
+//         effects: [{ focusAnchor: true }],   // exactly these effects, in order, apart
 //                                          // from whistle state (`published` checks it),
 //                                          // the public keys whistle.hints, .events, .config
 //                                          // (`shared` checks them) and
@@ -63,7 +63,7 @@ export const TEST_DEFAULTS = {
 // A world whistle runs in: the minimum Herdr, this copy in mods/whistle/ and announced, the
 // test defaults and no whistle.json.
 export const DEFAULT_WORLD = {
-  now: 0, layout: null, focused: null, panes: [], barFocused: false, keys: [],
+  now: 0, layout: null, focused: null, panes: [], anchorFocused: false, keys: [],
   herdr: MIN_HERDR, folder: "whistle", copies: { whistle: VERSION },
   configFiles: { defaults: JSON.stringify(TEST_DEFAULTS), user: null }, commands: null,
 };

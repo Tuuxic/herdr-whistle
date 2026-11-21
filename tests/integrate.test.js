@@ -16,18 +16,17 @@
 // Pick's table is tagged `<!-- table integrate-pick -->`:
 //   | Block | Herdr command | Then |   Then: `whistle.mode:type` when whistle is there.
 //
-// The anchor (issue #52, ADR 0018): the blocks Install adds are one fenced block tagged
-// ```json whistle-blocks``` (a JSON array). Put in a layout, block.js (the layout-block contract)
-// must read them as an anchor (anchor: true, 0 px) that drives and a bar that only draws, with no
-// config problem, and the hints box docking on the bar while it shows and on no spot (the
-// window's bottom right) while it is hidden (ADR 0019). Integrate adds
-// the same anchor to a layout that has whistle's bar but no anchor, and Uninstall removes it.
+// The blocks (ADR 0018, ADR 0020): the blocks Install adds are one fenced block tagged
+// ```json whistle-blocks``` (a JSON array): whistle's anchor (0 px) and whistle-ui's bar and
+// corner block (0 px). Put in a layout, block.js (the layout-block contract) must read the
+// anchor as the one whistle block, which runs, with no config problem. Integrate adds the same
+// blocks to a layout without them, and Uninstall removes both mods' blocks.
 
 import { suite } from "./harness.js";
 import { taggedRows } from "./guide.test.js";
 import texts from "./texts.js";
 import * as herdr from "herdr";
-import { bars, blockProps, viewing, dock, isAnchor, BEHAVIOUR } from "./block.js";
+import { blocks, blockProps, leftOut } from "./block.js";
 
 const code = (cell) => [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 const recipe = texts["RECIPE.md"];
@@ -83,37 +82,21 @@ export default suite("integrate", (t) => {
   t.check("Show never goes to the terminal", /\bnever[^.]*`\{ after: "terminal" \}`/.test(section), true);
   t.check("RECIPE offers no Aside", /\bAside\b|shift-space|Shift\+Space/.test(recipe ?? ""), false);
 
-  // The anchor (issue #52).
+  // The blocks Install adds (ADR 0020).
   const added = whistleBlocks(recipeSection("Install"));
   const layout = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } }, ...added] };
-  const anchor = added.find((b) => isAnchor(b.content?.props));
-  const bar = added.find((b) => b.content?.mod === "whistle" && b !== anchor);
-  t.check("Install adds an anchor and a bar", [Boolean(anchor), Boolean(bar)], [true, true]);
-  t.check("the anchor is sized 0 px", anchor?.size, { px: 0 });
-  t.check("the blocks are whistle's", bars(layout, "whistle").map((b) => b.id), added.map((b) => b.id));
-  t.check("the blocks have no config problem", blockProps(layout, "whistle").problems, []);
-  t.check("the anchor runs whistle, the bar only draws",
-    [viewing(layout, "whistle", anchor?.content.props), viewing(layout, "whistle", bar?.content.props ?? {})], [false, true]);
-  const hidden = { ...layout, children: layout.children.map((b) => (b === bar ? { ...b, hidden: true } : b)) };
-  t.check("with the bar shown, the hints box docks on it", dock(layout, "whistle")?.id, bar?.id);
-  t.check("with the bar hidden, the hints box docks on no spot (the window's bottom right)", dock(hidden, "whistle"), null);
-  t.check("Integrate adds the anchor", /```json whistle-blocks|"anchor": true|`anchor: true`/.test(recipeSection("Integrate")), true);
-  // Story 16 (#46): adding the anchor to a layout whose bar holds the layout's config moves
-  // those props onto the anchor, so whistle reads the same config with no problem.
-  const moves = (text) => /move[^.]*(to|onto) the anchor/i.test(text)
-    && BEHAVIOUR.every((p) => text.includes(`\`${p}\``));
-  t.check("Install moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Install")), true);
-  t.check("Integrate moves the bar's behaviour props onto the anchor it adds", moves(recipeSection("Integrate")), true);
-  t.check("CHANGELOG's v1.2.0 Upgrading moves them too", moves(texts["CHANGELOG.md"].split(/^## /m).find((e) => e.startsWith("v1.2.0 ")) ?? ""), true);
-  const bar2 = (props) => ({ id: "whistle", type: "block", content: { mod: "whistle", props } });
-  const before = { id: "work", type: "column", children: [{ id: "main", type: "block", content: { tab: {} } },
-    bar2({ mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false, hintsGap: 4 })] };
-  const after = { ...before, children: [before.children[0],
-    { id: "whistle-anchor", type: "block", content: { mod: "whistle", props: { anchor: true, mappings: { z: ["Zoom", "pane.zoom"] }, nav: { main: { down: "main" } }, hints: false } } },
-    bar2({ hintsGap: 4 })] };
-  t.check("moved onto the anchor, the layout's config reads as before, with no problem",
-    [blockProps(after, "whistle").props, blockProps(after, "whistle").problems], [blockProps(before, "whistle").props, []]);
-  t.check("Uninstall removes the anchor", /`anchor: true`/.test(recipeSection("Uninstall")), true);
+  const anchor = added.find((b) => b.content?.mod === "whistle");
+  const ui = added.filter((b) => b.content?.mod === "whistle-ui");
+  const corner = ui.find((b) => b.content?.props?.corner === true);
+  const bar = ui.find((b) => b !== corner);
+  t.check("Install adds whistle's anchor, whistle-ui's bar and its corner block", [Boolean(anchor), Boolean(bar), Boolean(corner)], [true, true, true]);
+  t.check("the anchor and the corner block are sized 0 px", [anchor?.size, corner?.size], [{ px: 0 }, { px: 0 }]);
+  t.check("the anchor is the layout's one whistle block", blocks(layout, "whistle").map((b) => b.id), [anchor?.id]);
+  t.check("the anchor has no config problem", blockProps(layout, "whistle").problems, []);
+  t.check("the anchor runs whistle", leftOut(layout, "whistle", anchor?.content.props ?? {}), false);
+  t.check("Integrate adds the blocks", /whistle-ui/.test(recipeSection("Integrate")) && /anchor/.test(recipeSection("Integrate")), true);
+  t.check("Uninstall removes whistle's and whistle-ui's blocks",
+    /"mod": "whistle"/.test(recipeSection("Uninstall")) && /"mod": "whistle-ui"/.test(recipeSection("Uninstall")), true);
   t.check("Done when: the hand check with the bar hidden",
     /bar hidden[\s\S]{0,80}?`ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl\+H selects\s+a field, and `i` goes back to TYPE/.test(recipeSection("Done when")), true);
 

@@ -19,9 +19,9 @@ scenario. Text around it, `${like this}` or a \backslash, is only prose.
     "panes": [{ "pane": "p1", "title": "C:\\work" }]
   },
   "steps": [
-    { "command": "switch-mode", "effects": [{ "focusBar": true }],
+    { "command": "switch-mode", "effects": [{ "focusAnchor": true }],
       "state": { "mode": "whistle", "onTerminal": true } },
-    { "world": { "barFocused": true }, "command": "switch-mode",
+    { "world": { "anchorFocused": true }, "command": "switch-mode",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }],
       "state": { "mode": "type" } }
   ]

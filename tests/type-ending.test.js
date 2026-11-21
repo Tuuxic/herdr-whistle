@@ -10,7 +10,7 @@ import { IN_TERMINAL } from "./worlds.js";
 const HOLD = 600;
 const defaults = (map) => ({ configFiles: { defaults: JSON.stringify({ keys: { type: ["i"] }, map }), user: null } });
 const world = (map) => ({ ...IN_TERMINAL, ...defaults(map) });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
 
 const SCENARIOS = [
   {
@@ -25,13 +25,13 @@ const SCENARIOS = [
     steps: [...IN, { key: "ctrl-n" },
       { world: { focused: { pane: "p2", terminal: "t2" } }, tick: 120,
         effects: [{ run: "pane.focus", args: { pane: "p2" } }], model: { mode: "type" } },
-      { world: { barFocused: false }, tick: 120, effects: [], model: { mode: "type" } }],
+      { world: { anchorFocused: false }, tick: 120, effects: [], model: { mode: "type" } }],
   },
   {
     name: "Once that hold is over, the anchor taking the keyboard is WHISTLE again",
     world: world({ "ctrl-n": ["New tab", "tab.new", null, "type"] }),
-    steps: [...IN, { key: "ctrl-n" }, { world: { barFocused: false }, tick: HOLD },
-      { world: { barFocused: true }, tick: 120, model: { mode: "whistle" } }],
+    steps: [...IN, { key: "ctrl-n" }, { world: { anchorFocused: false }, tick: HOLD },
+      { world: { anchorFocused: true }, tick: 120, model: { mode: "whistle" } }],
   },
   {
     name: "A TYPE-ending terminal mapping acts on the selected pane and focuses it",

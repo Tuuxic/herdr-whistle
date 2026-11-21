@@ -1,7 +1,7 @@
 # Whistle
 
 A vim-inspired mode for Herdr: switch out of typing to move around the window with single
-keys. A thin bar shows which mode you're in: **TYPE**, where the keyboard belongs to the
+keys. A thin bar (whistle-ui, shipped with whistle) shows which mode you're in: **TYPE**, where the keyboard belongs to the
 terminal as usual, or **WHISTLE**, where whistle holds it.
 
 > **Agents:** install, update and uninstall whistle by the [Install](#install),
@@ -30,8 +30,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   | keynav, field, Integrate, the simple path | "a highlight shows which list you're in, and j/k move in it" |
   | Herdr's blocks, `spaces` / `agents` / `tabs` / `files` / `changes` | "the spaces list on the left", "the agents list", "the tabs along the top", "the files and changes panel" |
   | a clone, `spaces-whistle`, `main-whistle`, `mod.clone` | "a copy of Herdr's sidebar lists", "a copy of your window layout" |
-  | the whistle block, a bar spot | "the bar at the bottom" |
-  | the anchor, `anchor: true` | "an invisible spot whistle runs in, so the bar can be hidden" |
+  | whistle-ui, its bar block | "the bar at the bottom" |
+  | the anchor, whistle's block, the corner block | "an invisible spot whistle runs in, so the bar can be hidden" |
   | the pane header mod | "the title strip on top of each terminal" |
   | `mod:whistle`, keys.json, claims | "whistle's keys in your key settings" |
   | `seen.json`, `installed.json`, `layouts/.state/`, the record | (don't name them) |
@@ -51,40 +51,45 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 
 ## What you see
 
+whistle-ui (`mods/whistle-ui/`) draws all of this from what whistle publishes
+(docs/contracts/whistle-ui.md); whistle itself draws nothing.
+
 - **Bar** (a block the layout places, else docked at the bottom, 22 px, on `chrome`, text
   11.5 px): on the left a mode badge, bold, 10 px side padding: **TYPE** outlined in the
   theme's `accent` (text in `accent`) or **WHISTLE** filled with `accent` (text in
   `accent_foreground`). Then, 10 px on, in `muted`,
   what has the keyboard: `Terminal`, or in WHISTLE `Terminal · <pane title>` (up to 40
-  characters). A flash (`w x is not mapped`) takes the label until the next key. A command
+  characters), or the selected field's name (`Spaces`). A flash (`w x is not mapped`, an event's
+text) takes the label for 2 s, or until the key sequence changes. A command
   Herdr refuses shows Herdr's own error message (its toast); whistle stays in its mode. While there are config problems, the bar ends with a marker in `blocked`, 10 px
   in from the right: `⚠ <count>`.
-- **Hints** (a window overlay docked on top of the bar, as wide as the bar block, on `chrome` with
+- **Hints** (a window overlay docked on top of the bar, as wide as the bar block; with no bar
+  shown, 480 px wide at the window's bottom right, opened by whistle-ui's 0 px corner block; on `chrome` with
   an `accent` border, text 12 px): while a key sequence has reached a group in WHISTLE, a
   title row with the keys so far (bold, `accent`), the group's name (`foreground`) and, at
   the right in `dim`, `Esc cancels`; then the group's keys in columns filled top to bottom,
   each `key → label` (a further group's label `+Name` in `accent`).
 - **Settings** (a dialog, 640 px wide, 80% high, on `chrome`; `alt-,` →
-  `whistle.settings` in keys.json's `global` opens it in TYPE, in WHISTLE and switched off): sections PROBLEMS (each
+  `whistle-ui.settings` in keys.json's `global` opens it in TYPE, in WHISTLE and switched off;
+  it changes whistle.json only through whistle's settings commands): sections PROBLEMS (each
   `<source>: <detail>` in `blocked`, or "None"), MAPPING CONFLICTS (each conflict in `blocked`
   with a `Keep <mod>'s` button per mod), OVER MODS' KEYS (`g: you, over alpha`) and MODS'
   MAPPINGS (each mod with an on/off switch, its problems under it in `blocked`).
 - **Inert**: no badge, only why, in the `blocked` color, 10 px in from the left:
   `Whistle needs Herdr ≥ 0.1.15 (this is 0.1.14)`, or on a second copy
-  `Another whistle runs, from mods/whistle/` (that copy's bar hides itself, so it shows only
-  if someone shows it again).
+  `Another whistle runs, from mods/whistle/`.
 
 ## How it behaves
 
 - **Modes**: `ctrl-space` (keys.json `global`, `whistle.switch-mode`) enters WHISTLE on the
   terminal pane the keyboard just left; `ctrl-space` again (`mod:whistle`, `whistle.mode:type`),
   `i` or Enter go back to TYPE in the selected pane. A click anywhere else ends WHISTLE; a
-  click on the bar enters it.
+  click on whistle's block enters it.
 - **Jump keys** (ADR 0014): a keys.json line `whistle.<verb>:<block>` (verbs `field`, `focus`,
   `toggle`, `toggle-keep-mode`; everything after the first colon is the block id, colons
   included) runs the verb from either mode and goes to WHISTLE; `toggle-keep-mode` keeps the
   mode. In WHISTLE it ends a key sequence first. A verb that can't run (no such block, a hidden
-  block for `field`) stays in the mode and flashes; in TYPE the flash ends after 2 s. Switched
+  block for `field`) stays in the mode and raises an event (whistle-ui's bar flashes it). Switched
   off or inert, the key bound to it is typed into the terminal, like the switch key. A keys.json
   line with an unknown `whistle.` command is a config problem (`config.js` `keysProblems`).
   Shipped: `alt-a` → `whistle.focus:agents`, `alt-s` → `whistle.focus:spaces` (ids from Herdr's
@@ -93,13 +98,13 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   now, terminal blocks); `h/j/k/l` and the arrows move between the selected terminal's split
   panes.
 - **Config** (ADR 0004): layers, each over the one before: `mods/whistle/mappings.json` (the
-  defaults), the layout's whistle block (`mappings` and `keys` props, the first block of this
-  copy that has each), and `whistle.json` in Herdr's home. `map`: key → `[label, command,
+  defaults), the layout's whistle block, the anchor (`mappings` and `keys` props), and
+  `whistle.json` in Herdr's home. `map`: key → `[label, command,
   args?, "type"?]` or a group `{ name, map }` (nested; groups merge key by key); `keys`: own-key
   action → list of keys. `null` takes a key or action away. Outside a key sequence a mapping
   goes over an own key; in one, `cancel` ends it, `back` goes up a level, an unmapped key
-  flashes `<keys> is not mapped`. A mapping runs its command (`pane.*`/`terminal.*` on the
-  selected pane first), then the bar holds the keyboard for 600 ms, except for commands that
+  raises an `unmapped` event (`<keys> is not mapped`). A mapping runs its command
+  (`pane.*`/`terminal.*` on the selected pane first), then the anchor holds the keyboard for 600 ms, except for commands that
   take it themselves (`mod.open`, `app.*`, renames).
 - **Failure** (issue #10): a file that doesn't parse runs on its last good version from this
   session; with none, whistle.json is left out and a missing or broken mappings.json gives the
@@ -119,37 +124,27 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   exists or when there is no keys.json, and never while inert. 600 ms after a write it looks
   for keys.error; if Herdr rejected the text it writes the old text back and doesn't retry
   that text. A failed write is kept as a problem (`model.claimProblem`) and not retried until
-  keys.json changes. `whistle.key-<key>` acts as the key pressed on the bar.
+  keys.json changes. `whistle.key-<key>` acts as the key pressed in WHISTLE.
 - **Inert**: on a Herdr older than the minimum in `version.js` (`updates().app.version`, or
-  when that can't be read), or while another copy of whistle runs, whistle stands aside:
-  WHISTLE never starts, keys and clicks on the bar do nothing, and the key keys.json binds to
+  when that can't be read), while another copy of whistle runs, or with whistle blocks that
+  share their props, whistle stands aside: WHISTLE never starts, keys and clicks do nothing, and the key keys.json binds to
   `whistle.switch-mode` (as it resolves from a terminal: `terminal`, then a layout's section,
   then `global`) is typed into the focused terminal instead. If WHISTLE was on, it goes back
-  to TYPE first.
+  to TYPE first. One Herdr notification says why, once per reason.
 - **Copies**: each copy announces its folder in `shared("whistle.copies")`. Of this copy
   and the announced copies with a block in the shown layout, the one in `mods/whistle/`
-  runs, else the first folder by name. The others are inert, hide their bars with
-  `layout.hide` (only bars that were showing), and show them again once they run.
-- **Anchor and bar spots** (ADR 0018): each whistle block in a layout is a copy, told apart by
-  its props (`props()`). In a layout with an anchor (`anchor: true`, 0 px), the first anchor
-  (of those whose props no other anchor shares) runs whistle and the bars only draw, so the bar is optional: hidden, whistle works the same.
-  Without an anchor, a bar stands in for it, and a copy whose block is hidden rests: TYPE, no
-  claims, no state; only the shown spot's copy runs
-  (docs/contracts/layout-block.md, rule 6).
-- **Hints and settings** (ADR 0011): the core works out their view models (`views.js`) and
-  sets them in private shared keys, `whistle.hintsbox` and `whistle.settings`, when they change;
-  two more copies of the mod (prop `part: "hints"` / `"settings"`) draw them on each render
-  and run no core. The core also opens, docks (`views.js` `hintsBox`, from the window and bar
-  sizes the shell measures) and closes the hints window, as effects. Each bar's copy
-  publishes its drawn size in `whistle.barsize:<folder>:<bar>`, so the anchor, which draws no
-  bar, docks the box on the bar that shows; with no bar shown, the box docks at the window's
-  bottom right. Whistle never shows or hides a bar: the layout does (ADR 0019). Settings
-  change things only by writing `whistle.json` (`config.js` `switchMod`, `keepMapping`, with
-  the text just read as `expected`; never while it doesn't parse); the bar picks it up on its
-  next read.
+  runs, else the first folder by name. The others are inert.
+- **The anchor** (ADR 0018, ADR 0020): every whistle block is the anchor, 0 px, drawing
+  nothing; each block is a copy, told apart by its props (`props()`). The first in layout order
+  runs whistle; the others are config problems and their copies act on nothing. Blocks with
+  the same props make whistle inert. A layout with no whistle block runs no whistle
+  (docs/contracts/layout-block.md).
+- **Clients** (ADR 0020): whistle decides no looks. It draws no bar, hints or dialog, keeps no
+  flash, and opens no overlay. whistle-ui reads the public keys and draws them; it docks the
+  hints box on its first shown bar, else its corner block shows it at the window's bottom right.
 - **Whistle state and the public keys**: the running copy publishes `shared("whistle") = { v: 1, mode, enabled,
-  sequence, pane, onTerminal }` whenever it changes, and only then; an inert copy writes it only with
-  `inert` (why), and only while no other copy runs (docs/contracts/state.md). Beside it:
+  sequence, pane, onTerminal, field, inert }` whenever it changes, and only then; an inert copy writes it
+  (with `inert`: why) only while no other copy runs (docs/contracts/state.md). Beside it:
   `whistle.hints`, `whistle.events` and `whistle.config` (docs/contracts/hints.md, events.md,
   config.md), and whistle writes whistle.json itself for the settings commands `whistle.mappings-on|off:<mod>`
   and `whistle.keep-mapping:<JSON>` (docs/contracts/commands.md). Every other `whistle.*` key
@@ -165,26 +160,27 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 - **`mods/whistle/`**: a pure core, `step(model, input, world) -> { model, effects }`
   (`step.js`, with `fields.js` for the layout's fields, `inert.js` for the inert gate,
   `claims.js` for the keys.json section it wants, `config.js` for the layers, `keymap.js`
-  for what a key means, `views.js` for the hints' and settings' models, `keynames.js`,
+  for what a key means, `facts.js` for the hint items and config it publishes, `keynames.js`,
   `version.js`), behind one shell, `main.js`, that reads Herdr into `world`,
   feeds commands, key presses and a 120 ms tick through `step`, and carries out the effects;
-  `bar.js`, `hints.js` and `settings.js` draw the bar, the hints and the settings. `whistle.js`
+  `anchor.js` is the block, which draws nothing and holds the keyboard. `whistle.js`
   is the helper other mods copy to read whistle state and offer mappings (whistle doesn't
   import it), and `keynav.js` the helper keynav
-  fields copy. `mod.json`: `place: bottom`, size 22, `focusable: true`, and
+  fields copy. `mod.json`: `place: bottom`, size 0, `focusable: true`, and
   `version` / `herdr` repeating `version.js`.
 - **`version.js`**: `VERSION`, `MIN_HERDR` and `HOME` (`"mods/whistle/"`, the copy's own
   folder; Herdr's add procedure rewrites it when it renames a copy).
 - **`keys.json`** (repo root): `global: ctrl-space → whistle.switch-mode`,
-  `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`,
-  `alt-, → whistle.settings`;
+  `alt-a → whistle.focus:agents`, `alt-s → whistle.focus:spaces`;
   `mod:whistle: ctrl-space → whistle.mode:type`.
-- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`, `theme()`,
+- **`mods/whistle-ui/`**: the client that draws the bar, the hints box and the settings dialog
+  (docs/contracts/whistle-ui.md). Its `keys.json`: `global: alt-, → whistle-ui.settings`.
+- **Herdr**: `layout()`, `focused()`, `panes()`, `keys()`, `updates()`, `window()`, `commands()`,
   `shared`/`setShared`, `nextCommand()`, `run` (`pane.focus`, `pane.go`, `layout.hide`,
   `layout.show`), `exec("hc", ["keys", ...])` to type the switch key through while inert.
   `readTextFile` / `writeTextFile` on `appHome()`'s `keys.json` (read every second, written
   with the text it read as `expected`) and `keys.error`, and reads `whistle.json` there
-  every second; settings and `whistle.on` / `whistle.off` write `whistle.json`, only whistle's
+  every second; the settings commands and `whistle.on` / `whistle.off` write `whistle.json`, only whistle's
   own entries (with the text read as `expected`), the whole file again with 2-space indents
   (entries and key order stay, the person's own line breaks don't). No network; no other files outside its folder.
 - **Tests**: `bash tests/run.sh` (`herdr-app check` on a throwaway test mod); not shipped.
@@ -201,8 +197,8 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   each one that runs another folder's (`whistle.switch-mode`) as a `keys.json` config problem. Whistle
   only reads `global`; it never writes it (ADR 0001).
 - `run()` returns `null` on a command Herdr refuses, and Herdr shows its own error toast; it
-  doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then the bar
-  flashes).
+  doesn't throw. `main.js` keeps its `try/catch` in case a later Herdr throws (then whistle
+  raises a `command-failed` event).
 - Herdr can hand the keyboard back to a pane late after a command: after a pane move whistle
   holds the keyboard for 600 ms.
 
@@ -212,9 +208,9 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   `ctrl-space` again (or `i`) goes back.
 - In TYPE in Herdr's `main` layout, Alt+A (Ctrl+Shift+A on macOS) goes to WHISTLE with the
   agents field selected, and Alt+S to the spaces field.
-- With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy's bar
-  hides itself and `mods/whistle/` runs.
-- Alt+, opens whistle's settings in TYPE, in WHISTLE and after `whistle.off`.
+- With `mods/whistle/` and a copy in `mods/whistle-2/` both in the layout, the copy stands
+  aside and `mods/whistle/` runs.
+- Alt+, opens whistle-ui's settings in TYPE, in WHISTLE and after `whistle.off`.
 - With only `mods/whistle-2/` running and `global`'s `ctrl-space` on `whistle.switch-mode`,
   settings list the switch-key problem and the bar shows `⚠ 1`.
 - With only `mods/whistle-2/`, its `global` lines on `whistle-2.*` and whistle switched off,
@@ -223,10 +219,10 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
   JSON keeps `n` working and puts `⚠ 1` at the bar's end; fixing it takes the marker away.
 - In WHISTLE, `w` shows the hints box above the bar listing the Panes group; `escape` closes it.
 - After a fresh Install (`scripts/sandbox.sh reset`, then `scripts/sandbox.sh agent`), the
-  shown layout has an anchor (`anchor: true`, 0 px) next to the bar. With the bar hidden
-  (`herdr-app do layout.hide '{"id":"whistle"}'`): `ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl+H selects
-  a field, and `i` goes back to TYPE. With the bar still hidden, `w` opens the hints box docked
-  where the bar would sit.
+  shown layout has whistle's anchor (0 px), whistle-ui's bar and its corner block (0 px). With
+  the bar hidden (`herdr-app do layout.hide '{"id":"whistle-bar"}'`): `ctrl-space` enters WHISTLE, `p` opens the palette, Ctrl+H selects
+  a field, and `i` goes back to TYPE. With the bar still hidden, `w` opens the hints box at the
+  window's bottom right.
 - In settings, switching a mod off that offers mappings writes `"mods": { "<mod>": false }`
   into `whistle.json` and its mappings stop working within a second.
 - With `MIN_HERDR` set above Herdr's version, the bar says which Herdr whistle needs and
@@ -247,7 +243,7 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
 
 ## Install
 
-1. Read this recipe and every file in `mods/whistle/` first. Tell the person, in plain words,
+1. Read this recipe and every file in `mods/whistle/` and `mods/whistle-ui/` first. Tell the person, in plain words,
    that whistle runs `hc` (to type a key into a terminal), writes only its own entries in
    keys.json's `mod:whistle` section, reads `whistle.json` (their own config) and writes it only
    when they change something in whistle's settings or run `whistle.on` / `whistle.off`, and
@@ -256,58 +252,51 @@ and Herdr's internal words; the person usually doesn't know them and needn't.
    If Herdr is older, say whistle will stay inert until Herdr is updated.
 3. Look for a whistle already there: any `mods/*/mod.json` with `"title": "Whistle"`. If
    there is one, follow [Update](#update) instead.
-4. Copy `mods/whistle/` to `mods/whistle/`. If another mod already has that name, ask the
-   person before renaming either; a renamed whistle needs `HOME` in its `version.js`
-   rewritten to its folder, and a copy in `mods/whistle/` always wins over it.
-5. Merge the repo's `keys.json` into the person's: add its sections and keys, and ask before
-   replacing a key they already use. **A copy in another folder** (say `mods/whistle-2/`)
-   answers only to its folder's name, so write its `global` lines with that name:
-   `<folder>.whistle`, `<folder>.focus:agents`, `<folder>.focus:spaces`, `<folder>.settings`
-   (whistle writes its own `mod:<folder>` section itself). On macOS, Option+letter types characters, so propose the
+4. Copy `mods/whistle/` to `mods/whistle/` and `mods/whistle-ui/` to `mods/whistle-ui/`. If
+   another mod already has that name, ask the person before renaming either; a renamed whistle
+   needs `HOME` in its `version.js` rewritten to its folder, and a copy in `mods/whistle/`
+   always wins over it.
+5. Merge the repo's `keys.json` and `mods/whistle-ui/keys.json` into the person's: add their
+   sections and keys, and ask before replacing a key they already use. **A copy in another
+   folder** (say `mods/whistle-2/`) answers only to its folder's name, so write its `global`
+   lines with that name: `<folder>.switch-mode`, `<folder>.focus:agents`,
+   `<folder>.focus:spaces` (whistle writes its own `mod:<folder>` section itself). On macOS, Option+letter types characters, so propose the
    jump keys as `ctrl-shift-a` / `ctrl-shift-s` instead of `alt-a` / `alt-s`, and the settings key
    as `ctrl-shift-,` instead of `alt-,` (macOS matches it by either spelling; elsewhere the
    shifted character depends on the keyboard layout, so it is never the default). If the person's
    layout has no `agents` or `spaces` block, say the jump keys name blocks by id and offer to
    point them at their layout's ids.
-6. `herdr-app check mods/whistle`.
-7. **Make sure whistle shows, after asking.** Whistle runs in an **anchor**, a whistle block
-   with `anchor: true` sized 0 px that draws nothing, and shows its mode in the **bar**, which
-   is only an aid: with an anchor, the bar can be hidden and whistle works the same (ADR 0018).
-   The blocks, in this order, along the layout's bottom (on `main`: the last children of the
-   `work` column):
+6. `herdr-app check mods/whistle` and `herdr-app check mods/whistle-ui`.
+7. **Make sure whistle shows, after asking.** Whistle runs in its block, the **anchor**, sized
+   0 px, which draws nothing; whistle-ui shows its mode in the **bar**, which is only an aid
+   and can be hidden, and its **corner block** (0 px) shows the hints when no bar shows
+   (ADR 0020). The blocks, in this order, along the layout's bottom (on `main`: the last
+   children of the `work` column):
 
    ```json whistle-blocks
    [
-     { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "resizable": false, "content": { "mod": "whistle", "props": { "anchor": true } } },
-     { "id": "whistle", "type": "block", "size": { "px": 22 }, "content": { "mod": "whistle" } }
+     { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "resizable": false, "content": { "mod": "whistle" } },
+     { "id": "whistle-bar", "type": "block", "size": { "px": 22 }, "content": { "mod": "whistle-ui" } },
+     { "id": "whistle-corner", "type": "block", "size": { "px": 0 }, "resizable": false, "content": { "mod": "whistle-ui", "props": { "corner": true } } }
    ]
    ```
 
-   The shown layout is `"layout"` in `herdr-app status`. If it already has a whistle block
-   with `anchor: true`, go on. If it has whistle's bar but no anchor, add only the anchor, just
-   before the bar, and leave the bar where it is (the person's own layout: in place, telling
-   them; Herdr's own: as below). Otherwise whistle won't run: on Herdr's own layouts
-   (read-only; `main` for most new users) Herdr never places a new mod's block, not after the
-   welcome and not after a restart.
-
-   **Move the layout's config onto the anchor** as you add it next to an existing bar: in a
-   layout with an anchor, whistle reads `mappings`, `keys`, `mods`, `enabled`, `hints` and
-   `nav` from the anchor alone and skips them on a bar (docs/contracts/layout-block.md, rule
-   14). So move each of these props to the anchor from the first whistle block, in layout
-   order, that has it (the one whistle read it from), and take them off every bar; `bar` and
-   the `hints*` place props stay on the bars. Whistle then works exactly as before.
+   The shown layout is `"layout"` in `herdr-app status`. If it already has these blocks, go
+   on; if it has some, add the others. A layout has one whistle block: never add a second.
+   Without one whistle won't run: on Herdr's own layouts (read-only; `main` for most new
+   users) Herdr never places a new mod's block, not after the welcome and not after a restart.
    - **Herdr's own layout** (in `installed.json` as `layout:<name>`): ask, for example "Herdr's
      standard window layout can't run whistle by itself. I can make your own copy of the
      layout with whistle's bar at the bottom and switch to it; everything else stays as it is.
      Do that?" Yes: `herdr-app do layout.clone '{"name":"<name>","as":"<name>-whistle"}'`
-     (the same copy [Integrate](#integrate) uses; it switches to it), add both blocks, and
+     (the same copy [Integrate](#integrate) uses; it switches to it), add the blocks, and
      write the [record](#the-record) with the layout's row.
-   - **The person's own layout**: ask before adding both blocks to it, in place.
+   - **The person's own layout**: ask before adding the blocks to it, in place.
    - With a yes, the rest is yours: where exactly the block goes, a taken name, a layout that
      doesn't take the edit. Check that the bar shows (`herdr-app status` lists no errors;
      `herdr-app shot` shows the TYPE badge). With a no, whistle is installed but doesn't run
      (Ctrl+Space types into the terminal): say so, and that you can set it up whenever they
-     say yes, or they can add the two blocks above themselves.
+     say yes, or they can add the blocks above themselves.
 8. Offer [Integrate](#integrate), by its result: "Right now whistle moves you between the
    lists, but moving inside the spaces or agents list shows what you land on, and the files
    and changes panel can't be reached. I can make copies of Herdr's sidebar lists where the
@@ -347,7 +336,7 @@ Offer it after Install's last step. Do it at any other time the person asks.
 - **Already fields, left as they are**: terminal blocks (`content` is a `pane`, `tab`,
   `terminal` or `agent`), mods that already speak keynav v3 (a `keynav.js` with `V = 3` whose
   `announce` the mod calls), and whistle's own blocks (`"title": "Whistle"` in the mod's
-  `mod.json`). Any other mod with a `keynav.js` is adapted: its `keynav.js` is replaced with
+  `mod.json`) and whistle-ui's (`"title": "Whistle UI"`). Any other mod with a `keynav.js` is adapted: its `keynav.js` is replaced with
   whistle's, whatever its version, and its calls changed as below.
 
 ### Simple path
@@ -369,13 +358,9 @@ Then, without asking more:
    clone; `herdr-app do layout.switch '{"name":"<name>-whistle"}'` if it didn't). If the name
    is taken by a clone of that layout (Install made it for the bar), use it: it is the
    person's own now. Taken by something else, pick another free name and say so afterwards.
-   The person's own layout is changed in place. **The anchor**: if the layout has whistle's
-   bar but no whistle block with `anchor: true`, add the anchor from [Install](#install)
-   step 7 just before the bar, and leave the bar where it is, and move the bar's config onto
-   it as Install step 7 says: move `mappings`, `keys`, `mods`, `enabled`, `hints` and `nav`
-   to the anchor from the first whistle block that has each, and take them off every bar. A
-   layout without whistle's bar gets both blocks. Tell the person afterwards that the bar can now be hidden without
-   switching whistle off.
+   The person's own layout is changed in place. **The anchor**: a layout without whistle's
+   blocks gets those from [Install](#install) step 7: the anchor, whistle-ui's bar and its
+   corner block.
 2. **The mods.** For each block to adapt: Herdr's mods and third-party mods are cloned,
    `herdr-app do mod.clone '{"name":"<mod>","as":"<mod>-whistle"}'`, and the block's
    `content.mod` in the layout file (`layouts/<layout>.json`) is pointed at the clone. Blocks
@@ -547,7 +532,7 @@ back, so the person looks at the item without working in it and moves on with `j
 
 ### The selected terminal's header
 
-In WHISTLE the bar holds the keyboard, and Herdr draws the pane look's `focus` border only on
+In WHISTLE the anchor holds the keyboard, and Herdr draws the pane look's `focus` border only on
 the pane with the keyboard, so no terminal shows that it is the selected one. The layout's pane
 header mod marks it instead. Whistle's code doesn't change: the header reads whistle's public
 state.
@@ -625,14 +610,15 @@ only through you.
    and delete the files the new version doesn't ship. Don't rename anything. If the only
    copy is in another folder, move it to `mods/whistle/` and update it there, and rewrite its
    `global` lines in keys.json from `<folder>.*` to `whistle.*` (`whistle.switch-mode`,
-   `whistle.focus:agents`, `whistle.focus:spaces`, `whistle.settings`), keeping their keys.
+   `whistle.focus:agents`, `whistle.focus:spaces`), keeping their keys. Replace
+   `mods/whistle-ui/` the same way.
 3. Other copies stay inert while `mods/whistle/` runs. Ask before deleting them.
 4. Never touch `whistle.json` in Herdr's home, and don't merge `keys.json` again:
    whistle reconciles its own `mod:whistle` keys. Change keys.json only where step 2 or an
    Upgrading note says to.
 5. Read the `CHANGELOG.md` entries newer than the old version, up to the new one, and follow
    their **Upgrading** notes. Tell the person about each, breaking ones first.
-6. `herdr-app check mods/whistle`.
+6. `herdr-app check mods/whistle` and `herdr-app check mods/whistle-ui`.
 7. **Integration**: if `whistle-integration.md` is in Herdr's home, read it. Clones never get
    their original's updates on their own, so for each row:
    - A **clone** whose original is newer than the clone (Herdr's own: `herdr-app --version`;
@@ -641,7 +627,7 @@ only through you.
      `cloned_from.version`; **when they disagree, the older one counts**. Yes: move the old
      clone aside (`<name>-whistle-old`), clone the original again under the old clone's name
      (`mod.clone` / `layout.clone` refuse a taken name), make it what it was again with the
-     look and declared keys the record gives (a layout: its whistle bar block, and its blocks
+     look and declared keys the record gives (a layout: whistle's and whistle-ui's blocks, and its blocks
      pointed at the clones again), check it, then delete the old one. Changes the person made
      to the old clone by hand are lost; say so first.
    - **Herdr's saved layout state**: Herdr keeps `layouts/.state/<name>.json` for each layout:
@@ -669,11 +655,11 @@ only through you.
    the fields keep working without whistle (they only show their look while a driver selects
    them), and that the clones no longer get updates, since only whistle's Update looks for
    them.
-2. **The anchor**: from each of the person's layouts still there (`layouts/*.json`), remove
-   every whistle block with `anchor: true`. It draws nothing and only whistle uses it, so
-   don't ask. Herdr's own layouts never have one.
-3. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`).
-4. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` action.
+2. **The blocks**: from each of the person's layouts still there (`layouts/*.json`), remove
+   every block of whistle's and whistle-ui's (`"mod": "whistle"`, `"mod": "whistle-ui"`, or a
+   copy's folder). Only whistle uses them, so don't ask. Herdr's own layouts never have one.
+3. Delete every copy (each `mods/*/` whose `mod.json` has `"title": "Whistle"`) and
+   `mods/whistle-ui/`.
+4. In keys.json, remove the `mod:whistle` section and every binding to a `whistle.*` or
+   `whistle-ui.*` action.
 5. Ask before deleting `whistle.json` in Herdr's home, the person's own settings.
-6. Tell the person that whistle's bars in their layouts will now show nothing, and offer to
-   remove them.

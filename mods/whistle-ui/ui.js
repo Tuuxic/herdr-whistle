@@ -70,9 +70,25 @@ const leads = (world) => {
   return Boolean(l) && stable(l.props) === stable(world.props ?? {});
 };
 
+// The names of Herdr's own spaces, tabs and agents mods' blocks, which whistle selects as stock
+// fields (they take no part in keynav, so only the whistle state's field names them).
+const STOCK = { spaces: "Spaces", tabs: "Tabs", agents: "Agents" };
+
+// The mod in the layout's block with this id, if any.
+function modAt(layout, id) {
+  let found = null;
+  const walk = (n) => {
+    if (!n || found) return;
+    if (n.id === id && n.content?.mod) found = n.content.mod;
+    for (const c of n.children ?? []) walk(c);
+  };
+  walk(layout);
+  return found;
+}
+
 // Where the keyboard is, as the bar says it: in TYPE, the terminal if a pane is focused; in
-// WHISTLE, the terminal and its selected pane's title, or the selected keynav field's label
-// (docs/contracts/keynav.md), else nothing.
+// WHISTLE, the terminal and its selected pane's title, the selected keynav field's label
+// (docs/contracts/keynav.md), or a stock field's name (the whistle state's field), else nothing.
 function where(state, world) {
   if (state.mode !== "whistle") return world.focused?.pane ? "Terminal" : "";
   if (state.onTerminal) {
@@ -81,9 +97,11 @@ function where(state, world) {
     return name ? `Terminal · ${name}` : "Terminal";
   }
   const active = world.shared?.keynav?.active;
-  if (typeof active !== "string") return "";
-  const label = world.shared?.[`keynav.field:${active}`]?.label;
-  return typeof label === "string" ? label : active.split(" ")[0];
+  if (typeof active === "string") {
+    const label = world.shared?.[`keynav.field:${active}`]?.label;
+    return typeof label === "string" ? label : active.split(" ")[0];
+  }
+  return STOCK[modAt(world.layout, state.field)] ?? "";
 }
 
 // The bar: inert, why; whistle not running, that; switched off, "Whistle off"; else the mode

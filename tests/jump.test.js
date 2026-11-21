@@ -9,8 +9,8 @@ import { STOCK, term, anchor, stock } from "./worlds.js";
 
 const json = (v) => JSON.stringify(v);
 const IN_STOCK = { layout: STOCK, focused: { pane: "p1", terminal: "t1" }, panes: [{ pane: "p1", title: "zsh" }] };
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
-const HOLD = { focusBar: true };
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
+const HOLD = { focusAnchor: true };
 // Blocks whose ids hold colons: "test" and "test:stay" (ADR 0014's example).
 const COLONS = { id: "root", type: "column", children: [
   { id: "top", type: "row", children: [term("main"), term("test"), term("test:stay")] }, anchor] };
@@ -75,7 +75,7 @@ const SCENARIOS = [
     world: { ...IN_STOCK, layout: WITH_LOG },
     steps: [
       { command: "focus:log", model: { mode: "whistle", field: "main" }, effects: [{ run: "layout.show", args: { id: "log" } }, HOLD] },
-      { world: { barFocused: true, layout: { ...WITH_LOG, children: [WITH_LOG.children[0], term("log"), anchor] } }, tick: 120, model: { mode: "whistle", field: "log" } },
+      { world: { anchorFocused: true, layout: { ...WITH_LOG, children: [WITH_LOG.children[0], term("log"), anchor] } }, tick: 120, model: { mode: "whistle", field: "log" } },
     ],
   },
   {
@@ -120,7 +120,7 @@ const SCENARIOS = [
   {
     name: "A jump key on the field already selected keeps it selected and stays in WHISTLE",
     world: IN_STOCK,
-    steps: [{ command: "focus:agents" }, { world: { barFocused: true }, tick: 120 },
+    steps: [{ command: "focus:agents" }, { world: { anchorFocused: true }, tick: 120 },
       { command: "focus:agents", model: { mode: "whistle", field: "agents" } },
       { command: "field:agents", model: { mode: "whistle", field: "agents" } }],
   },

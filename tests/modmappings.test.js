@@ -24,8 +24,8 @@ const world = ({ mods = ["alpha", "beta"], entries = {}, map = {}, keys, props, 
   configFiles: { defaults: json({ keys: keys ?? TEST_DEFAULTS.keys, map }), user: user === undefined ? null : json(user) },
 });
 const entry = (map) => ({ v: 1, map });
-const IN = [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120 }];
-const ran = (command, args = {}) => [{ run: command, args }, { focusBar: true }];
+const IN = [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120 }];
+const ran = (command, args = {}) => [{ run: command, args }, { focusAnchor: true }];
 
 const SCENARIOS = [
   {
@@ -73,7 +73,7 @@ const SCENARIOS = [
       { tick: 120, raised: [{ text: "g: 2 mods want it, see settings" }] },
       { tick: 120, raised: [] },
       { command: "switch-mode", state: { onTerminal: true } },
-      { world: { barFocused: true }, tick: 120, state: { onTerminal: true } },
+      { world: { anchorFocused: true }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {
@@ -116,7 +116,7 @@ const SCENARIOS = [
   {
     name: "A mod on an own key counts for neither: the own key acts",
     world: world({ entries: { alpha: entry({ j: ["Down", "alpha.down"] }) } }),
-    steps: [...IN, { key: "j", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { run: "pane.go", args: { direction: "down" } }, { focusBar: true }],
+    steps: [...IN, { key: "j", effects: [{ run: "pane.focus", args: { pane: "p1" } }, { run: "pane.go", args: { direction: "down" } }, { focusAnchor: true }],
       model: { conflicts: [{ seq: ["j"], mods: ["alpha"], own: "down" }] } }],
   },
   {
@@ -259,7 +259,7 @@ const SCENARIOS = [
       { tick: 120, problems: 0, raised: [{ text: "alpha's mappings have a problem, see settings" }] },
       { tick: 120, raised: [] },
       { command: "switch-mode", state: { onTerminal: true } },
-      { world: { barFocused: true }, tick: 120, state: { onTerminal: true } },
+      { world: { anchorFocused: true }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {
@@ -270,7 +270,7 @@ const SCENARIOS = [
       { world: { modMappings: { alpha: entry({ g: ["Go", "alpha.go"], x: ["X", 5] }) } }, tick: 120,
         raised: [{ text: "alpha's mappings have a problem, see settings" }] },
       { command: "switch-mode" },
-      { world: { barFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, state: { onTerminal: true } },
+      { world: { anchorFocused: true, modMappings: { alpha: entry({ x: ["X", 5] }) } }, tick: 120, state: { onTerminal: true } },
     ],
   },
   {

@@ -177,14 +177,14 @@ const SCENARIOS = [
   {
     name: "Claims are made in TYPE as in WHISTLE",
     world: world(SHIPPED),
-    steps: [{ command: "switch-mode" }, { world: { barFocused: true }, tick: 120, effects: [WRITE] }],
+    steps: [{ command: "switch-mode" }, { world: { anchorFocused: true }, tick: 120, effects: [WRITE] }],
   },
   {
     name: "A claimed key's command in WHISTLE acts as the key",
     world: world(CLAIMED),
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
+      { world: { anchorFocused: true }, command: "key-i", effects: [{ run: "pane.focus", args: { pane: "p1" } }], model: { mode: "type" } },
     ],
   },
   {
@@ -192,7 +192,7 @@ const SCENARIOS = [
     world: world(CLAIMED),
     steps: [
       { command: "switch-mode" },
-      { world: { barFocused: true }, command: "key-Enter", model: { mode: "type" } },
+      { world: { anchorFocused: true }, command: "key-Enter", model: { mode: "type" } },
     ],
   },
   {

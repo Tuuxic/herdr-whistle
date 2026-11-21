@@ -27,7 +27,7 @@ keep the others.
 | `map` | object | Mappings and groups in whistle's `map` format (see the guide's "Your config"): a key to `[label, command]`, `[label, command, {args}]`, `[label, command, {args}, "type"]`, or a group `{ "name", "map" }`. |
 
 An entry only adds keys: no `null`, and no own keys or settings. A bad entry (another `v`, the
-wrong form) or a bad mapping in it is skipped and listed in whistle's settings under your mod's
+wrong form) or a bad mapping in it is skipped and listed in [whistle's config](config.md) under your mod's
 name; the rest still counts (rule 6).
 
 ## Rules
@@ -54,8 +54,8 @@ your mod leaves the layout is ignored, not deleted.
   },
   "steps": [
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "r",
-      "effects": [{ "run": "mymod.refresh", "args": {} }, { "focusBar": true }] },
+    { "world": { "anchorFocused": true }, "key": "r",
+      "effects": [{ "run": "mymod.refresh", "args": {} }, { "focusAnchor": true }] },
     { "world": { "layout": { "id": "root", "type": "column", "children": [
         { "id": "main", "type": "block", "content": { "pane": {} } },
         { "id": "bar", "type": "block", "content": { "mod": "whistle" } }
@@ -68,12 +68,13 @@ your mod leaves the layout is ignored, not deleted.
 ### 2. Two mods on one key count for neither
 
 If two mods offer the same key (command against command, or command against group), neither
-counts: the key falls through to the defaults, or is unmapped. The bar flashes once when the
-conflict appears, and whistle's settings list it with both mods. Two groups on one key aren't a
+counts: the key falls through to the defaults, or is unmapped. Whistle raises a `conflict-new`
+[event](events.md) once when the conflict appears (whistle-ui's bar flashes it), and whistle's
+config lists it with both mods. Two groups on one key aren't a
 conflict: they merge key by key, only keys both offer inside them conflict, and the group takes
 the title of the mod first in layout order.
 
-```json example Two mods on one key count for neither and flash once
+```json example Two mods on one key count for neither and raise an event once
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -93,8 +94,8 @@ the title of the mod first in layout order.
     { "tick": 120, "raised": [{ "text": "g: 2 mods want it, see settings" }],
       "model": { "conflicts": [{ "seq": ["g"], "mods": ["alpha", "beta"] }] } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "tick": 120 },
-    { "key": "g", "effects": [{ "run": "tab.next", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "tick": 120 },
+    { "key": "g", "effects": [{ "run": "tab.next", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
@@ -119,7 +120,7 @@ taken an own key's action away, its key is free.
   "steps": [
     { "tick": 120, "raised": [{ "text": "i: alpha wants an own key, see settings" }] },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "i",
+    { "world": { "anchorFocused": true }, "key": "i",
       "effects": [{ "run": "pane.focus", "args": { "pane": "p1" } }], "state": { "mode": "type" } }
   ]
 }
@@ -130,7 +131,7 @@ taken an own key's action away, its key is free.
 The layout's whistle block or the person's whistle.json can map any mod's key, or set it to
 `null`: that's an override, not a conflict, and settles a conflict on that key. A mapping or
 `null` on a key where a mod's group is overrides the whole group (a group there merges with it
-instead). Settings label each override ("you, over alpha"); nothing flashes. Either can also switch a mod off whole with a `mods`
+instead). Whistle's config labels each override ("you, over alpha"); no event is raised. Either can also switch a mod off whole with a `mods`
 section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's.
 
 ```json example whistle.json switches a mod off, settling its conflict
@@ -152,13 +153,13 @@ section, `{ "mods": { "alpha": false } }`; whistle.json's goes over the layout's
   "steps": [
     { "tick": 120, "model": { "conflicts": [] } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "g",
-      "effects": [{ "run": "beta.go", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "g",
+      "effects": [{ "run": "beta.go", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```
 
-```json example The layout mapping a mod's key is an override, without a flash
+```json example The layout mapping a mod's key is an override, without an event
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -183,13 +184,13 @@ A chord in your mappings (`ctrl-g`) is claimed in keys.json like any of whistle'
 reaches whistle in WHISTLE. A conflicting chord is claimed only while a lower layer still maps
 it, so Herdr's own binding keeps working until the conflict is settled.
 
-### 6. A bad entry is skipped, listed under your mod, and flashes once
+### 6. A bad entry is skipped, listed under your mod, and raises an event once
 
 A bad entry, or a bad mapping in it, is skipped; the rest of your entry still counts. Whistle's
-settings list the problem under your mod's name, and the bar flashes once when it first
-appears. It isn't one of the person's config problems, so the bar's marker doesn't count it.
+config lists the problem under your mod's name, and a `mod-problem-new` event is raised once when it first
+appears. It isn't one of the person's config problems, so whistle-ui's marker doesn't count it.
 
-```json example A bad mapping in a mod's entry is skipped and flashes once
+```json example A bad mapping in a mod's entry is skipped and raises an event once
 {
   "world": {
     "layout": { "id": "root", "type": "column", "children": [
@@ -205,7 +206,7 @@ appears. It isn't one of the person's config problems, so the bar's marker doesn
     { "tick": 120, "problems": 0, "raised": [{ "text": "alpha's mappings have a problem, see settings" }],
       "settings": { "mods": [{ "name": "alpha", "on": true, "problems": ["map › x: should be [label, command] or a group { name, map }"] }] } },
     { "command": "switch-mode" },
-    { "world": { "barFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusBar": true }] }
+    { "world": { "anchorFocused": true }, "key": "g", "effects": [{ "run": "alpha.go", "args": {} }, { "focusAnchor": true }] }
   ]
 }
 ```

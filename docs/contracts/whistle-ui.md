@@ -10,14 +10,11 @@ whistle-ui, without it, or with your own client in its place.
 
 ```json
 [
-  { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle", "props": { "anchor": true, "hints": false } } },
+  { "id": "whistle-anchor", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle" } },
   { "id": "whistle-bar", "type": "block", "size": { "px": 22 }, "content": { "mod": "whistle-ui", "props": { "hintsGap": 6 } } },
   { "id": "whistle-corner", "type": "block", "size": { "px": 0 }, "content": { "mod": "whistle-ui", "props": { "corner": true } } }
 ]
 ```
-
-Whistle still draws a hints box of its own unless its anchor says `hints: false`, which leaves
-the hints to whistle-ui.
 
 ## Blocks and props
 
@@ -51,20 +48,35 @@ them.
 ### 1. A bar shows the mode and where the keyboard is
 
 The badge says TYPE or WHISTLE. In TYPE the label says `Terminal` while a terminal pane has
-focus. In WHISTLE it names the terminal's selected pane, or the selected keynav field's label
-([keynav.md](keynav.md): `active` and the field's entry).
+focus. In WHISTLE it names the terminal's selected pane, the selected keynav field's label
+([keynav.md](keynav.md): `active` and the field's entry), or a stock field's name (`Spaces`,
+`Tabs` or `Agents`, from the whistle state's `field` and that block's mod).
 
 ```json ui-example In WHISTLE on the terminal, the bar names the pane
 {
-  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true } },
+  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": true, "field": "main", "inert": null } },
   "world": { "panes": [{ "pane": "p1", "title": "zsh" }] },
   "bar": { "badge": "WHISTLE", "label": "Terminal · zsh", "marker": null }
 }
 ```
 
+```json ui-example In WHISTLE on a stock field, the bar says its name
+{
+  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": "p1", "onTerminal": false, "field": "spaces", "inert": null } },
+  "world": { "layout": { "id": "root", "type": "column", "children": [
+    { "id": "spaces", "type": "block", "content": { "mod": "spaces" } },
+    { "id": "main", "type": "block", "content": { "pane": {} } },
+    { "id": "whistle-anchor", "type": "block", "content": { "mod": "whistle" } },
+    { "id": "whistle-bar", "type": "block", "content": { "mod": "whistle-ui" } },
+    { "id": "whistle-corner", "type": "block", "content": { "mod": "whistle-ui", "props": { "corner": true } } }
+  ] } },
+  "bar": { "badge": "WHISTLE", "label": "Spaces", "marker": null }
+}
+```
+
 ```json ui-example In WHISTLE on a keynav field, the bar says the field's label
 {
-  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false } },
+  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null } },
   "world": { "shared": { "keynav": { "v": 3, "active": "files {}" }, "keynav.field:files {}": { "v": 3, "label": "Files", "keys": {} } } },
   "bar": { "badge": "WHISTLE", "label": "Files", "marker": null }
 }
@@ -75,7 +87,7 @@ focus. In WHISTLE it names the terminal's selected pane, or the selected keynav 
 ```json ui-example Switched off with two config problems
 {
   "published": {
-    "whistle": { "v": 1, "mode": "type", "enabled": false, "sequence": null, "pane": null, "onTerminal": false },
+    "whistle": { "v": 1, "mode": "type", "enabled": false, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null },
     "config": { "v": 1, "problems": [{ "source": "layout", "detail": "a" }, { "source": "keys.json", "detail": "b" }], "mods": [], "conflicts": [], "overrides": [] }
   },
   "bar": { "badge": null, "label": "Whistle off", "marker": "⚠ 2" }
@@ -86,7 +98,7 @@ focus. In WHISTLE it names the terminal's selected pane, or the selected keynav 
 
 ```json ui-example Whistle inert: the bar says why
 {
-  "published": { "whistle": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false,
+  "published": { "whistle": { "v": 1, "mode": "type", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null,
     "inert": { "problem": "Whistle needs Herdr 0.1.15 or later", "fix": "Update Herdr" } } },
   "bar": { "badge": null, "label": "", "marker": null, "problem": "Whistle needs Herdr 0.1.15 or later" }
 }
@@ -108,7 +120,7 @@ makes one when the layout changes) flashes none of the events already in the fee
 ```json ui-example A new event flashes its text
 {
   "published": {
-    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false },
+    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null },
     "events": { "v": 1, "events": [{ "seq": 4, "kind": "unmapped", "keys": ["w", "x"], "text": "w x is not mapped" }] }
   },
   "world": { "last": 3 },
@@ -124,7 +136,7 @@ block and `hintsGap` above it, and closes it when `whistle.hints` goes back to `
 ```json ui-example The lead bar docks the hints on itself
 {
   "published": {
-    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false },
+    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false, "field": null, "inert": null },
     "hints": { "v": 1, "keys": "w", "title": "Panes", "items": [{ "key": "v", "label": "Split right", "group": false }], "exit": "Esc cancels" }
   },
   "world": { "size": { "width": 1000, "height": 22 }, "viewport": { "width": 1000, "height": 600 } },
@@ -141,7 +153,7 @@ right and bottom edges.
 ```json ui-example No bar shown: the corner block shows the hints at the bottom right
 {
   "published": {
-    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false },
+    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false, "field": null, "inert": null },
     "hints": { "v": 1, "keys": "w", "title": "Panes", "items": [{ "key": "v", "label": "Split right", "group": false }], "exit": "Esc cancels" }
   },
   "world": {
@@ -161,7 +173,7 @@ right and bottom edges.
 ```json ui-example A bar with hints false opens no hints box
 {
   "published": {
-    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false },
+    "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": { "keys": ["w"], "group": "Panes" }, "pane": null, "onTerminal": false, "field": null, "inert": null },
     "hints": { "v": 1, "keys": "w", "title": "Panes", "items": [{ "key": "v", "label": "Split right", "group": false }], "exit": "Esc cancels" }
   },
   "world": { "props": { "hints": false }, "layout": { "id": "root", "type": "column", "children": [
@@ -182,7 +194,7 @@ fails comes back as an event, which the bar flashes.
 
 ```json ui-example whistle-ui.settings in WHISTLE
 {
-  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false } },
+  "published": { "whistle": { "v": 1, "mode": "whistle", "enabled": true, "sequence": null, "pane": null, "onTerminal": false, "field": null, "inert": null } },
   "command": "settings",
   "effects": [{ "run": "whistle.mode:type" },
     { "openOverlay": "settings", "spec": { "mod": "whistle-ui", "kind": "dialog", "width": 640, "height": 0.8, "props": { "part": "settings" } } }]
