@@ -188,8 +188,26 @@ the last one you read, whistle started again: every event in the feed is new to 
 
 Whistle compares the whistle state it publishes with the one published before (by this copy or
 the copy before it): a new `mode` is `mode-switched`, a new `enabled` is `whistle-enabled` or
-`whistle-disabled`, and a new `field` in WHISTLE is `field-selected`. The first state whistle
-ever publishes is no change.
+`whistle-disabled`, and a new `field` in WHISTLE is `field-selected`. With no state published
+before (whistle just started), it compares with the state before the step: the first state is
+no change by itself, but a step that changes the mode raises `mode-switched` all the same.
+
+```json example The first step of a whistle that just started raises mode-switched when it switches
+{
+  "world": {
+    "layout": { "id": "root", "type": "column", "children": [
+      { "id": "main", "type": "block", "content": { "pane": {} } },
+      { "id": "anchor", "type": "block", "content": { "mod": "whistle" } }
+    ] },
+    "focused": { "pane": "p1" }
+  },
+  "steps": [
+    { "command": "switch-mode", "raised": [
+      { "kind": "mode-switched", "groups": ["mode"], "from": "type", "to": "whistle", "text": "WHISTLE" },
+      { "kind": "field-selected", "groups": ["field"], "block": "main", "text": "main selected" }] }
+  ]
+}
+```
 
 ```json example switch-mode raises mode-switched, and field-selected for the terminal
 {

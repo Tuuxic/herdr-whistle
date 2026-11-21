@@ -595,9 +595,14 @@ export function step(model, input, world) {
   if (leftOut(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
   if (why) return inertPublished(told(stepped(model, input, world, why), world, why), world, why);
-  // A copy that stood aside runs now.
-  const m = model.told ? raised({ ...model, told: null, inertRaised: null }, { kind: "whistle-active", text: "Whistle runs" }) : model;
-  return publish(stepped(m, input, world, why), world, model.eventSeq ?? 0);
+  // A copy that stood aside runs now. Another copy may have published since: what this copy
+  // published last is no guide, so it compares with world.state and writes each public key anew.
+  const m = model.told ? raised({ ...model, told: null, inertRaised: null, published: null, publicSent: NOTHING_SENT },
+    { kind: "whistle-active", text: "Whistle runs" }) : model;
+  // The state to compare with: the one published before, else (none yet) the one before this
+  // step, so a fresh copy's first step that switches the mode still raises mode-switched.
+  const before = statePublished(m, world) ?? state(configured(m, world), world);
+  return publish(stepped(m, input, world, why), world, model.eventSeq ?? 0, before);
 }
 
 function stepped(model, input, world, why) {
@@ -683,14 +688,14 @@ function writePublic(out, values) {
 // The state published before this step, by this copy or (a new copy) the one before it.
 const statePublished = (model, world) => (model.published ? JSON.parse(model.published) : (world.state ?? null));
 
-// After a running copy's step: the changes in the whistle state raised as events (events.js
-// changes), each public key that changed, the whistle state if it changed (and only then), and
-// the events raised since seq `before` pushed to the subscribers that show.
-function publish(out, world, before) {
+// After a running copy's step: the changes in the whistle state since `was` raised as events
+// (events.js changes), each public key that changed, the whistle state if it changed (and only
+// then), and the events raised since seq `after` pushed to the subscribers that show.
+function publish(out, world, after, was) {
   const now = state(out.model, world);
-  const model = changes(statePublished(out.model, world), now).reduce(raised, out.model);
+  const model = changes(was, now).reduce(raised, out.model);
   const written = published(writePublic({ ...out, model }, publicValues(model, world)), now);
-  return { ...written, effects: [...written.effects, ...pushes(model, before, subscribersOf(world), world)] };
+  return { ...written, effects: [...written.effects, ...pushes(model, after, subscribersOf(world), world)] };
 }
 
 // An inert copy's step, only from the copy that would run (inert.js runningCopy): while another

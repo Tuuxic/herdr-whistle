@@ -102,11 +102,10 @@ const SCENARIOS = [
     world: world({ layout: { id: "root", type: "column", children: [term("main"), { id: "notes", type: "block", hidden: true, content: { pane: {} } },
         { ...anchor, content: { mod: "whistle", props: { mappings: { n: ["Notes", "whistle.field:notes"], m: ["Missing", "whistle.toggle:gone"] } } } }] } }),
     steps: [...IN,
-      { key: "n", shared: { "whistle.events": { v: 1, events: [
-        { seq: 1, kind: "cant-select", groups: G["cant-select"], block: "notes", reason: "hidden", text: "notes can't be selected now" }] } } },
-      { key: "m", shared: { "whistle.events": { v: 1, events: [
-        { seq: 1, kind: "cant-select", groups: G["cant-select"], block: "notes", reason: "hidden", text: "notes can't be selected now" },
-        { seq: 2, kind: "verb-failed", groups: G["verb-failed"], block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
+      { key: "n", raised: [
+        { seq: 3, kind: "cant-select", groups: G["cant-select"], block: "notes", reason: "hidden", text: "notes can't be selected now" }] },
+      { key: "m", raised: [
+        { seq: 4, kind: "verb-failed", groups: G["verb-failed"], block: "gone", reason: "missing", text: "No gone in this layout" }] }],
   },
   {
     name: "A jump key in TYPE on a block the layout lacks raises verb-failed",
@@ -255,6 +254,16 @@ const SCENARIOS = [
       inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." } } },
     steps: [{ tick: 120, raised: [] }, { tick: 120, raised: [] },
       { world: { herdr: "0.0.1" }, tick: 120, raised: [{ kind: "whistle-inert", problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.0.1)` }] }],
+  },
+  {
+    name: "A copy that stood aside for another compares with the state that copy published, not its own old one",
+    world: { folder: "whistle-2", copies: { "whistle-2": VERSION }, focused: { pane: "p1" },
+      layout: { id: "root", type: "column", children: [term("main"), { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
+    steps: [{ tick: 120 }, { command: "switch-mode", state: { mode: "whistle" } },
+      { world: { copies: { whistle: VERSION, "whistle-2": VERSION }, layout: { id: "root", type: "column", children: [term("main"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] },
+        state: { v: 1, mode: "type", enabled: true, sequence: null, pane: "p1", onTerminal: false, field: null, inert: null } }, tick: 120 },
+      { world: { layout: { id: "root", type: "column", children: [term("main"), { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
+        tick: 120, raised: [{ kind: "whistle-active" }] }],
   },
   {
     name: "A copy inert while another copy runs writes no state",
