@@ -19,7 +19,7 @@ import { View } from "gpui-kit";
 import { layout, focused, panes, run, shared, setShared, nextCommand, readTextFile, writeTextFile, appHome, exec, props } from "herdr";
 // Through the namespace, so a Herdr without them still loads whistle, which then stands aside.
 import * as herdr from "herdr";
-import { start, step, STATE } from "./step.js";
+import { start, step, STATE, SUBSCRIBERS } from "./step.js";
 import { keyName, hcKey } from "./keynames.js";
 import { renderAnchor } from "./anchor.js";
 import { HOME } from "./version.js";
@@ -98,6 +98,7 @@ export default class Whistle extends View {
       platform: call(() => herdr.window().platform), layoutName: shared("layout") ?? null, keysFile: this.keysFile,
       configFiles: this.configFiles, commands: this.commands, modMappings: shared("whistle.mappings") ?? {},
       props: call(() => props() ?? {}) ?? undefined, state: shared(STATE) ?? null,
+      subscribers: shared(SUBSCRIBERS) ?? null,
     };
   }
 

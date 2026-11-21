@@ -8,8 +8,16 @@ import { term, anchor } from "./worlds.js";
 import { VERSION, MIN_HERDR } from "./version.js";
 import { readState, hintsOf, eventsSince, configOf } from "./whistle.js";
 
+// Each kind's groups, as docs/contracts/events.md lists them.
+const G = {
+  "command-failed": ["command", "problem"], "verb-failed": ["command", "problem"], "cant-select": ["field", "problem"],
+  "key-unmapped": ["sequence", "problem"], "conflict-new": ["config", "problem"], "mod-problem-new": ["config", "problem"],
+  "settings-unread": ["settings", "problem"], "settings-broken": ["settings", "problem"], "settings-write-failed": ["settings", "problem"],
+  "whistle-inert": ["whistle", "problem"],
+};
+
 // The event a command whistle doesn't know raises when run (c: as Herdr hands it over).
-const UNKNOWN = (seq, c) => ({ seq, kind: "command-failed", command: `whistle.${c}`,
+const UNKNOWN = (seq, c) => ({ seq, kind: "command-failed", groups: G["command-failed"], command: `whistle.${c}`,
   error: `unknown whistle command whistle.${c}`, text: `unknown whistle command whistle.${c}` });
 
 const json = (v) => JSON.stringify(v);
@@ -58,14 +66,14 @@ const SCENARIOS = [
 
   // whistle.events
   {
-    name: "whistle.events starts empty, and an unmapped key adds an unmapped event with its keys",
+    name: "whistle.events starts empty, and an unmapped key adds key-unmapped with its keys, ending the sequence",
     world: world({ map: PANES }),
     steps: [
       { tick: 120, shared: { "whistle.events": { v: 1, events: [] } } },
       ...IN.slice(0, 1),
-      { world: { anchorFocused: true }, key: "w", shared: { "whistle.events": undefined } },
-      { key: "x", raised: [{ text: "w x is not mapped" }],
-        shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "unmapped", keys: ["w", "x"], text: "w x is not mapped" }] } } },
+      { world: { anchorFocused: true }, key: "w", raised: [{ kind: "sequence-started" }] },
+      { key: "x", raised: [{ seq: 4, kind: "key-unmapped", groups: G["key-unmapped"], keys: ["w", "x"], text: "w x is not mapped" },
+        { seq: 5, kind: "sequence-ended", keys: ["w"], by: "unmapped" }] },
       { tick: 120, shared: { "whistle.events": undefined } },
     ],
   },
@@ -76,18 +84,18 @@ const SCENARIOS = [
       beta: entry({ g: { name: "Beta", map: { d: ["D", "beta.d"], e: ["E", "beta.e"] } } }),
     } }),
     steps: [{ tick: 120, shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "conflict-new", keys: ["g", "d"], mods: ["alpha", "beta"], text: "g d: 2 mods want it, see settings" },
-      { seq: 2, kind: "conflict-new", keys: ["g", "e"], mods: ["alpha", "beta"], text: "g e: 2 mods want it, see settings" },
-      { seq: 3, kind: "mod-problem-new", source: "alpha", detail: "map › z: should be [label, command] or a group { name, map }",
+      { seq: 1, kind: "conflict-new", groups: G["conflict-new"], keys: ["g", "d"], mods: ["alpha", "beta"], text: "g d: 2 mods want it, see settings" },
+      { seq: 2, kind: "conflict-new", groups: G["conflict-new"], keys: ["g", "e"], mods: ["alpha", "beta"], text: "g e: 2 mods want it, see settings" },
+      { seq: 3, kind: "mod-problem-new", groups: G["mod-problem-new"], source: "alpha", detail: "map › z: should be [label, command] or a group { name, map }",
         text: "alpha's mappings have a problem, see settings" },
     ] } } }],
   },
   {
-    name: "The feed keeps the last 8 events, their seqs rising on",
+    name: "The feed keeps the last 32 events, their seqs rising on",
     world: world(),
-    steps: [{ tick: 120 }, ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ command: `focus:nope${n}` })),
-      { command: "focus:nope9", shared: { "whistle.events": { v: 1, events: [2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-        { seq: n, kind: "verb-failed", block: `nope${n}`, reason: "missing", text: `No nope${n} in this layout` })) } } }],
+    steps: [{ tick: 120 }, ...Array.from({ length: 32 }, (_, i) => ({ command: `focus:nope${i + 1}` })),
+      { command: "focus:nope33", shared: { "whistle.events": { v: 1, events: Array.from({ length: 32 }, (_, i) => i + 2).map((n) => (
+        { seq: n, kind: "verb-failed", groups: G["verb-failed"], block: `nope${n}`, reason: "missing", text: `No nope${n} in this layout` })) } } }],
   },
   {
     name: "A block that can't be selected raises cant-select, and a verb on a block the layout lacks raises verb-failed",
@@ -95,41 +103,41 @@ const SCENARIOS = [
         { ...anchor, content: { mod: "whistle", props: { mappings: { n: ["Notes", "whistle.field:notes"], m: ["Missing", "whistle.toggle:gone"] } } } }] } }),
     steps: [...IN,
       { key: "n", shared: { "whistle.events": { v: 1, events: [
-        { seq: 1, kind: "cant-select", block: "notes", reason: "hidden", text: "notes can't be selected now" }] } } },
+        { seq: 1, kind: "cant-select", groups: G["cant-select"], block: "notes", reason: "hidden", text: "notes can't be selected now" }] } } },
       { key: "m", shared: { "whistle.events": { v: 1, events: [
-        { seq: 1, kind: "cant-select", block: "notes", reason: "hidden", text: "notes can't be selected now" },
-        { seq: 2, kind: "verb-failed", block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
+        { seq: 1, kind: "cant-select", groups: G["cant-select"], block: "notes", reason: "hidden", text: "notes can't be selected now" },
+        { seq: 2, kind: "verb-failed", groups: G["verb-failed"], block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
   },
   {
     name: "A jump key in TYPE on a block the layout lacks raises verb-failed",
     world: world(),
     steps: [{ tick: 120 }, { command: "focus:gone", raised: [{ text: "No gone in this layout" }], shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "verb-failed", block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
+      { seq: 1, kind: "verb-failed", groups: G["verb-failed"], block: "gone", reason: "missing", text: "No gone in this layout" }] } } }],
   },
   {
     name: "A command that failed raises command-failed",
     world: world(),
     steps: [{ tick: 120 }, { ran: "pane.split", error: "boom", shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "command-failed", command: "pane.split", error: "boom", text: "pane.split failed: boom" }] } } }],
+      { seq: 1, kind: "command-failed", groups: G["command-failed"], command: "pane.split", error: "boom", text: "pane.split failed: boom" }] } } }],
   },
   {
     name: "whistle.on before whistle.json is read raises settings-unread",
     world: { ...world(), configFiles: { defaults: json({ keys: TEST_DEFAULTS.keys, map: {} }) } },
     steps: [{ command: "on", effects: [], shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "settings-unread", text: "whistle.json isn't read yet" }] } } }],
+      { seq: 1, kind: "settings-unread", groups: G["settings-unread"], text: "whistle.json isn't read yet" }] } } }],
   },
   {
     name: "whistle.off on a whistle.json that doesn't parse raises settings-broken and writes nothing",
     world: world({ user: "{ nope" }),
     steps: [{ command: "off", effects: [], shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "settings-broken", detail: "doesn't parse", text: "whistle.json doesn't parse; fix it first" }] } } }],
+      { seq: 1, kind: "settings-broken", groups: G["settings-broken"], detail: "doesn't parse", text: "whistle.json doesn't parse; fix it first" }] } } }],
   },
   {
     name: "A failed write of whistle.json raises settings-write-failed",
     world: world(),
     steps: [{ tick: 120 }, { wrote: "whistle.json", ok: false, error: "denied", raised: [{ text: "couldn't write whistle.json: denied" }],
       shared: { "whistle.events": { v: 1, events: [
-        { seq: 1, kind: "settings-write-failed", error: "denied", text: "couldn't write whistle.json: denied" }] } } }],
+        { seq: 1, kind: "settings-write-failed", groups: G["settings-write-failed"], error: "denied", text: "couldn't write whistle.json: denied" }] } } }],
   },
 
   // The settings commands: whistle writes whistle.json itself.
@@ -158,14 +166,14 @@ const SCENARIOS = [
     name: "The keep command on a key sequence the mod doesn't map raises command-failed and writes nothing",
     world: world({ mods: ["alpha"], entries: { alpha: entry({ g: ["Go", "alpha.go"] }) } }),
     steps: [{ tick: 120 }, { command: 'keep-mapping:{"mod":"alpha","keys":["x","y"]}', effects: [],
-      shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "command-failed", command: 'whistle.keep-mapping:{"mod":"alpha","keys":["x","y"]}',
+      shared: { "whistle.events": { v: 1, events: [{ seq: 1, kind: "command-failed", groups: G["command-failed"], command: 'whistle.keep-mapping:{"mod":"alpha","keys":["x","y"]}',
         error: "alpha maps nothing at x y", text: "alpha maps nothing at x y" }] } } }],
   },
   {
     name: "A settings command on a whistle.json that doesn't parse raises settings-broken and writes nothing",
     world: world({ user: "[1]" }),
     steps: [{ command: "mappings-off:alpha", effects: [], shared: { "whistle.events": { v: 1, events: [
-      { seq: 1, kind: "settings-broken", detail: "isn't a JSON object", text: "whistle.json isn't a JSON object; fix it first" }] } } }],
+      { seq: 1, kind: "settings-broken", groups: G["settings-broken"], detail: "isn't a JSON object", text: "whistle.json isn't a JSON object; fix it first" }] } } }],
   },
   {
     name: "The settings commands spell as the commands contract says",
@@ -230,12 +238,13 @@ const SCENARIOS = [
 
   // The whistle state's inert field.
   {
-    name: "A copy inert on an old Herdr, with no other copy running, publishes the state with inert, once",
+    name: "A copy inert on an old Herdr, with no other copy running, publishes the state with inert and whistle-inert, once",
     world: { herdr: "0.1.0", focused: { pane: "p1" } },
     steps: [
       { tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null,
         inert: { problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." } },
-        shared: { "whistle.hints": undefined, "whistle.events": undefined, "whistle.config": undefined } },
+        shared: { "whistle.hints": undefined, "whistle.config": undefined, "whistle.events": { v: 1, events: [{ seq: 1, kind: "whistle-inert", groups: G["whistle-inert"],
+          text: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, problem: `Whistle needs Herdr ≥ ${MIN_HERDR} (this is 0.1.0)`, fix: "Update Herdr." }] } } },
       { tick: 120, published: null },
       { world: { herdr: MIN_HERDR }, tick: 120, published: { v: 1, mode: "type", enabled: true, sequence: null, pane: null, onTerminal: false, field: null, inert: null } },
     ],
@@ -251,6 +260,54 @@ const SCENARIOS = [
     world: { herdr: "0.1.0", folder: "whistle-2", copies: { whistle: VERSION, "whistle-2": VERSION },
       layout: { id: "root", type: "column", children: [term("main"), anchor, { id: "anchor-2", type: "block", content: { mod: "whistle-2" } }] } },
     steps: [{ tick: 120, published: null }],
+  },
+
+  // Subscriptions (events.md): kept in the private whistle.subscribers, pushed only to mods that show.
+  {
+    name: "subscribe keeps the filter in whistle.subscribers; the same filter again writes nothing; unsubscribe removes it",
+    world: world({ mods: ["notes"] }),
+    steps: [{ tick: 120 },
+      { command: 'subscribe:{"mod":"notes","groups":["mode"],"kinds":["command-ran"]}',
+        effects: [{ setShared: "whistle.subscribers", value: { notes: { groups: ["mode"], kinds: ["command-ran"] } } }] },
+      { command: 'subscribe:{"mod":"notes","groups":["mode"],"kinds":["command-ran"]}', effects: [] },
+      { command: "unsubscribe:notes", effects: [{ setShared: "whistle.subscribers", value: {} }] },
+      { command: "unsubscribe:notes", effects: [], raised: [] }],
+  },
+  {
+    name: "A new copy of whistle reads the subscriptions back and pushes to them",
+    world: { ...world({ mods: ["notes"] }), subscribers: { notes: {} } },
+    steps: [{ tick: 120 }, { command: "switch-mode", effects: [{ focusAnchor: true },
+      { run: 'notes.whistle-event:{"seq":1,"kind":"mode-switched","groups":["mode"],"text":"WHISTLE","from":"type","to":"whistle"}' },
+      { run: 'notes.whistle-event:{"seq":2,"kind":"field-selected","groups":["field"],"text":"main selected","block":"main"}' }] }],
+  },
+  {
+    name: "subscribe and unsubscribe work while WHISTLE is switched off",
+    world: world({ mods: ["notes"], user: { enabled: false } }),
+    steps: [{ tick: 120 }, { command: 'subscribe:{"mod":"notes"}', effects: [{ setShared: "whistle.subscribers", value: { notes: {} } }] }],
+  },
+  {
+    name: "A subscribe whose groups aren't strings raises command-failed and keeps nothing",
+    world: world({ mods: ["notes"] }),
+    steps: [{ tick: 120 }, { command: 'subscribe:{"mod":"notes","groups":"mode"}', effects: [], raised: [{ kind: "command-failed" }] }],
+  },
+  {
+    name: "A lone inert copy pushes nothing to its subscribers",
+    world: { ...world({ mods: ["notes"] }), herdr: "0.1.0", subscribers: { notes: {} } },
+    steps: [{ tick: 120, effects: [], raised: [{ kind: "whistle-inert" }] }],
+  },
+  {
+    name: "A mapping to whistle's own verb, and the layout.show it runs to reveal a block, raise no command-ran",
+    world: world({ layout: { id: "root", type: "column", children: [term("main"), { id: "log", type: "block", hidden: true, content: { pane: {} } },
+      { ...anchor, content: { mod: "whistle", props: { mappings: { g: ["Log", "whistle.focus:log"], s: ["Split", "pane.split"] } } } }] } }),
+    steps: [...IN, { key: "g", effects: [{ run: "layout.show", args: { id: "log" } }, { focusAnchor: true }], raised: [] },
+      { key: "s", raised: [{ kind: "command-ran", command: "pane.split" }] }],
+  },
+  {
+    name: "A move sent to a keynav field raises no command-ran",
+    world: { ...world({ layout: { id: "root", type: "column", children: [{ id: "top", type: "row", children: [term("main"), { id: "tree", type: "block", content: { mod: "tree" } }] }, anchor] } }),
+      shared: { "keynav.field:tree {}": { v: 3, label: "Tree", keys: {} } } },
+    steps: [...IN, { key: "ctrl-l", raised: [{ kind: "field-selected", block: "tree" }] },
+      { key: "l", effects: [{ run: "tree.keynav-right", args: {} }, { focusAnchor: true }], raised: [] }],
   },
 ];
 

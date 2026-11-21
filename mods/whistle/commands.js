@@ -14,6 +14,10 @@ const COMMANDS = {
   "mappings-on": PLAIN, "mappings-off": PLAIN,
   // { "mod": "claude-hints", "keys": ["g", "q"] }: the keys in Herdr's key names.
   "keep-mapping": { arg: "json", valid: (v) => isObject(v) && nonEmpty(v.mod) && Array.isArray(v.keys) && v.keys.length > 0 && v.keys.every(nonEmpty) },
+  // { "mod": "notes", "groups": ["mode"], "kinds": ["field-selected"] }: groups and kinds
+  // optional (events.js subscription says what a good one is; a bad one fails there).
+  subscribe: { arg: "json", valid: () => true },
+  unsubscribe: PLAIN,
 };
 
 // A command as Herdr hands it over (no "whistle." before it): { name, arg: undefined (none) |

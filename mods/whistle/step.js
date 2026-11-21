@@ -26,8 +26,11 @@
 //          enabled: whether WHISTLE is switched on, published: the whistle state last
 //          published (state() below, as JSON) | null, publicSent: the public keys (PUBLIC)
 //          last written, as JSON ({ hints, events, config }; null: not yet),
-//          events: the last EVENTS_KEPT events [{ seq, kind, text, ...data }] (raised()),
-//          eventSeq: the last event's seq (0: none yet) }
+//          events: the last EVENTS_KEPT events [{ seq, kind, groups, text, ...data }]
+//          (events.js raised()), eventSeq: the last event's seq (0: none yet),
+//          inertRaised: the problem of the whistle-inert event this copy raised | null,
+//          subscribers: { [mod]: { groups?, kinds? } }, the subscriptions as this copy last
+//          wrote them (undefined: as world.subscribers says) }
 //
 // input: { command: "switch-mode" }      a whistle.<command>[:<argument>] from Herdr (keys.json,
 //                                          run()): "mode:type", 'keep-mapping:{"mod":…}'
@@ -57,10 +60,13 @@
 //          props: this copy's block props (props()), which tell the copies of the layout's
 //                 whistle blocks apart | undefined (unknown),
 //          state: shared("whistle"), the whistle state as last published, by whichever copy
-//                 | null (Herdr makes a new copy whenever the layout changes or shows again) }
+//                 | null (Herdr makes a new copy whenever the layout changes or shows again),
+//          subscribers: shared("whistle.subscribers"), the subscriptions as a copy last wrote
+//                       them | null }
 //
 // effects, a closed set of data:
-//   { run: "<command>", args }          run a Herdr command
+//   { run: "<command>", args }          run a Herdr command (or a mod's: a push to a
+//                                       subscriber, "<mod>.whistle-event:<event>")
 //   { focusAnchor: true }                  the anchor takes the keyboard
 //   { setShared: key, value }           set shared state; step adds the public keys (PUBLIC)
 //                                       that changed, then { setShared: "whistle" } last
@@ -82,6 +88,9 @@ import { blockProps, settings as blockSettings, leftOut } from "./block.js";
 import { inert, announce, runningCopy, COPIES } from "./inert.js";
 import { VERSION, FOLDER } from "./version.js";
 import { hints, config as configFacts, offered } from "./facts.js";
+import { raised, changes, pushes, subscription, sequenceStarted, sequenceEnded, EVENTS_KEPT } from "./events.js";
+
+export { EVENTS_KEPT };
 
 // The public keys (PUBLIC) as last written, as JSON: none yet.
 const NOTHING_SENT = { hints: null, events: null, config: null };
@@ -230,8 +239,11 @@ const takesKeyboard = (name) => /^(mod\.open|app\.)/.test(name) || /rename/.test
 // A mapping pressed: its command (pane and terminal commands on the terminal's selected pane),
 // then the anchor holds the keyboard. A mapping that ends in TYPE goes to TYPE instead, and holds
 // the keyboard for the terminal (modeTick): the command may have made one, which Herdr focuses.
-function runMapping(model, world, e) {
+// A mapping's own command raises command-ran (announce false: a keynav move or declared key,
+// which whistle sends for itself).
+function runMapping(model, world, e, announce = true) {
   if (e.run.startsWith("whistle.")) return whistleMapping(model, world, e.run.slice(8), e.args?.block);
+  if (announce) model = raised(model, { kind: "command-ran", command: e.run, text: `ran ${e.run}` });
   const effects = [];
   const pane = onTerminal(model, world) && model.pane;
   if (/^(pane|terminal)\./.test(e.run) && pane) effects.push({ run: "pane.focus", args: { pane } });
@@ -243,20 +255,10 @@ function runMapping(model, world, e) {
 
 // A move or a declared key sent to a keynav field as <mod>.keynav-<what>; the anchor holds the
 // keyboard, as after a mapping.
-const toField = (model, world, field, what) => runMapping(model, world, { run: `${field.mod}.keynav-${what}`, args: {} });
+const toField = (model, world, field, what) => runMapping(model, world, { run: `${field.mod}.keynav-${what}`, args: {} }, false);
 
 // How long whistle.focus waits for a block it showed to show a field (ms).
 export const WAIT_MS = 1500;
-
-// How many events whistle.events keeps: the last ones.
-export const EVENTS_KEPT = 8;
-
-// The model with an event in its feed (docs/contracts/events.md): { kind, text, ...data },
-// numbered with the next seq, the oldest dropped past EVENTS_KEPT.
-function raised(model, event) {
-  const seq = (model.eventSeq ?? 0) + 1;
-  return { ...model, eventSeq: seq, events: [...(model.events ?? []), { seq, ...event }].slice(-EVENTS_KEPT) };
-}
 
 
 // A key or mapping that raised an event and did nothing else.
@@ -315,7 +317,7 @@ function whistleMapping(model, world, v, block) {
 function jump(model, world, c) {
   const { verb, block } = verbAndBlock(c);
   const v = runsAs(verb);
-  if (model.mode === "whistle") return whistleMapping({ ...model, sequence: null }, world, v, block);
+  if (model.mode === "whistle") return whistleMapping(sequenceLeft(model), world, v, block);
   const why = cantRun(model, world, v, block);
   if (why) return { model: raised(model, why), effects: [] };
   if (verb === KEEP_MODE) return toggled(model, world, block);
@@ -354,6 +356,9 @@ function keepMod(model, world, c, { mod, keys: written }) {
   return userWrite(model, world, (text) => keepMapping(text, keys, value));
 }
 
+// The model with its key sequence ended another way than a key: sequence-ended, by "left".
+const sequenceLeft = (model) => (model.sequence?.length ? raised({ ...model, sequence: null }, sequenceEnded(model.sequence, "left")) : model);
+
 // In WHISTLE, back to TYPE before out (whistle switches off).
 function leaving(model, world, out) {
   if (model.mode !== "whistle") return out(model);
@@ -365,7 +370,32 @@ function leaving(model, world, out) {
 
 // The commands that work whether whistle is on or off: on, off and the settings
 // commands (commands.js parseCommand names).
-const ANY_TIME = ["on", "off", "mappings-on", "mappings-off", "keep-mapping"];
+const ANY_TIME = ["on", "off", "mappings-on", "mappings-off", "keep-mapping", "subscribe", "unsubscribe"];
+
+// The private shared key the subscriptions are kept in, so a new copy reads them back.
+export const SUBSCRIBERS = "whistle.subscribers";
+
+// The subscriptions now: this copy's, else those a copy before it wrote.
+const subscribersOf = (model, world) => model.subscribers ?? world.subscribers ?? {};
+
+// The model with the subscriptions changed to next, and the write of them if they changed.
+function subscribed(model, world, next) {
+  if (JSON.stringify(next) === JSON.stringify(subscribersOf(model, world))) return { model: { ...model, subscribers: next }, effects: [] };
+  return { model: { ...model, subscribers: next }, effects: [{ setShared: SUBSCRIBERS, value: next }] };
+}
+
+// whistle.subscribe:{ mod, groups?, kinds? }: the mod's whole filter, replacing any earlier one.
+function subscribe(model, world, c, arg) {
+  const s = subscription(arg);
+  if (!s) return failed(model, world, c, `${folderOf(world)}.subscribe needs {"mod":"<mod>","groups":[…],"kinds":[…]}`);
+  return subscribed(model, world, { ...subscribersOf(model, world), [s.mod]: s.filter });
+}
+
+// whistle.unsubscribe:<mod>: the mod's filter removed.
+function unsubscribe(model, world, mod) {
+  const { [mod]: _gone, ...rest } = subscribersOf(model, world);
+  return subscribed(model, world, rest);
+}
 
 // One of whistle's commands but the verbs (docs/contracts/commands.md), as Herdr hands it over
 // ("switch-mode", "mode:type", 'keep-mapping:{"mod":…}'). One it doesn't know fails.
@@ -380,6 +410,8 @@ function command(model, world, c) {
     case "mode": return p.arg === "type" ? (inWhistle ? type(model, world) : none) : (inWhistle ? none : whistle(model, world));
     case "mappings-on": case "mappings-off": return userWrite(model, world, (text) => switchMod(text, p.arg, p.name === "mappings-on"));
     case "keep-mapping": return keepMod(model, world, c, p.arg);
+    case "subscribe": return subscribe(model, world, c, p.arg);
+    case "unsubscribe": return unsubscribe(model, world, p.arg);
     default: return unknown(model, world, c);
   }
 }
@@ -439,8 +471,10 @@ function key(model, world, name) {
   const field = fieldAt(world.layout, ready.field, ready.recent, world.shared);
   const declared = field?.kind === KEYNAV ? declaredKeys(field, ready.config.own, world.platform).keys : null;
   const { sequence, act } = resolve(ready.config, ready.sequence, name, declared);
-  const cleared = { ...ready, sequence };
-  const m = act?.flash ? raised(cleared, { kind: "unmapped", keys: [...(ready.sequence ?? []), name], text: act.flash }) : cleared;
+  let m = { ...ready, sequence };
+  if (act?.flash) m = raised(m, { kind: "key-unmapped", keys: [...(ready.sequence ?? []), name], text: act.flash });
+  if (!ready.sequence?.length && sequence?.length) m = raised(m, sequenceStarted(sequence, groupAt(ready.config.map, sequence)?.name ?? null));
+  if (ready.sequence?.length && !sequence?.length) m = raised(m, sequenceEnded(ready.sequence, act?.run ? "ran" : act?.flash ? "unmapped" : "left"));
   if (!act) return { model: m, effects: [], handled: false };
   if (act.declared !== undefined) return toField(m, world, field, `key-${act.declared}`);
   if (act.run) return runMapping(m, world, act.run);
@@ -557,9 +591,10 @@ export function step(model, input, world) {
   // it acts on none of them.
   if (leftOut(world.layout, folderOf(world), world.props)) return { model, effects: [], handled: false };
   const why = inert(world);
-  if (why) return inertPublished(told(stepped(model, input, world, why), world, why), world);
-  const m = model.told ? { ...model, told: null } : model;
-  return publish(stepped(m, input, world, why), world);
+  if (why) return inertPublished(told(stepped(model, input, world, why), world, why), world, why);
+  // A copy that stood aside runs now.
+  const m = model.told ? raised({ ...model, told: null, inertRaised: null }, { kind: "whistle-active", text: "Whistle runs" }) : model;
+  return publish(stepped(m, input, world, why), world, model.eventSeq ?? 0);
 }
 
 function stepped(model, input, world, why) {
@@ -616,34 +651,51 @@ export function state(model, world) {
 export const PUBLIC = { hints: "whistle.hints", events: "whistle.events", config: "whistle.config" };
 
 // What the public keys hold for this model: whistle.hints { v: 1, keys, title, items, exit } |
-// null (facts.js hints), whistle.events { v: 1, events: the last EVENTS_KEPT [{ seq, kind, text,
-// ...data }] }, whistle.config { v: 1, problems, mods, conflicts, overrides } (facts.js config).
+// null (facts.js hints), whistle.events { v: 1, events: the last EVENTS_KEPT [{ seq, kind,
+// groups, text, ...data }] }, whistle.config { v: 1, problems, mods, conflicts, overrides }
+// (facts.js config).
 function publicValues(model, world) {
   const h = hints(model, world);
   return { hints: h && { v: 1, ...h }, events: { v: 1, events: model.events ?? [] }, config: { v: 1, ...configFacts(model, world) } };
 }
 
-// After a running copy's step: each public key that changed, then the whistle state if it
-// changed (and only then).
-function publish(out, world) {
+// Each of the public keys given that changed, written.
+function writePublic(out, values) {
   const sent = out.model.publicSent ?? NOTHING_SENT;
   const effects = [...out.effects];
   let publicSent = sent;
-  for (const [name, value] of Object.entries(publicValues(out.model, world))) {
+  for (const [name, value] of Object.entries(values)) {
     const sig = JSON.stringify(value);
     if (sig === sent[name]) continue;
     publicSent = { ...publicSent, [name]: sig };
     effects.push({ setShared: PUBLIC[name], value });
   }
-  return published({ ...out, model: { ...out.model, publicSent }, effects }, state(out.model, world));
+  return { ...out, model: { ...out.model, publicSent }, effects };
 }
 
-// An inert copy's step: the whistle state, saying why it is inert, when it changed, but only from
-// the copy that would run (inert.js runningCopy): while another copy runs, that copy's state
-// stands. The public keys stay as they were.
-function inertPublished(out, world) {
+// The state published before this step, by this copy or (a new copy) the one before it.
+const statePublished = (model, world) => (model.published ? JSON.parse(model.published) : (world.state ?? null));
+
+// After a running copy's step: the changes in the whistle state raised as events (events.js
+// changes), each public key that changed, the whistle state if it changed (and only then), and
+// the events raised since seq `before` pushed to the subscribers that show.
+function publish(out, world, before) {
+  const now = state(out.model, world);
+  const model = changes(statePublished(out.model, world), now).reduce(raised, out.model);
+  const written = published(writePublic({ ...out, model }, publicValues(model, world)), now);
+  return { ...written, effects: [...written.effects, ...pushes(model, before, subscribersOf(model, world), world)] };
+}
+
+// An inert copy's step, only from the copy that would run (inert.js runningCopy): while another
+// copy runs, that copy's state and feed stand. With none running: whistle-inert once per reason,
+// the feed if it changed, and the whistle state, saying why it is inert, when it changed. It
+// pushes nothing.
+function inertPublished(out, world, why) {
   if (runningCopy(world) !== folderOf(world)) return out;
-  return published(out, state(out.model, world));
+  const model = out.model.inertRaised === why.problem ? out.model
+    : raised({ ...out.model, inertRaised: why.problem }, { kind: "whistle-inert", problem: why.problem, fix: why.fix, text: why.problem });
+  const fed = writePublic({ ...out, model }, { events: { v: 1, events: model.events ?? [] } });
+  return published(fed, state(fed.model, world));
 }
 
 // The whistle state value written, if it isn't what was last.
