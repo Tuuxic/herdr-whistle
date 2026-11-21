@@ -2,7 +2,7 @@
 // core: the bar it draws, the events it flashes, the hints box it opens, docks and closes, and
 // the commands its settings run. The contract examples tie the two mods together.
 
-import { suite } from "./harness.js";
+import { suite, examplesIn } from "./harness.js";
 import { ui, command, mappingsCommand, keepCommand, FLASH_MS } from "./ui/ui.js";
 import * as read from "./ui/read.js";
 import texts from "./texts.js";
@@ -70,6 +70,15 @@ export default suite("whistle-ui", (t) => {
   t.check("a new copy flashes none of the events already there, and handles them",
     (({ bar, last }) => ({ label: bar.label, last }))(ui(pub({ events: EVENTS(ev(3, "old"), ev(4, "older")) }), world({ last: null })).model),
     { label: "Terminal", last: 4 });
+  const SEEN = "whistle-ui.seen";
+  const raised = ui(pub({ events: EVENTS(ev(3, "old"), ev(4, "raised while the layout changed")) }), world({ last: null, shared: { [SEEN]: 3 } }));
+  t.check("a new copy flashes the events after the last one any copy handled",
+    [raised.model.bar.label, raised.model.last], ["raised while the layout changed", 4]);
+  t.check("a copy that handles events keeps the last seq for the next copy", raised.effects, [{ seen: 4 }]);
+  t.check("a new copy after whistle started again (seqs gone back): every event in the feed is new",
+    ui(pub({ events: EVENTS(ev(1, "again")) }), world({ last: null, shared: { [SEEN]: 9 } })).model.bar.label, "again");
+  t.check("nothing new handled: the kept seq stays as it is",
+    ui(pub({ events: EVENTS(ev(4, "x")) }), world({ last: 4, shared: { [SEEN]: 4 } })).effects, []);
   const flashed = ui(pub({ events: one }), world()).model;
   t.check("a new event flashes its text", flashed.bar.label, "`x` is not mapped");
   t.check("the flash lasts FLASH_MS", flashed.flash.until, 10000 + FLASH_MS);
@@ -136,11 +145,11 @@ export default suite("whistle-ui", (t) => {
 
   // The contract page's examples (`json ui-example <name>`) run through whistle-ui's core.
   const page = "docs/contracts/whistle-ui.md";
-  const found = [...String(texts[page] ?? "").replace(/\r\n/g, "\n").matchAll(/^```[ \t]*json[ \t]+ui-example[ \t]+([^\n`]*?)[ \t]*\n([\s\S]*?)^```[ \t]*$/gm)];
+  const found = examplesIn(texts[page] ?? "", "ui-example");
   t.check(`${page} has examples`, found.length > 0, true);
   const DEFAULTS = { folder: "whistle-ui", props: {}, size: null, viewport: null, focused: null, panes: [], shared: {}, now: 0, last: 0, flash: null, box: null,
     layout: { id: "root", type: "column", children: [uiBlock("whistle-bar", {}), uiBlock("whistle-corner", CORNER)] } };
-  for (const [, name, body] of found) {
+  for (const { name, body } of found) {
     let x;
     try { x = JSON.parse(body); } catch (e) { t.fail(`${page}: ${name}`, `doesn't parse: ${e?.message ?? e}`); continue; }
     const w = { ...DEFAULTS, ...(x.world ?? {}) };

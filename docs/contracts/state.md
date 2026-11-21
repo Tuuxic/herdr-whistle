@@ -313,8 +313,3 @@ the CHANGELOG under **Mod authors**. New fields come under the same `v`. `whistl
   ([config.md](config.md)).
 - Private: every other `whistle.*` key (such as `whistle.copies`). It may change or go in any
   release; don't read or write it.
-
-## History
-
-- `v: 1` (whistle 1.0.0): first version.
-- whistle 2.0.0: `field` and `inert`.

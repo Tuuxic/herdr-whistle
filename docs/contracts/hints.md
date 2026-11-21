@@ -132,7 +132,3 @@ A copy of whistle that stands aside writes nothing here (see the state's
 
 As for the [whistle state](state.md#9-v-goes-up-only-on-a-breaking-change). `whistle.js`
 reads `v: 1` only, and gives `null` for any other `v`.
-
-## History
-
-- `v: 1` (whistle 2.0.0): first version.

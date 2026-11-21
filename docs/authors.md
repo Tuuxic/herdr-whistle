@@ -20,7 +20,7 @@ contracts. Pick the one that fits your job.
 
 Each contract has the same outline: who it's for and its current `v`, the shapes, numbered
 rules each with an example (the examples run as whistle's tests, so they're exactly what
-whistle does), what's stable and what may change, and its history.
+whistle does), and what's stable and what may change.
 
 ## The helpers
 

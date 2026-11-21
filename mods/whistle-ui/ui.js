@@ -11,7 +11,8 @@
 //          size: its drawn size { width, height } | null (not measured), viewport: the window's
 //          drawable size | null, layout: Herdr's layout tree, focused: { pane, terminal } | null,
 //          panes: [{ pane, title, program }], shared: { keynav: shared("keynav"),
-//          "keynav.field:<active>": that field's entry }, now: ms,
+//          "keynav.field:<active>": that field's entry, "whistle-ui.seen": the seq of the last
+//          event any copy handled }, now: ms,
 //          and what this copy kept from its last call (the model's fields): last: the seq of
 //          the last event it handled (null: none read yet, a new copy), flash: the bar's flash
 //          { text, until, sequence } | null, box: the hints box it opened, as JSON (null: none;
@@ -21,7 +22,7 @@
 //          block; last, flash, box: to hand back in the next world }
 //
 // effects: { openOverlay: name, spec } (closing the one open under that name first),
-//          { closeOverlay: name }, { run: "<command>" }.
+//          { closeOverlay: name }, { run: "<command>" }, { seen: seq } (written to SEEN).
 
 import { readState, hintsOf, eventsSince, configOf } from "./read.js";
 import { hintsBox } from "./box.js";
@@ -44,13 +45,13 @@ const stable = (v) => {
 // bar shown.
 export const isCorner = (props) => isObject(props) && props.corner === true;
 
-// This mod's blocks in the layout, in layout order: [{ id, props, shown }].
-function blocks(layout, folder) {
+// The layout's mod blocks, in layout order: [{ id, mod, props, shown }].
+function blocks(layout) {
   const out = [];
   const walk = (n, hidden) => {
     if (!n) return;
     const h = hidden || Boolean(n.hidden);
-    if (n.content?.mod === folder) out.push({ id: n.id, props: propsOf(n), shown: !h });
+    if (n.content?.mod) out.push({ id: n.id, mod: n.content.mod, props: propsOf(n), shown: !h });
     for (const c of n.children ?? []) walk(c, h);
   };
   walk(layout, false);
@@ -60,7 +61,7 @@ function blocks(layout, folder) {
 // The block that shows the hints and opens the settings: the first bar that shows, else the
 // corner block if it shows, else none.
 export function lead(layout, folder) {
-  const all = blocks(layout, folder).filter((b) => b.shown);
+  const all = blocks(layout).filter((b) => b.mod === folder && b.shown);
   return all.find((b) => !isCorner(b.props)) ?? all.find((b) => isCorner(b.props)) ?? null;
 }
 
@@ -74,17 +75,8 @@ const leads = (world) => {
 // fields (they take no part in keynav, so only the whistle state's field names them).
 const STOCK = { spaces: "Spaces", tabs: "Tabs", agents: "Agents" };
 
-// The mod in the layout's block with this id, if any.
-function modAt(layout, id) {
-  let found = null;
-  const walk = (n) => {
-    if (!n || found) return;
-    if (n.id === id && n.content?.mod) found = n.content.mod;
-    for (const c of n.children ?? []) walk(c);
-  };
-  walk(layout);
-  return found;
-}
+// The mod of a keynav field key: the folder name before the first space (docs/contracts/keynav.md).
+const modOfFieldKey = (key) => key.split(" ")[0];
 
 // Where the keyboard is, as the bar says it: in TYPE, the terminal if a pane is focused; in
 // WHISTLE, the terminal and its selected pane's title, the selected keynav field's label
@@ -99,9 +91,9 @@ function where(state, world) {
   const active = world.shared?.keynav?.active;
   if (typeof active === "string") {
     const label = world.shared?.[`keynav.field:${active}`]?.label;
-    return typeof label === "string" ? label : active.split(" ")[0];
+    return typeof label === "string" ? label : modOfFieldKey(active);
   }
-  return STOCK[modAt(world.layout, state.field)] ?? "";
+  return STOCK[blocks(world.layout).find((b) => b.id === state.field)?.mod] ?? "";
 }
 
 // The bar: inert, why; whistle not running, that; switched off, "Whistle off"; else the mode
@@ -118,12 +110,18 @@ function bar(state, config, flash, world) {
 
 const sequenceOf = (state) => JSON.stringify(state?.sequence?.keys ?? null);
 
+// The private shared key holding the seq of the last event a copy handled, so a new copy
+// (Herdr makes one on every layout change) goes on from there.
+export const SEEN = "whistle-ui.seen";
+
 // The flash after this call: the new events' texts, else the one kept while it lasts and the key
-// sequence hasn't changed. A new copy (last null) handles the events already there unshown.
+// sequence hasn't changed. A new copy (last null) goes on from SEEN; with none kept, it handles
+// the events already there unshown. When seqs go back (whistle started again), every event is new.
 function flashed(published, state, world) {
-  const fresh = world.last == null;
-  const { events, last } = eventsSince(published.events, fresh ? Infinity : world.last);
-  if (fresh) return { last: last === Infinity ? 0 : last, flash: null };
+  const seen = world.shared?.[SEEN];
+  const from = world.last ?? (Number.isInteger(seen) ? seen : null);
+  const { events, last } = eventsSince(published.events, from ?? Infinity);
+  if (from == null) return { last: last === Infinity ? 0 : last, flash: null };
   const sequence = sequenceOf(state);
   if (events.length) return { last, flash: { text: events.map((e) => e.text).join(" · "), until: world.now + FLASH_MS, sequence } };
   const f = world.flash;
@@ -147,6 +145,8 @@ export function ui(published, world) {
   const spec = box(published, state, world);
   const sent = spec ? JSON.stringify(spec) : null;
   const effects = [];
+  // Any copy that handled events keeps where it got to, for the next new copy.
+  if (last !== (world.shared?.[SEEN] ?? 0)) effects.push({ seen: last });
   // Only the lead closes a box: another copy's close would close the lead's (the shell finds
   // the box open under the name, whichever copy opened it).
   if (spec && sent !== world.box) effects.push({ openOverlay: HINTS, spec });

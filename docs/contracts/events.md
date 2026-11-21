@@ -151,7 +151,3 @@ A copy of whistle that stands aside writes nothing here.
 As for the [whistle state](state.md#9-v-goes-up-only-on-a-breaking-change): a field removed or
 its meaning changed, or a kind renamed, is a break. New kinds and new fields are not.
 `whistle.js` reads `v: 1` only.
-
-## History
-
-- `v: 1` (whistle 2.0.0): first version.

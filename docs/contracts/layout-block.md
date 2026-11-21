@@ -293,9 +293,3 @@ acts on nothing and publishes nothing.
 ## Stable and may change
 
 - Stable: `mappings`, `keys`, `mods`, `enabled`, `nav`, and the rules above.
-
-## History
-
-- whistle 1.0.0: first version.
-- whistle 2.0.0: every whistle block is the anchor; the props that placed whistle's bar and
-  hints box went to whistle-ui's blocks.

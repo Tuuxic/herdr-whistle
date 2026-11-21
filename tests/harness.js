@@ -180,19 +180,21 @@ export function runScenario(sc, core) {
   return fails;
 }
 
-// The tagged example blocks of a Markdown text: fenced blocks whose info string is
-// `json example <name>`, each holding one scenario as JSON (its name is the tag's). A block
-// that doesn't parse comes back with `error` instead of `scenario`.
+// The fenced blocks of a Markdown text whose info string is `json <tag> <name>`: [{ name, body }].
+// A fence is 3 or more backticks, closed by the same run.
+export function examplesIn(text, tag) {
+  const re = new RegExp(`^(\`{3,})[ \\t]*json[ \\t]+${tag}[ \\t]+([^\\n\`]*?)[ \\t]*\\n([\\s\\S]*?)^\\1[ \\t]*$`, "gm");
+  return [...String(text).replace(/\r\n/g, "\n").matchAll(re)].map((m) => ({ name: m[2], body: m[3] }));
+}
+
+// The tagged example blocks of a Markdown text (`json example <name>`), each holding one
+// scenario as JSON (its name is the tag's). A block that doesn't parse comes back with `error`
+// instead of `scenario`.
 export function examples(text) {
-  const out = [];
-  text = String(text).replace(/\r\n/g, "\n");
-  const re = /^(`{3,})[ \t]*json[ \t]+example[ \t]+([^\n`]*?)[ \t]*\n([\s\S]*?)^\1[ \t]*$/gm;
-  for (const m of text.matchAll(re)) {
-    const name = m[2];
-    try { out.push({ name, scenario: { ...JSON.parse(m[3]), name } }); }
-    catch (e) { out.push({ name, error: String(e?.message ?? e) }); }
-  }
-  return out;
+  return examplesIn(text, "example").map(({ name, body }) => {
+    try { return { name, scenario: { ...JSON.parse(body), name } }; }
+    catch (e) { return { name, error: String(e?.message ?? e) }; }
+  });
 }
 
 // A suite: run(t) gets t.check(name, got, want), t.scenario(sc, core), t.fail(name, why).

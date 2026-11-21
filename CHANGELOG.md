@@ -25,18 +25,13 @@ every public surface: ADR 0002). Agents relay these entries when they update whi
 4. whistle.json's `bar` is no longer listed as a config problem: whistle ignores it, like any
    key it doesn't know. Nothing to do; you may remove it.
 5. **Whistle draws nothing (breaking)**: whistle's bar, hints box and settings dialog are gone
-   from whistle; whistle-ui draws them. Copy `mods/whistle-ui/` and merge its `keys.json` as
-   Install steps 4 and 5 say. In each of the person's layouts with whistle blocks, keep exactly
-   one whistle block, sized 0 px, with the layout's `mappings`, `keys`, `mods`, `enabled` and
-   `nav` props; replace the other whistle blocks (the bars) with whistle-ui's bar, give it the
-   old bar's `hintsAlignRight`, `hintsAlignBorder` and `hintsGap`, and add whistle-ui's corner
-   block, as Install step 7 shows. Two whistle blocks with the same props make whistle stand
-   aside, so never leave two.
+   from whistle; whistle-ui draws them. Every whistle block is the anchor, and a layout's
+   whistle bars are no longer drawn: two whistle blocks with the same props make whistle stand
+   aside.
 6. **Props whistle doesn't take (breaking)**: on a whistle block, `anchor`, `bar`, `hints`,
    `hintsAlignRight`, `hintsAlignBorder` and `hintsGap` are props whistle doesn't know, each
-   listed as a config problem. Remove them from the whistle block (the `hints*` props go on
-   whistle-ui's bar). whistle.json's `hints` is ignored; remove it, and put `"hints": false` on
-   whistle-ui's blocks if the person had the hints off.
+   listed as a config problem; the `hints*` props are whistle-ui's. whistle.json's `hints` is
+   ignored.
 7. **`whistle.settings` (breaking)**: whistle opens no dialog. Replace keys.json's
    `"alt-,": "whistle.settings"` (in `global`) with whistle-ui's `"alt-,": "whistle-ui.settings"`,
    keeping its key.

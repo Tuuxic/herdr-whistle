@@ -444,10 +444,3 @@ It does nothing but raise `command-failed`; on a keys.json line it's a config pr
   `whistle.<verb>:<block>` (ADR 0007), and the settings commands' spellings.
 - `whistle.key-<key>` is the form whistle writes for the keys it claims in keys.json
   (see the guide). It may change; don't bind it yourself.
-
-## History
-
-- whistle 1.0.0: first version of this list, with jump keys and `toggle-keep-mode`.
-- whistle 2.0.0: the spelling `whistle.<command>[:<argument>]`, each command declaring its
-  argument; `whistle.mode:<mode>` and the settings commands, `whistle.mappings-on:<mod>`,
-  `whistle.mappings-off:<mod>` and `whistle.keep-mapping:<JSON>`.
