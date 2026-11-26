@@ -13,6 +13,7 @@
     F ending: the orbit opens around a centred title     G ending: the orbit circles Ctrl+Space, title left
   Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
   Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
+  Round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` lands on the bar's badge
   Space pause/play · R restart · drag the scrubber · ?t=7 to start paused at 7 s ·
   ?clean=1 hides the bar (for screen recording) · window.renderAt(t) draws one frame.
   Never merge this file.
@@ -81,6 +82,10 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 .t-url{font-size:22px;color:var(--muted)}.t-url b{color:var(--fg)}
 
 /* B's HUD */
+.modehud{display:flex;align-items:center;gap:18px;white-space:nowrap}
+.modehud .mode{font-size:30px;font-weight:800;letter-spacing:1px;padding:8px 18px 10px;background:var(--accent);color:#101114;box-shadow:8px 8px 0 var(--deep)}
+.modehud .mode.t{background:#2a2d32;color:var(--muted);box-shadow:8px 8px 0 #0a0b0d}
+.modehud .sub{font-size:22px;color:var(--muted)}
 .pop.sm{font-size:60px;text-shadow:5px 5px 0 var(--deep),0 0 30px rgba(185,163,227,.5)}
 .pop{font-size:92px;font-weight:800;letter-spacing:-1px;white-space:nowrap;text-shadow:7px 7px 0 var(--deep),0 0 40px rgba(185,163,227,.5)}
 .hud{font-size:30px;font-weight:800;letter-spacing:1px;white-space:nowrap}.hud b{color:var(--accent);font-size:56px}
@@ -288,7 +293,8 @@ function makeOrbit(S,R){
   return{pos:(label,g)=>at(keys.find(x=>x.k===label),g),
     update(g){keys.forEach(k=>{const p=at(k,g),hot=g.hot&&g.hot.has(k.k);k.el.classList.toggle('hot',!!hot);
       const over=g.avoid&&!hot&&Math.abs(p.x-g.cx)<g.avoid[0]&&Math.abs(p.y-g.cy)<g.avoid[1];
-      put(k.el,p.x,p.y,{s:p.s*(hot?1.35:1),r:hot?0:k.tilt+Math.sin(g.t*2+k.a0)*6,o:p.b>0?(hot?1:lerp(.45,1,(p.dep+1)/2))*g.o*(over?lerp(1,.15,g.avoidK??1):1):0,z:hot?120:(p.dep>0?60:40)+Math.round(p.dep*20)})})}};
+      const mf=g.morphFront&&g.morph<1,inWin=g.win&&Math.abs(p.x-g.cx)<g.win[0]&&Math.abs(p.y-g.cy)<g.win[1],back=mf&&p.dep<0&&inWin?1-seg(g.morph,.6,1):1;
+      put(k.el,p.x,p.y,{s:p.s*(hot?1.35:1),r:hot?0:k.tilt+Math.sin(g.t*2+k.a0)*6,o:p.b>0?(hot?1:lerp(.45,1,(p.dep+1)/2))*g.o*back*(over?lerp(1,.15,g.avoidK??1):1):0,z:hot?120:mf?90:(p.dep>0?60:40)+Math.round(p.dep*20)})})}};
 }
 function makeStars(S,R,n){
   const st=Array.from({length:n},()=>({el:add(S,$('div','abs '+(R()<.3?'px w':R()<.5?'px':'dot'))),x:R()*W,y:R()*H,ph:R()*6,d:R()*1.4,s:.5+R()*.8}));
@@ -300,9 +306,9 @@ function makeBlocks(S,R,rect){
   return(t,start)=>b.forEach(k=>put(k.el,k.x,k.y,{o:t>=start+k.d&&t<start+.8+k.d*.5?1:0,z:95}));
 }
 // keycap hyperspace; with word, seven keys stop and spell WHISTLE at wordY
-function makeWarp(S,R,{t0,cruise,stop,word,wordY=380,claim=[],handoff}){
+function makeWarp(S,R,{t0,cruise,stop,word,wordY=380,claim=[],handoff,ramp=1.2}){
   const HO=handoff??stop;
-  const v=t=>t<t0?0:t<t0+1.2?1.3*eio(seg(t,t0,t0+1.2)):t<cruise?1.3:1.3*(1-eio(seg(t,cruise,stop)));
+  const v=t=>t<t0?0:t<t0+ramp?1.3*eio(seg(t,t0,t0+ramp)):t<cruise?1.3:1.3*(1-eio(seg(t,cruise,stop)));
   const D=t=>{let d=0;for(let u=t0;u<Math.min(t,stop);u+=1/120)d+=v(u)/120;return d},DS=D(stop);
   const pool='hjklvszpqtaoimnuxgcbdfry/?;[]',WORD='WHISTLE';
   const nc=claim.length;
@@ -479,7 +485,7 @@ function makeCommandRun(S,hz,seqs,o){
         if(t<at-fly||t>sq.end+.3){el.style.opacity=0;return}
         if(t<at){const f=from(k),p=steps(eout(seg(t,at-fly,at)),5);put(el,lerp(f.x,sx,p),lerp(f.y,ty,p),{s:lerp(1,1.3,p),z:175});return}
         put(el,sx,ty,{s:1.3*(t<at+.12?1.25:1),o:1-out,z:175})});
-      if(sq.lab){const p=seg(t,sq.last,sq.last+.12);put(sq.lab,tx,ty+96,{s:p<1?lerp(1.6,1,p):1,o:t>=sq.last&&t<sq.end+.3?1-out:0,z:170})}});
+      if(sq.lab){const p=seg(t,sq.last,sq.last+.12),[lx,ly]=sq.labelAt||[tx,ty+96];put(sq.lab,lx,ly,{s:p<1?lerp(1.6,1,p):1,o:t>=sq.last&&t<sq.end+.3?1-out:0,z:170})}});
     const cmds=seqs.filter(q=>q.cmd&&t>=q.last),last=cmds[cmds.length-1];
     hud.innerHTML=`COMBO <b>×${cmds.length}</b>`;put(hud,1880,45,{ax:1,s:last?1+.35*(1-seg(t,last.last,last.last+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
     const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
@@ -583,8 +589,68 @@ function variantI(S){
   };
 }
 
+// ---------- round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` on the bar's badge ----------
+const backOut=(p,c=1.2)=>1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2);
+function makeModeHud(S){
+  const el=add(S,$('div','abs modehud'));let last=null,since=-1;
+  return(t,whistle,o)=>{const k=whistle?'w':'t';if(k!==last){last=k;since=t;
+      el.innerHTML=whistle?'<span class="mode">WHISTLE MODE</span><span class="sub">the keyboard drives Herdr</span>':'<span class="mode t">TYPE MODE</span><span class="sub">the keyboard types again</span>'}
+    const p=seg(t,since,since+.25);put(el,180,45,{ax:0,s:p<1?lerp(1.3,1,steps(eout(p),4)):1,o,z:160})};
+}
+function variantJ(S){
+  const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
+  const ORB=[...'hjkl',...'wvszpqt',...'a/?mioxung','esc'],HANDOFF=5.4;
+  const warp=makeWarp(S,R,{t0:3.15,ramp:.7,cruise:4.8,stop:5.9,word:false,claim:ORB,handoff:HANDOFF}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
+  const combo=makeCombo(S),flash=add(S,$('div','flash')),mode=makeModeHud(S);
+  const O=-1.0,T=x=>x+O;
+  const seqs=[
+    {keys:[['w',T(8.6)],['v',T(9.4)]],label:'SPLIT RIGHT',at:[1420,440],state:{layout:'v',focus:1},cmd:1},
+    {keys:[['w',T(11.0)],['s',T(11.8)]],label:'SPLIT DOWN',at:[1420,620],state:{layout:'vs',focus:2},cmd:1},
+    {keys:[['h',T(13.3)]],label:'← FOCUS',at:[800,440],state:{focus:0},cmd:1},
+    {keys:[['l',T(14.6)]],label:'FOCUS →',at:[1420,260],state:{focus:1},cmd:1},
+    {keys:[['z',T(15.9)]],label:'ZOOM',at:[1110,440],state:{zoom:true},cmd:1},
+    {keys:[['t',T(17.2)]],label:'NEW TAB',at:[720,250],state:{tabs:2,layout:'one',focus:0,zoom:false,fresh:true},cmd:1},
+    {keys:[['p',T(18.5)]],label:'PALETTE',at:[1470,330],state:{palette:true},cmd:1},
+    {keys:[['esc',T(19.7)]],label:'CLOSE',at:[960,380],state:{palette:false}},
+    {keys:[['i',T(20.6)]],label:'BACK TO TYPING',at:[240,872],labelAt:[480,770],state:{whistle:false}}];
+  const run=makeCommandRun(S,hz,seqs,{from:5.25,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.45});
+  const END={cx:960,cy:500,radii:[[720,260],[840,320],[960,370]],tilt:-.1,avoid:[470,410]};
+  const els=[['t-big','WHISTLE',330],['t-box','MODE',520],['t-head','Drive Herdr from the <em>keyboard.</em>',705],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]].map(([c,h,y])=>[add(S,$('div','abs '+c,h)),y]);
+  const title=(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.35,1,steps(eout(p),5)),o:p>0?1:0,z:150})});
+  const hideEnd=(x,y)=>Math.abs(x-960)<480&&y>230&&y<870;
+  const src={};ORB.forEach((k,i)=>src[k]=warp.claimPos(i));
+  const P2=T(24.0),FL2=T(24.8);
+  // rushing past the camera: one accelerating move, no steps
+  const past=(t,at,to=3.2)=>{const p=seg(t,at,at+.5);return{s:lerp(1,to,p*p*p),o:1-p*p}};
+  const whistleAt=T(20.6);
+  return t=>{
+    const second=t>=10,fl=second?FL2:3.15,sh=shake(t,fl,.3,10);
+    bg.style.opacity=t>=3.15?1:0;flashAt(flash,t,fl,.22);
+    const fin=eio(seg(t,FL2+.3,FL2+1.2));
+    const ce=second?seg(t,P2,P2+.35):seg(t,2.0,2.35),yIn=lerp(1200,560,steps(eout(ce),5));
+    if(!second){const q=t<3.15?{s:1,o:1}:past(t,3.15,3.6);put(combo.el,960,yIn,{s:1.8*q.s,o:ce>0?q.o:0,z:160});combo.set(seg(t,2.85,2.95),seg(t,3.05,3.15))}
+    else{put(combo.el,960,lerp(yIn,820,fin),{s:lerp(1.8,1,fin),o:ce>0?1:0,z:160});combo.set(t<FL2+.3?seg(t,FL2-.3,FL2-.2):0,t<FL2+.3?seg(t,FL2-.15,FL2-.05):0)}
+    if(t<5.25)hz.set({whistle:t>=3.15,typed:typing(t,.4,'npm test')});
+    // the window flies in while the warp is still slowing: continuous, with a soft overshoot
+    let hs=1,ho=1;
+    if(t<5.25){const q=t<3.15?{s:1,o:1}:past(t,3.15);hs=q.s;ho=q.o}
+    else if(t<6.0)hs=lerp(.05,1,backOut(seg(t,5.25,6.0)));
+    else if(t>=FL2){const q=past(t,FL2);hs=q.s;ho=q.o}
+    put(hz.el,960+sh,505+sh,{s:hs,o:ho,z:50});
+    warp(t,()=>true);stars(t,5.6,1e9,(x,y)=>t>FL2+.5&&hideEnd(x,y));
+    const hot=new Set(seqs.flatMap(q=>q.keys).filter(([k,at])=>t>=at-.45&&t<at+.15).map(([k])=>k));
+    const g={t,phase:t,cx:lerp(960,END.cx,fin)+sh,cy:lerp(505,END.cy,fin)+sh,radii:lerpRadii(HALO_FULL,END.radii,fin),tilt:lerp(0,END.tilt,fin),
+      rs:1,born:-10,o:t>=HANDOFF?1:0,hot,src,spiral:true,morph:eio(seg(t,HANDOFF,HANDOFF+.95)),morphFront:true,win:[780,410],
+      avoid:t<FL2?[800,430]:fin>.99?END.avoid:null,avoidK:seg(t,6.2,6.7)};
+    orb.update(g);
+    run(t,{from:k=>orb.pos(k,g)});
+    mode(t,t<whistleAt,t>=5.9&&t<FL2?1:0);
+    title(t,[FL2+1.0,FL2+1.4,FL2+1.9,FL2+2.5]);
+  };
+}
+
 // ---------- player + switcher ----------
-const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29]},KEYS=Object.keys(VARIANTS);
+const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29],J:['I + smooth transitions + mode badge',variantJ,29]},KEYS=Object.keys(VARIANTS);
 const qs=new URLSearchParams(location.search),stage=document.getElementById('stage'),bar=document.getElementById('bar');
 const scrub=document.getElementById('scrub'),tm=document.getElementById('tm'),play=document.getElementById('play');
 if(qs.get('clean'))bar.style.display='none';
