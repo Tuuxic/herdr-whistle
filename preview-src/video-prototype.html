@@ -6,6 +6,9 @@
     A Orbit  - the screen shrinks and a universe of keycaps orbits it (pure spectacle)
     B Combo  - fighting-game HUD: each key lands, Herdr reacts, a combo counter climbs
     C Warp   - pixel wipe into a keycap hyperspace; seven keys stop and spell WHISTLE
+  Round 2, mixes of all three:
+    D Orbit → Combo → Warp (~25 s) - keys leave the orbit to drive Herdr; warp finale spells WHISTLE
+    E Warp → Combo → Orbit (~23 s) - warp into WHISTLE, combo among the stars, orbit + title finale
   Space pause/play · R restart · drag the scrubber · ?t=7 to start paused at 7 s ·
   ?clean=1 hides the bar (for screen recording) · window.renderAt(t) draws one frame.
   Never merge this file.
@@ -83,13 +86,13 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 #bar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 14px;background:#fff;color:#111;font:600 14px system-ui,sans-serif;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:999}
 #bar button{border:0;background:#eee;border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer}
 #bar input{width:320px}
-#lab{min-width:120px;text-align:center}
+#lab{min-width:220px;text-align:center}
 </style></head><body>
 <div id="stage"></div>
 <div id="bar"><button id="prev">‹</button><span id="lab"></span><button id="next">›</button>
   <button id="play">❚❚</button><button id="rst">⟲</button><input id="scrub" type="range" min="0" max="15" step="0.01"><span id="tm">0.0s</span></div>
 <script>
-const W=1920,H=1080,DUR=15;
+const W=1920,H=1080;let DUR=15;
 const $=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
 const add=(p,e)=>(p.append(e),e);
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
@@ -260,14 +263,149 @@ function variantC(S){
   };
 }
 
+// ========== round 2: reusable parts for the mixes ==========
+const ORBIT_A=[[330,120],[540,200],[790,290]],ORBIT_HALO=[[600,330],[740,390],[880,440]];
+const lerpRadii=(a,b,p)=>a.map((r,i)=>[lerp(r[0],b[i][0],p),lerp(r[1],b[i][1],p)]);
+function makeOrbit(S,R){
+  const rings=[{keys:[...'hjkl'],sp:.6},{keys:[...'wvszpqt'],sp:-.38},{keys:[...'a/?mioxung','esc'],sp:.24}],keys=[];
+  rings.forEach((ring,ri)=>ring.keys.forEach((k,i,a)=>keys.push({k,ri,sp:ring.sp,el:add(S,$('span','abs cap orb',k)),a0:i/a.length*Math.PI*2+ri*.7,d:R()*.6,tilt:(R()-.5)*24})));
+  // g: {t,phase,cx,cy,radii,tilt,rs,born,o,hot:Set}
+  const at=(k,g)=>{const a=k.a0+k.sp*g.phase,dep=Math.sin(a),[rx,ry]=g.radii[k.ri],b=eout(seg(g.t,g.born+k.d,g.born+.9+k.d));
+    let x=Math.cos(a)*rx*g.rs,y=dep*ry*g.rs;const c=Math.cos(g.tilt),s=Math.sin(g.tilt);[x,y]=[x*c-y*s,x*s+y*c];
+    return{x:g.cx+x*b,y:g.cy+y*b,dep,b,s:lerp(.2,1,b)*lerp(.7,1.15,(dep+1)/2)*Math.max(g.rs,.35)}};
+  return{pos:(label,g)=>at(keys.find(x=>x.k===label),g),
+    update(g){keys.forEach(k=>{const p=at(k,g),hot=g.hot&&g.hot.has(k.k);k.el.classList.toggle('hot',!!hot);
+      const over=g.avoid&&!hot&&Math.abs(p.x-g.cx)<g.avoid[0]&&Math.abs(p.y-g.cy)<g.avoid[1];
+      put(k.el,p.x,p.y,{s:p.s*(hot?1.35:1),r:hot?0:k.tilt+Math.sin(g.t*2+k.a0)*6,o:p.b>0?(hot?1:lerp(.45,1,(p.dep+1)/2))*g.o*(over?.15:1):0,z:hot?120:(p.dep>0?60:40)+Math.round(p.dep*20)})})}};
+}
+function makeStars(S,R,n){
+  const st=Array.from({length:n},()=>({el:add(S,$('div','abs '+(R()<.3?'px w':R()<.5?'px':'dot'))),x:R()*W,y:R()*H,ph:R()*6,d:R()*1.4,s:.5+R()*.8}));
+  return(t,from,to=1e9,hide=()=>false)=>st.forEach(s=>{const v=seg(t,from+s.d,from+.3+s.d);
+    put(s.el,s.x,s.y,{s:s.s*(v<1?steps(v,3)*1.6:1),o:v>0&&t<to&&!hide(s.x,s.y)?.35+.65*(Math.sin(t*3+s.ph)>0?1:.3):0,z:10})});
+}
+function makeBlocks(S,R){
+  const b=[];for(let by=0;by<14;by++)for(let bx=0;bx<24;bx++)b.push({el:add(S,$('div','abs block')),x:bx*80+40,y:by*80+40,d:R()*.55});
+  return(t,start)=>b.forEach(k=>put(k.el,k.x,k.y,{o:t>=start+k.d&&t<start+.8+k.d*.5?1:0,z:95}));
+}
+// keycap hyperspace; with word, seven keys stop and spell WHISTLE at wordY
+function makeWarp(S,R,{t0,cruise,stop,word,wordY=380}){
+  const v=t=>t<t0?0:t<t0+1.2?1.3*eio(seg(t,t0,t0+1.2)):t<cruise?1.3:1.3*(1-eio(seg(t,cruise,stop)));
+  const D=t=>{let d=0;for(let u=t0;u<Math.min(t,stop);u+=1/120)d+=v(u)/120;return d},DS=D(stop);
+  const pool='hjklvszpqtaoimnuxgcbdfry/?;[]',WORD='WHISTLE';
+  const parts=Array.from({length:120},(_,i)=>{const w=word&&i<7,th=w?(-Math.PI/2+(i-3)*.55):R()*Math.PI*2;
+    return{w,i,th,r0:60+R()*140,z0:w?((.55+i*.03+DS)%1):R(),el:add(S,$('span','abs cap orb xl',w?WORD[i].toLowerCase():pool[Math.floor(R()*pool.length)])),
+      st:add(S,$('div','abs streak')),px:add(S,$('div','abs '+(R()<.4?'px w':'px'))),tw:R()*6}});
+  const pos=(p,dd)=>{const z=((p.z0-dd)%1+1)%1,dep=.06+z*.94;return{x:960+Math.cos(p.th)*p.r0/dep,y:540+Math.sin(p.th)*p.r0/dep,s:clamp(.16/dep,0,1.6),z,dep}};
+  return(t,hide=()=>false)=>{
+    const dd=D(t),vel=v(t),land=t>=stop,arrive=seg(t,t0+.2,t0+1);
+    parts.forEach(p=>{const q=pos(p,land?DS:dd);
+      if(p.w&&land){const f=steps(eout(seg(t,stop,stop+.6+p.i*.06)),6),tx=960+(p.i-3)*190;
+        p.el.textContent=t>=stop+.4+p.i*.06?WORD[p.i]:WORD[p.i].toLowerCase();p.el.classList.toggle('hot',t>=stop+1+p.i*.07);
+        put(p.el,lerp(q.x,tx,f),lerp(q.y,wordY,f)-(f===1?Math.max(0,Math.sin((t-stop-.7-p.i*.06)*14))*20*(1-seg(t,stop+.7,stop+1.3)):0),{s:lerp(q.s,1,f),z:120});
+        p.st.style.opacity=0;p.px.style.opacity=0;return}
+      const vis=q.dep>.09&&t>=t0+.1&&arrive>q.z*.5,fade=land?seg(t,stop,stop+.5):0;
+      put(p.el,q.x,q.y,{s:q.s*(1-fade),r:(p.th*57)%20-10,o:vis?clamp((1-q.z)*2)*(1-fade):0,z:60+Math.round((1-q.z)*40)});
+      const len=vel*clamp(28/q.dep,0,420);p.st.style.width=len+'px';
+      put(p.st,q.x-Math.cos(p.th)*len/2,q.y-Math.sin(p.th)*len/2,{r:p.th*180/Math.PI,o:vis&&len>8?clamp((1-q.z)*2)*.8:0,z:55});
+      put(p.px,q.x,q.y,{o:fade>0&&!hide(q.x,q.y)?fade*(Math.sin(t*3+p.tw)>-.2?1:.3):0,z:12});
+    });
+  };
+}
+// B's combo: Herdr state per key, the input row, pops, the combo counter, the banner.
+// o: {from, base, hud:[a,b], rowOut, banner:[a,b], fly}; from(a) gives where a key flies in from.
+function makeComboRun(S,hz,acts,o){
+  acts.forEach(a=>{if(a.pop)a.el=add(S,$('div','abs pop',a.pop));a.cap=add(S,$('span','abs cap'+(a.k.length>3?' hot':''),a.k.length>1?a.k.toUpperCase():a.k))});
+  const hud=add(S,$('div','abs hud')),banner=add(S,$('div','abs banner'));banner.innerHTML=`${acts.filter(a=>a.cmd).length} COMMANDS · <em>0 CLICKS</em>`;
+  const fly=o.fly||0;
+  const stateAt=u=>{const d=acts.filter(a=>u>=a.at),st={...o.base};d.forEach((a,i)=>{const{at,k,pop,el,cap,cmd,hints,...rest}=a;Object.assign(st,rest);st.hints=hints&&i===d.length-1});return st};
+  return(t,{popY=500,from}={})=>{
+    const done=acts.filter(a=>t>=a.at);
+    if(t>=o.from){const lc=[...done].reverse().find(a=>a.layout||a.focus!=null||a.zoom!=null);
+      hz.set(stateAt(t),lc&&stateAt(lc.at-1e-3),lc?steps(seg(t,lc.at,lc.at+.24),4):1)}
+    const rowO=1-seg(t,o.rowOut,o.rowOut+.4),vis=acts.filter(a=>t>=a.at-fly&&a.k!=='CTRL+SPACE').slice(-8);
+    let x=960-vis.reduce((w,a)=>w+(a.k.length>3?250:90),0)/2;
+    acts.forEach(a=>a.cap.style.opacity=0);
+    vis.forEach(a=>{const wd=a.k.length>3?250:90,sx=x+wd/2;x+=wd;a.cap.classList.toggle('hot',t<a.at+.35);
+      if(t<a.at&&from){const f=from(a),p=steps(eout(seg(t,a.at-fly,a.at)),5);put(a.cap,lerp(f.x,sx,p),lerp(f.y,1000,p),{s:lerp(1.3,1,p),o:rowO,z:175});return}
+      put(a.cap,sx,1000,{s:lerp(1.6,1,steps(seg(t,a.at,a.at+.15),3)),o:rowO,z:140})});
+    acts.forEach(a=>{if(!a.el)return;const p=seg(t,a.at,a.at+.9);put(a.el,960,popY-steps(eout(p),6)*70,{s:p<.12?lerp(1.7,1,p/.12):1,o:p>0&&p<1?(p<.7?1:1-(p-.7)/.3):0,z:170})});
+    const n=done.filter(a=>a.cmd).length,last=[...done].reverse().find(a=>a.cmd);
+    hud.innerHTML=`COMBO <b>×${n}</b>`;put(hud,1880,45,{ax:1,s:last?1+.35*(1-seg(t,last.at,last.at+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
+    const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
+  };
+}
+const COMBO_ACTS=at=>[{k:'w',hints:1},{k:'v',pop:'SPLIT!',layout:'v',focus:1,cmd:1},{k:'w',hints:1},{k:'s',pop:'SPLIT DOWN!',layout:'vs',focus:2,cmd:1},
+  {k:'h',pop:'← FOCUS',focus:0,cmd:1},{k:'l',pop:'FOCUS →',focus:1,cmd:1},{k:'z',pop:'ZOOM!',zoom:true,cmd:1},
+  {k:'t',pop:'NEW TAB!',tabs:2,layout:'one',focus:0,zoom:false,fresh:true,cmd:1},{k:'p',pop:'PALETTE!',palette:true,cmd:1},{k:'esc',palette:false}]
+  .map((a,i)=>({...a,at:at[i]}));
+const centerTitle=S=>{const els=[['t-box','MODE',600],['t-head','Drive Herdr from the <em>keyboard.</em>',780],[null,null,880],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]]
+  .map(([c,h,y])=>[c?add(S,$('div','abs '+c,h)):makeCombo(S).el,y]);
+  return(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.4,1,steps(eout(p),5)),o:p>0?1:0,z:150})})};
+const behindCenterTitle=(x,y)=>Math.abs(x-960)<470&&y>500&&y<930;
+
+// ---------- D: Orbit → Combo → Warp ----------
+function variantD(S){
+  const R=rng(5),bg=add(S,$('div','grid-bg')),stars=makeStars(S,R,70),hz=makeHerdr(S,1560,820),orb=makeOrbit(S,R);
+  const blocks=makeBlocks(S,R),warp=makeWarp(S,R,{t0:16.8,cruise:18.6,stop:19.8,word:true});
+  const combo=makeCombo(S),flash=add(S,$('div','flash')),title=centerTitle(S);
+  const acts=COMBO_ACTS([8.4,8.9,9.7,10.2,11.0,11.6,12.3,13.1,13.9,14.6]),FLY=.35;
+  const run=makeComboRun(S,hz,acts,{from:7.0,base:{whistle:true,typed:'npm test'},hud:[8.4,15.4],rowOut:15.2,banner:[15.4,16.3],fly:FLY});
+  return t=>{
+    const sh=shake(t,3.55)+shake(t,16.6,.35,12),shrink=eio(seg(t,3.9,4.9)),grow=eio(seg(t,7.0,7.8)),pull=eio(seg(t,16.0,16.6));
+    bg.style.opacity=steps(seg(t,3.55,4.3),5);
+    flashAt(flash,t,t<10?3.55:16.6);
+    const ce=seg(t,2.3,2.7),cl=seg(t,4.2,4.6);
+    put(combo.el,960,lerp(1180,960,steps(eout(ce),5)),{o:ce>0&&cl<1?1-cl:0,z:160,s:1.2});combo.set(seg(t,3.3,3.4),seg(t,3.48,3.56));
+    const cx=960+sh,cy=lerp(540,480,grow)+sh;
+    if(t<7)hz.set({whistle:t>=3.55,typed:typing(t,.5,'npm test')});
+    put(hz.el,cx,cy,{s:t<7?lerp(1,.3,shrink):lerp(.3,.62,grow),o:t<17.4?1:0,z:50});
+    const hot=new Set(acts.filter(a=>t>=a.at-FLY&&t<a.at+.15).map(a=>a.k));
+    const g={t,phase:t+5*pull*pull,cx,cy,radii:lerpRadii(ORBIT_A,ORBIT_HALO,grow),tilt:lerp(-.18,0,grow),rs:1-pull,born:4.0,o:t<16.6?1:0,hot,avoid:grow>.99&&t<16.0?[520,290]:null};
+    orb.update(g);
+    run(t,{popY:480,from:a=>orb.pos(a.k,g)});
+    stars(t,4.0,16.6);
+    blocks(t,16.6);
+    warp(t,(x,y)=>t>20.9&&behindCenterTitle(x,y));
+    title(t,[21.0,21.6,22.1,22.6]);
+  };
+}
+
+// ---------- E: Warp → Combo → Orbit ----------
+function variantE(S){
+  const R=rng(13),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820),blocks=makeBlocks(S,R);
+  const warp=makeWarp(S,R,{t0:3.4,cruise:5.0,stop:6.2,word:false}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
+  const combo=makeCombo(S),flash=add(S,$('div','flash')),title=makeTitle(S,110);
+  const acts=[...COMBO_ACTS([7.8,8.3,9.0,9.5,10.2,10.8,11.5,12.3,13.1,13.8]),{at:14.3,k:'i',pop:'BACK TO TYPING',whistle:false},{at:16.05,k:'CTRL+SPACE',whistle:true}];
+  const run=makeComboRun(S,hz,acts,{from:6.2,base:{whistle:true,typed:'npm test'},hud:[7.8,14.9],rowOut:14.9,banner:[14.9,15.6]});
+  return t=>{
+    const second=t>=10,fl=second?16.05:3.15,sh=shake(t,fl,.35,12);
+    bg.style.opacity=t>=3.3?1:0;flashAt(flash,t,fl);
+    // Ctrl+Space, pressed twice: once into WHISTLE, once more for the finale
+    const ce=second?seg(t,15.5,15.8):seg(t,2.0,2.35),gone=second?t>=16.5:t>=3.5;
+    put(combo.el,960,second?lerp(1200,940,steps(eout(ce),5)):lerp(1200,560,steps(eout(ce),5)),{s:second?1.3:1.8,o:ce>0&&!gone?1:0,z:160});
+    combo.set(second?seg(t,15.85,15.95):seg(t,2.85,2.95),second?seg(t,15.97,16.05):seg(t,3.05,3.15));
+    if(t<6.2)hz.set({whistle:t>=3.15,typed:typing(t,.4,'npm test')});
+    // the window flies in from deep space when the warp stops
+    const land=seg(t,6.2,7.0),shrink=eio(seg(t,16.1,17.0)),out=eio(seg(t,18.4,19.6));
+    const hs=t<4.1?1:t<7.2?steps(eout(land),6):lerp(1,.3,shrink)*lerp(1,.85,out);
+    const cx=lerp(960,1420,out)+sh,cy=(t<16.1?505:lerp(505,540,shrink)+lerp(0,20,out))+sh;
+    put(hz.el,cx,cy,{s:hs,o:t<4.1||(t>=6.2&&land>0)?1:0,z:50});
+    blocks(t,3.3);
+    warp(t,()=>true);stars(t,6.0,1e9,(x,y)=>t>18.6&&x<980&&y>200&&y<860);
+    run(t,{popY:505});
+    orb.update({t,phase:t,cx,cy,radii:ORBIT_A,tilt:-.18,rs:lerp(1,.5,out),born:16.2,o:1,hot:null});
+    title(t,[19.0,19.4,19.9,20.3,20.7]);
+  };
+}
+
 // ---------- player + switcher ----------
-const VARIANTS={A:['Orbit',variantA],B:['Combo',variantB],C:['Warp',variantC]},KEYS=Object.keys(VARIANTS);
+const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23]},KEYS=Object.keys(VARIANTS);
 const qs=new URLSearchParams(location.search),stage=document.getElementById('stage'),bar=document.getElementById('bar');
 const scrub=document.getElementById('scrub'),tm=document.getElementById('tm'),play=document.getElementById('play');
 if(qs.get('clean'))bar.style.display='none';
 let cur,update,t=+(qs.get('t')||0),paused=qs.has('t'),last=performance.now();
 function fit(){const room=qs.get('clean')?0:60,s=Math.min(innerWidth/W,(innerHeight-room)/H);stage.style.transform=`translate(${(innerWidth-W*s)/2}px,${(innerHeight-room-H*s)/2}px) scale(${s})`}
-function load(k){cur=k;stage.innerHTML='';update=VARIANTS[k][1](stage);document.getElementById('lab').textContent=`${k} · ${VARIANTS[k][0]}`;
+function load(k){cur=k;stage.innerHTML='';update=VARIANTS[k][1](stage);DUR=VARIANTS[k][2];scrub.max=DUR;document.getElementById('lab').textContent=`${k} · ${VARIANTS[k][0]}`;
   qs.set('variant',k);history.replaceState(null,'','?'+qs);t=0;update(0)}
 const step=d=>load(KEYS[(KEYS.indexOf(cur)+d+KEYS.length)%KEYS.length]);
 const setPaused=p=>{paused=p;play.textContent=p?'▶':'❚❚'};
