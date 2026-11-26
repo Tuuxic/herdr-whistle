@@ -14,6 +14,9 @@
   Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
   Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
   Round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` lands on the bar's badge
+  Round 9: music driven by the action (build: a layer per command; reactive: chord per command, note per key; pulse: speeds up with the combo); UI palette at 55%
+  Round 8: UI palette variations (soft / tuned / minimal) and a beat-locked music bed (dropped: felt unrelated to the action); N cycles music
+  Round 7: sound (8bit-sfx palettes, S cycles them; regenerate with `node video-prototype-sfx-bake.mjs <8bit-sfx dir>`); K/L/M try endings that say the combos never run out
   Space pause/play · R restart · drag the scrubber · ?t=7 to start paused at 7 s ·
   ?clean=1 hides the bar (for screen recording) · window.renderAt(t) draws one frame.
   Never merge this file.
@@ -93,6 +96,8 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 .hud{font-size:30px;font-weight:800;letter-spacing:1px;white-space:nowrap}.hud b{color:var(--accent);font-size:56px}
 .banner{font-size:72px;font-weight:800;padding:18px 40px;background:var(--fg);color:#101114;box-shadow:14px 14px 0 var(--deep);white-space:nowrap}
 .banner em{font-style:normal;color:var(--deep)}
+.hud .inf{font-size:1.6em;line-height:0;vertical-align:-.08em}
+.banner .inf{color:var(--deep);font-size:1.25em;line-height:0}
 
 /* prototype switcher: not part of the video */
 #bar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 14px;background:#fff;color:#111;font:600 14px system-ui,sans-serif;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:999}
@@ -102,7 +107,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 </style></head><body>
 <div id="stage"></div>
 <div id="bar"><button id="prev">‹</button><span id="lab"></span><button id="next">›</button>
-  <button id="play">❚❚</button><button id="rst">⟲</button><input id="scrub" type="range" min="0" max="15" step="0.01"><span id="tm">0.0s</span></div>
+  <button id="play">❚❚</button><button id="rst">⟲</button><input id="scrub" type="range" min="0" max="15" step="0.01"><span id="tm">0.0s</span>
+  <select id="sfx" title="sound palette (S)"></select><select id="mus" title="music (N)"></select><span id="sfxhint">click for sound</span></div>
+<script src="video-prototype-sfx.js"></script>
 <script>
 const W=1920,H=1080;let DUR=15;
 const $=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
@@ -476,7 +483,7 @@ function makeCommandRun(S,hz,seqs,o){
     if(sq.label)sq.lab=add(S,$('div','abs pop sm',sq.label));
     const last=sq.keys[sq.keys.length-1][1],next=seqs[i+1];sq.last=last;sq.end=Math.min(last+(o.hold||1.4),next?next.keys[0][1]-fly-.1:1e9);
     sq.keys.slice(0,-1).forEach(([k,at])=>acts.push({at,hints:1}));acts.push({at:last,...sq.state,cmd:sq.cmd})});
-  const hud=add(S,$('div','abs hud')),banner=add(S,$('div','abs banner'));banner.innerHTML=`${seqs.filter(q=>q.cmd).length} COMMANDS · <em>0 CLICKS</em>`;
+  const hud=add(S,$('div','abs hud')),banner=add(S,$('div','abs banner'));banner.innerHTML=o.bannerHTML??`${seqs.filter(q=>q.cmd).length} COMMANDS · <em>0 CLICKS</em>`;
   const stateAt=u=>{const d=acts.filter(a=>u>=a.at),st={...o.base};d.forEach((a,i)=>{const{at,cmd,hints,...rest}=a;Object.assign(st,rest);st.hints=hints&&i===d.length-1});return st};
   return(t,{from})=>{
     if(t>=o.from){const done=acts.filter(a=>t>=a.at),lc=[...done].reverse().find(a=>a.layout||a.focus!=null||a.zoom!=null);
@@ -489,7 +496,8 @@ function makeCommandRun(S,hz,seqs,o){
         put(el,sx,ty,{s:1.3*(t<at+.12?1.25:1),o:1-out,z:175})});
       if(sq.lab){const p=seg(t,sq.last,sq.last+.12),[lx,ly]=sq.labelAt||[tx,ty+96];put(sq.lab,lx,ly,{s:p<1?lerp(1.6,1,p):1,o:t>=sq.last&&t<sq.end+.3?1-out:0,z:170})}});
     const cmds=seqs.filter(q=>q.cmd&&t>=q.last),last=cmds[cmds.length-1];
-    hud.innerHTML=`COMBO <b>×${cmds.length}</b>`;put(hud,1740,o.hudY||45,{ax:1,s:last?1+.35*(1-seg(t,last.last,last.last+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
+    const hc=o.hudText?o.hudText(t,cmds.length):null,pa=hc?hc.at:last?.last;
+    hud.innerHTML=`COMBO <b>×${hc?hc.txt:cmds.length}</b>`;put(hud,1740,o.hudY||45,{ax:1,s:pa!=null?1+.35*(1-seg(t,pa,pa+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
     const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,o.bannerY||500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
   };
 }
@@ -599,7 +607,7 @@ function makeModeHud(S){
       el.innerHTML=whistle?'<span class="mode">WHISTLE MODE</span><span class="sub">the keyboard drives Herdr</span>':'<span class="mode t">TYPE MODE</span><span class="sub">the keyboard types again</span>'}
     since=at;const p=seg(t,since,since+.25);put(el,180,y,{ax:0,s:p<1?lerp(1.3,1,steps(eout(p),4)):1,o,z:160})};
 }
-function variantJ(S){
+function variantJ(S,end='J'){
   const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
   const ORB=[...'hjkl',...'wvszpqt',...'a/?mioxung','esc'],HANDOFF=5.4;
   const warp=makeWarp(S,R,{t0:3.15,ramp:.7,cruise:4.8,stop:5.9,word:false,claim:ORB,handoff:HANDOFF}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
@@ -619,7 +627,14 @@ function variantJ(S){
     {keys:[['i',T(20.6)]],label:'BACK TO TYPING',at:[1110,440],state:{whistle:false}}];
   // the demo block (badge row + terminal) is centred vertically: badge row at HUDY, terminal centred at WY
   const WY=580,HUDY=117,DY=WY-505;seqs.forEach(q=>{q.at=[q.at[0],q.at[1]+DY];if(q.labelAt)q.labelAt=[q.labelAt[0],q.labelAt[1]+DY]});
-  const run=makeCommandRun(S,hz,seqs,{from:5.25,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.55,hold:2.0,hudY:HUDY,bannerY:WY});
+  // endings: J = 'N COMMANDS'; K = counter rolls to ∞; L = '7 OF ∞'; M = counter to ∞ + the orbit bursts keys
+  const RI=T(20.95),RF=T(21.4),ROLL=[8,9,10,12,15,19,25,34,47,64,99],rollAt=i=>lerp(RI,RF,i/ROLL.length),infinite=end==='K'||end==='M';
+  const hudText=infinite?(t,n)=>{if(t<RI)return null;if(t>=RF)return{txt:'<span class="inf">∞</span>',at:RF};const i=Math.floor(seg(t,RI,RF)*ROLL.length);return{txt:ROLL[i],at:rollAt(i)}}:null;
+  const bannerHTML={K:'<b class="inf">∞</b> COMBOS · <em>0 CLICKS</em>',L:'7 OF <b class="inf">∞</b> COMBOS · <em>0 CLICKS</em>',M:'ENDLESS COMBOS · <em>0 CLICKS</em>'}[end];
+  const run=makeCommandRun(S,hz,seqs,{from:5.25,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.55,hold:2.0,hudY:HUDY,bannerY:WY,hudText,bannerHTML});
+  // M: a burst of keys pours out from behind the banner
+  const SR=rng(99),NSP=end==='M'?44:0,sparks=Array.from({length:NSP},(_,i)=>{const k=ORB[(i*7)%ORB.length];
+    return{k,at:RF+i*.05,el:add(S,$('span','abs cap hot',k.length>1?k.toUpperCase():k)),x0:960+(SR()-.5)*900,a:SR()*Math.PI*2,d:380+SR()*420,spin:(SR()-.5)*90}});
   const END={cx:960,cy:500,radii:[[720,260],[840,320],[960,370]],tilt:-.1,avoid:[470,410]};
   const els=[['t-big','WHISTLE',330],['t-box','MODE',520],['t-head','Drive Herdr from the <em>keyboard.</em>',705],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]].map(([c,h,y])=>[add(S,$('div','abs '+c,h)),y]);
   const title=(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.35,1,steps(eout(p),5)),o:p>0?1:0,z:150})});
@@ -629,7 +644,7 @@ function variantJ(S){
   // rushing past the camera: one accelerating move, no steps
   const past=(t,at,to=3.2)=>{const p=seg(t,at,at+.5);return{s:lerp(1,to,p*p*p),o:1-p*p}};
   const whistleAt=T(20.6);
-  return t=>{
+  const upd=t=>{
     const second=t>=10,fl=second?FL2:3.15,sh=shake(t,fl,.3,10);
     bg.style.opacity=t>=3.15?1:0;flashAt(flash,t,fl,.22);
     const fin=eio(seg(t,FL2+.3,FL2+1.2));
@@ -652,29 +667,179 @@ function variantJ(S){
     run(t,{from:k=>orb.pos(k,g)});
     mode(t,t<whistleAt,t>=5.9&&t<FL2?1:0,HUDY,t<whistleAt?5.9:whistleAt);
     title(t,[FL2+1.0,FL2+1.4,FL2+1.9,FL2+2.5]);
+    sparks.forEach(q=>{const p=seg(t,q.at,q.at+.7);if(p<=0||p>=1){q.el.style.opacity=0;return}
+      const e=eout(p);   // keys pour out from behind the banner
+      put(q.el,q.x0+Math.cos(q.a)*q.d*e,WY+Math.sin(q.a)*q.d*.7*e,{s:lerp(1.1,1.8,e),r:q.spin*e,o:1-p*p*p,z:172})});
   };
+  // sound cues: what happens when, by name; a palette turns them into sounds
+  const cues=[];const cue=(t,ev,x={})=>cues.push({t,ev,...x});
+  [...'npm test'].forEach((_,i)=>cue(.4+(i+1)/14,'type',{i}));
+  cue(3.15,'music',{start:3.15,drop:FL2,end:32});
+  cue(2.0,'rise');cue(2.85,'ctrl');cue(3.05,'space');cue(3.15,'boom');cue(3.15,'warp');cue(5.25,'arrive');cue(HANDOFF,'orbit');cue(5.9,'badge');
+  let ki=0;seqs.forEach((sq,si)=>{sq.keys.forEach(([k,at])=>{cue(at-.55,'fly',{k,i:ki});cue(at,'press',{k,i:ki++})});
+    if(sq.cmd)cue(sq.last,'cmd',{i:si});else cue(sq.last,sq.keys[0][0]==='i'?'typemode':'close')});
+  if(infinite)ROLL.forEach((_,i)=>cue(rollAt(i),'tick',{i}));if(infinite)cue(RF,'inf');
+  cue(T(21.4),'banner');sparks.forEach((q,i)=>cue(q.at,'spark',{i}));
+  cue(P2,'rise2');cue(FL2-.3,'ctrl');cue(FL2-.15,'space');cue(FL2,'boom2');[1.0,1.4,1.9,2.5].forEach((d,i)=>cue(FL2+d,'title',{i}));cue(FL2+2.5,'end');
+  upd.cues=cues.sort((a,b)=>a.t-b.t);return upd;
 }
 
+// ---------- sound (8bit-sfx, baked into video-prototype-sfx.js by video-prototype-sfx-bake.mjs) ----------
+// a palette maps a cue to [name, volume, {rate, lead}] or a list of them; lead = start that much early (swells that land on the beat)
+const PENTA=[0,2,4,7,9,12,14,16,19,21,24,26],st=n=>Math.pow(2,n/12);
+// A minor pentatonic, climbing from E5 (midi); the music is in A minor
+const AMP=[76,79,81,84,86,88,91,93,96,98,100];
+// ---------- music: one-shots from 8bit-sfx sequenced into a bed. Bars fit exactly between the two flashes, so the drop lands on the second Ctrl+Space ----------
+// base notes (midi) of the samples: bass_133 E2=40, pad_007 C2=36, pad_009 A3=57, pluck_001 F4=65
+const CHORDS=[{r:45,lo:33,hi:60,arp:[69,72,76,81]},{r:41,lo:29,hi:57,arp:[65,69,72,77]},{r:48,lo:36,hi:55,arp:[72,76,79,84]},{r:43,lo:31,hi:59,arp:[67,71,74,79]}]; // Am F C G
+const MUSIC={off:{label:'no music'},
+  build:{label:'Build · a layer joins with every command'},
+  reactive:{label:'Reactive · each command changes the chord, each key plays a note'},
+  pulse:{label:'Pulse · a heartbeat that speeds up with the combo'},
+};
+// music follows the video's cues: nothing plays on a fixed loop that ignores the action
+const E_CH={r:40,lo:28,hi:56,arp:[64,68,71,76]},PROG=[CHORDS[0],CHORDS[1],CHORDS[2],CHORDS[3],CHORDS[0],CHORDS[1],E_CH]; // per command: Am F C G Am F E → back to Am
+function musicEvents(kind,{start,drop,end},cues){
+  if(kind==='off'||!MUSIC[kind])return[];
+  const out=[],fade=t=>clamp((end-t)/1.6,0,1),ev=(t,n,vol,rate=1)=>{if(t>=0&&t<end)out.push({t,n,vol:vol*fade(t),rate,bus:'m'})};
+  const at=e=>cues.filter(c=>c.ev===e).map(c=>c.t),cmds=at('cmd'),presses=cues.filter(c=>c.ev==='press'),orbit=at('orbit')[0],tm=at('typemode')[0];
+  const level=t=>t>=drop?7:t>=tm?-1:cmds.filter(x=>x<=t).length;   // combo so far; -1 = back in type mode
+  const pad=(t,ch,v=1)=>{ev(t,'pad_007',.22*v,st(ch.lo-36));ev(t,'pad_009',.16*v,st(ch.hi-57))};
+  const bass=(t,ch,v=.5,oct=0)=>ev(t,'bass_133',v,st(ch.r-40+oct));
+  const note=(t,m,v=.2)=>ev(t,'pluck_001',v,st(m-65));
+  // chord segments: Am when the orbit forms, a new chord on every command, Am again (soft) in type mode, Am on the drop
+  const segs=[{t:orbit,ch:CHORDS[0],v:.8},...cmds.map((t,i)=>({t,ch:PROG[i],v:1,hit:1})),{t:tm,ch:CHORDS[0],v:.5,hit:1},{t:drop,ch:CHORDS[0],v:1.1,hit:1},{t:end,end:1}];
+  const chordAt=t=>{let c=segs[0];for(const g of segs)if(!g.end&&g.t<=t)c=g;return c};
+  const pads=()=>segs.slice(0,-1).forEach((g,i)=>{for(let x=g.t;x<segs[i+1].t-.3;x+=2.1)pad(x,g.ch,g.v)});
+  if(kind==='build'){
+    const bar=(drop-start)/11,beat=bar/4,nb=Math.ceil((end-start)/bar);
+    pads();
+    for(let b=0;b<nb;b++)for(let q=0;q<8;q++){const t=start+b*bar+q*beat/2,x=q/2,L=level(t),ch=chordAt(t).ch;
+      if(t<orbit){if(q===0)ev(t,'kick_016',.55);continue}           // the warp: a low pulse only
+      if(t>=end-bar)break;
+      if(L<0){if(q%2===0)note(t,ch.arp[[0,1,2,1][x]],.1);continue}   // type mode: the arp alone, quiet
+      if(L===0){if(q%4===0)note(t,ch.arp[q/4],.12);continue}         // orbit formed, nothing done yet
+      if(x===0||(L>=4&&x===2)||(L>=6&&x===2.5))ev(t,'kick_016',.7);  // 1 command: kick
+      if(L>=2&&[0,1.5,2,3.5].includes(x))bass(t,ch,.45,x===2&&L>=5?12:0);  // 2: bass
+      if(L>=3&&q%2===1)ev(t,'hihat_000',.15);                        // 3: hats
+      if(L>=4&&(x===1||x===3))ev(t,'snare_010',.3);                  // 4: backbeat
+      if(L>=5)note(t,ch.arp[[0,1,2,1,3,2,1,2][q]],.16);              // 5: arp
+      if(L>=6&&q%2===0)ev(t,'hihat_000',.07)}                        // 6+: everything
+    note(end-bar,81,.22);
+  }
+  if(kind==='reactive'){
+    pads();
+    segs.forEach(g=>{if(!g.hit)return;bass(g.t,g.ch,.5);g.ch.arp.slice(0,3).forEach((m,k)=>note(g.t+k*.04,m,.12))});
+    bass(orbit,CHORDS[0],.4);
+    let n=0,lastCh=null;presses.forEach(c=>{const ch=chordAt(c.t+.01).ch;if(ch!==lastCh){n=0;lastCh=ch}note(c.t,ch.arp[(n++)%4]+12,.14)});
+    ev(drop,'kick_016',.8);[0,1,2,3].forEach(k=>note(drop+1.0+k*.45,[69,72,76,81][k],.16));
+  }
+  if(kind==='pulse'){
+    pads();
+    let t=orbit,k=0;
+    while(t<end-1){const L=level(t);if(L<0){t=drop;k=0;continue}
+      const iv=lerp(.6,.3,L/7),ch=chordAt(t).ch;
+      ev(t,'kick_016',k%2?.4:.65);if(k%2)ev(t,'hihat_000',.13);
+      if(k%4===0)bass(t,ch,.42);if(L>=3&&k%2===0)note(t+iv/2,ch.arp[(k/2)%4],.13);
+      t+=iv;k++}
+  }
+  return out}
+
+const SFX={
+  off:{label:'no sfx'},
+  ui:{label:'UI · clicks and dings',gain:.55,
+    type:c=>[['ui_010','ui_059','ui_083','ui_113','ui_184'][c.i%5],.45],rise:['ui_006',.35],ctrl:['ui_088',.7],space:['ui_048',.8],
+    boom:[['impact_010',.7,{lead:.602}],['ui_000',.5]],warp:['riser_005',.45],arrive:['ui_015',.5],orbit:['rpg_menu-open',.6],badge:['ui_005',.7],
+    fly:['ui_011',.3],press:['ui_036',.9],cmd:['ui_031',.3],close:['ui_002',.4],typemode:['ui_005',.6,{rate:st(-5)}],
+    tick:c=>['ui_002',.35,{rate:st(c.i)}],inf:['ui_038',.8],banner:['ui_022',.8],spark:c=>['ui_011',.22,{rate:st(PENTA[c.i%12])}],
+    rise2:['ui_006',.4],boom2:[['impact_010',.7,{lead:.602}],['ui_004',.5]],title:c=>['ui_036',.8,{rate:st([0,4,7,12][c.i])}],end:['ui_097',.7]},
+  'ui-soft':{label:'UI soft · low thocks, no extras',lp:5200,
+    type:c=>[['ui_028','ui_135','ui_166','ui_117'][c.i%4],.28],ctrl:['ui_048',.45,{rate:st(-5)}],space:['ui_048',.55],
+    boom:[['impact_010',.55,{lead:.602}],['ui_004',.35]],warp:['riser_005',.3],orbit:['rpg_menu-open',.4],badge:['ui_005',.4,{rate:st(-5)}],
+    press:c=>[['ui_028','ui_135'][c.i%2],.7],close:['ui_027',.4,{rate:st(-5)}],typemode:['ui_155',.45],
+    tick:c=>c.i%2?null:['ui_011',.18,{rate:st(c.i)}],inf:['ui_004',.45],banner:['ui_022',.45,{rate:st(-5)}],spark:c=>c.i%4?null:['ui_029',.1,{rate:st([0,3,5,7,10][c.i/4%5])}],
+    boom2:[['impact_010',.55,{lead:.602}],['ui_004',.35]],title:c=>['ui_028',.6],end:['ui_097',.4,{rate:st(-5)}]},
+  'ui-tuned':{label:'UI tuned · presses play notes in the music\'s key',lp:6000,
+    type:c=>[['ui_028','ui_135','ui_166','ui_117'][c.i%4],.25],ctrl:['ui_029',.4,{rate:st(-3)}],space:['ui_029',.45,{rate:st(4)}],
+    boom:[['impact_010',.55,{lead:.602}]],warp:['riser_005',.3],orbit:['rpg_menu-open',.35],badge:['ui_029',.35,{rate:st(-3)}],
+    press:c=>[['ui_029',.45,{rate:st(AMP[c.i]-84)}],['ui_028',.35]],close:['ui_029',.4,{rate:st(-8)}],typemode:['ui_155',.4],
+    tick:c=>['ui_029',.15,{rate:st(AMP[c.i]-84)}],inf:['ui_029',.4,{rate:st(12)}],banner:['ui_022',.4,{rate:st(-3)}],spark:c=>c.i%3?null:['ui_029',.08,{rate:st(AMP[(c.i/3)%11]-84)}],
+    boom2:[['impact_010',.55,{lead:.602}]],title:c=>['ui_029',.45,{rate:st([-3,0,4,9][c.i])}],end:null},
+  'ui-minimal':{label:'UI minimal · only the big beats',lp:5600,
+    type:c=>['ui_028',.2],ctrl:['ui_048',.4,{rate:st(-5)}],space:['ui_048',.5],
+    boom:['impact_010',.5,{lead:.602}],orbit:['rpg_menu-open',.3],
+    press:['ui_135',.6],banner:['ui_022',.35,{rate:st(-5)}],inf:['ui_004',.3],
+    boom2:['impact_010',.5,{lead:.602}],title:c=>c.i===0?['ui_028',.5]:null},
+  arcade:{label:'Arcade · coins and zaps',
+    type:c=>[['blip_000','blip_002','blip_004','blip_005'][c.i%4],.35],rise:['jump_000',.4],ctrl:['blip_002',.6],space:['blip_003',.7],
+    boom:['impact_002',.8],warp:[['rpg_047',.6],['riser_013',.35,{lead:-.9}]],arrive:['jump_001',.5],orbit:['powerup_002',.6],badge:['rpg_menu-confirm',.7],
+    fly:['jump_001',.18],press:['coin_005',.5],cmd:null,close:['rpg_vanish',.5],typemode:['rpg_swap',.6],
+    tick:c=>['blip_006',.35,{rate:st(c.i)}],inf:['powerup_004',.7],banner:['jingle_003',.7],spark:c=>['laser_001',.12,{rate:st(PENTA[c.i%12]/2)}],
+    rise2:['jump_000',.4],boom2:['impact_002',.8],title:c=>[['hit_000','hit_003','hit_001','hit_000'][c.i],.8],end:['jingle_011',.7]},
+  melodic:{label:'Melodic · every key a note',
+    type:c=>[['ui_010','ui_059','ui_083','ui_113','ui_184'][c.i%5],.3],rise:['riser_020',.3],ctrl:['pluck_016',.6,{rate:st(0)}],space:['pluck_016',.7,{rate:st(7)}],
+    boom:['impact_051',.8,{lead:.479}],warp:['riser_001',.45],arrive:['rpg_034',.5],orbit:['bell_010',.45],badge:['rpg_menu-confirm',.6],
+    fly:null,press:c=>['pluck_023',.75,{rate:st(PENTA[c.i]-6)}],cmd:null,close:['pluck_023',.6,{rate:st(-6-5)}],typemode:['rpg_010',.6],
+    tick:c=>['pluck_016',.4,{rate:st(PENTA[c.i])}],inf:['bell_028',.6],banner:['rpg_levelup',.8],spark:c=>['pluck_013',.2,{rate:st(PENTA[(c.i*5)%12]-12)}],
+    rise2:['riser_020',.35],boom2:['impact_051',.8,{lead:.479}],title:c=>['pluck_022',.8,{rate:st([0,4,7,12][c.i])}],end:['bell_016',.5]},
+};
+const SOUND=(()=>{
+  let ac=null,master,sbus,mbus,lp,bufs={},on=[],fired=0,events=[],pal='off',mus='off';
+  const buf=n=>{if(bufs[n])return bufs[n];const b64=(window.SFX_DATA||{})[n];if(!b64){console.warn('sfx not baked:',n);return bufs[n]=null}
+    const bin=atob(b64),b=ac.createBuffer(1,bin.length,22050),d=b.getChannelData(0);for(let i=0;i<bin.length;i++)d[i]=(bin.charCodeAt(i)-128)/128;return bufs[n]=b};
+  const expand=cues=>{const P=SFX[pal],out=[];cues.forEach(c=>{if(c.ev==='music'){out.push(...musicEvents(mus,c,cues));return}let v=P[c.ev];if(typeof v==='function')v=v(c);if(!v)return;
+      (Array.isArray(v[0])?v:[v]).forEach(([n,vol=1,o={}])=>out.push({t:c.t-(o.lead||0),n,vol:vol*(P.gain??1),rate:o.rate||1}))});return out.sort((a,b)=>a.t-b.t)};
+  const stop=()=>{on.forEach(s=>{try{s.stop()}catch{}});on=[]};
+  return{
+    get palette(){return pal},get music(){return mus},
+    setMusic(m){mus=m;this.setCues(this.cues)},
+    unlocked:()=>!!ac&&ac.state==='running',
+    unlock(){if(!ac){ac=new AudioContext();const comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;master=ac.createGain();master.gain.value=.8;master.connect(comp).connect(ac.destination);
+      lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=.5;sbus=ac.createGain();sbus.connect(lp).connect(master);mbus=ac.createGain();mbus.gain.value=.55;mbus.connect(master)}
+      lp.frequency.value=SFX[pal].lp||20000;ac.resume()},
+    setCues(cues){this.cues=cues||[];events=expand(this.cues);stop()},
+    setPalette(p){pal=p;if(lp)lp.frequency.value=SFX[p].lp||20000;this.setCues(this.cues)},
+    resync(t){stop();fired=t-3},          // after a jump: sounds still ringing at t resume mid-buffer
+    // play everything due in (fired, t+look]; called every frame while playing
+    tick(t,look=.06){if(!ac||ac.state!=='running'){fired=t;return}
+      const until=t+look;for(const e of events){if(e.t<=fired||e.t>until)continue;const b=buf(e.n);if(!b)continue;
+        const into=(t-e.t)*e.rate;if(into>=b.duration)continue;
+        const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=e.rate;g.gain.value=e.vol;s.connect(g).connect(e.bus==='m'?mbus:sbus);
+        if(into>0)s.start(0,into);else s.start(ac.currentTime+(e.t-t));on.push(s);s.onended=()=>{on=on.filter(x=>x!==s)}}
+      fired=until},
+    events:()=>events,
+  };
+})();
+
 // ---------- player + switcher ----------
-const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29],J:['I + smooth transitions + mode badge',variantJ,32]},KEYS=Object.keys(VARIANTS);
+const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29],J:['I + smooth transitions + mode badge',variantJ,32],K:['J · counter rolls to ∞',S=>variantJ(S,'K'),32],L:['J · "7 of ∞"',S=>variantJ(S,'L'),32],M:['J · endless burst from the orbit',S=>variantJ(S,'M'),32]},KEYS=Object.keys(VARIANTS);
 const qs=new URLSearchParams(location.search),stage=document.getElementById('stage'),bar=document.getElementById('bar');
 const scrub=document.getElementById('scrub'),tm=document.getElementById('tm'),play=document.getElementById('play');
 if(qs.get('clean'))bar.style.display='none';
 let cur,update,t=+(qs.get('t')||0),paused=qs.has('t'),last=performance.now();
 function fit(){const room=qs.get('clean')?0:60,s=Math.min(innerWidth/W,(innerHeight-room)/H);stage.style.transform=`translate(${(innerWidth-W*s)/2}px,${(innerHeight-room-H*s)/2}px) scale(${s})`}
 function load(k){cur=k;stage.innerHTML='';update=VARIANTS[k][1](stage);DUR=VARIANTS[k][2];scrub.max=DUR;document.getElementById('lab').textContent=`${k} · ${VARIANTS[k][0]}`;
-  qs.set('variant',k);history.replaceState(null,'','?'+qs);t=0;update(0)}
+  qs.set('variant',k);history.replaceState(null,'','?'+qs);t=0;update(0);SOUND.setCues(update.cues)}
 const step=d=>load(KEYS[(KEYS.indexOf(cur)+d+KEYS.length)%KEYS.length]);
-const setPaused=p=>{paused=p;play.textContent=p?'▶':'❚❚'};
+const setPaused=p=>{paused=p;play.textContent=p?'▶':'❚❚';SOUND.resync(t)};
+const sfxSel=document.getElementById('sfx'),sfxHint=document.getElementById('sfxhint');
+Object.entries(SFX).forEach(([k,v])=>sfxSel.add(new Option(v.label,k)));
+const setSfx=k=>{sfxSel.value=k;SOUND.setPalette(k);SOUND.resync(t);qs.set('sfx',k);history.replaceState(null,'','?'+qs)};
+sfxSel.onchange=()=>{setSfx(sfxSel.value);sfxSel.blur()};
+const musSel=document.getElementById('mus');Object.entries(MUSIC).forEach(([k,v])=>musSel.add(new Option(v.label,k)));
+const setMus=k=>{musSel.value=k;SOUND.setMusic(k);SOUND.resync(t);qs.set('music',k);history.replaceState(null,'','?'+qs)};
+musSel.onchange=()=>{setMus(musSel.value);musSel.blur()};
+const gesture=()=>{SOUND.unlock();SOUND.resync(t)};addEventListener('pointerdown',gesture);addEventListener('keydown',gesture);
 document.getElementById('prev').onclick=()=>step(-1);document.getElementById('next').onclick=()=>step(1);
 play.onclick=()=>setPaused(!paused);document.getElementById('rst').onclick=()=>{t=0;setPaused(false)};
 scrub.oninput=()=>{t=+scrub.value;setPaused(true)};
-addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='ArrowRight')step(1);else if(e.key===' '){e.preventDefault();setPaused(!paused)}else if(e.key==='r'){t=0;setPaused(false)}});
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='ArrowRight')step(1);else if(e.key===' '){e.preventDefault();setPaused(!paused)}else if(e.key==='r'){t=0;setPaused(false)}else if(e.key==='s'){const ks=Object.keys(SFX);setSfx(ks[(ks.indexOf(sfxSel.value)+1)%ks.length])}else if(e.key==='n'){const ks=Object.keys(MUSIC);setMus(ks[(ks.indexOf(musSel.value)+1)%ks.length])}});
 addEventListener('resize',fit);fit();
 const draw=x=>{update(x);stage.classList.toggle('blinkoff',Math.floor(x*2)%2===1)};
 window.renderAt=x=>{setPaused(true);t=x;draw(x)};
-const t0=t;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'A');t=t0;setPaused(paused);
-function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2)t=0}
+const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'build');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
+function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2){t=0;SOUND.resync(0)}SOUND.tick(t)}
+  sfxHint.style.display=SOUND.unlocked()?'none':'';
   draw(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script></body></html>
