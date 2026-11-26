@@ -487,8 +487,8 @@ function makeCommandRun(S,hz,seqs,o){
         put(el,sx,ty,{s:1.3*(t<at+.12?1.25:1),o:1-out,z:175})});
       if(sq.lab){const p=seg(t,sq.last,sq.last+.12),[lx,ly]=sq.labelAt||[tx,ty+96];put(sq.lab,lx,ly,{s:p<1?lerp(1.6,1,p):1,o:t>=sq.last&&t<sq.end+.3?1-out:0,z:170})}});
     const cmds=seqs.filter(q=>q.cmd&&t>=q.last),last=cmds[cmds.length-1];
-    hud.innerHTML=`COMBO <b>×${cmds.length}</b>`;put(hud,1880,45,{ax:1,s:last?1+.35*(1-seg(t,last.last,last.last+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
-    const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
+    hud.innerHTML=`COMBO <b>×${cmds.length}</b>`;put(hud,1740,o.hudY||45,{ax:1,s:last?1+.35*(1-seg(t,last.last,last.last+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
+    const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,o.bannerY||500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
   };
 }
 function variantH(S){
@@ -593,9 +593,9 @@ function variantI(S){
 const backOut=(p,c=1.2)=>1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2);
 function makeModeHud(S){
   const el=add(S,$('div','abs modehud'));let last=null,since=-1;
-  return(t,whistle,o)=>{const k=whistle?'w':'t';if(k!==last){last=k;since=t;
+  return(t,whistle,o,y=45,at)=>{const k=whistle?'w':'t';if(k!==last){last=k;
       el.innerHTML=whistle?'<span class="mode">WHISTLE MODE</span><span class="sub">the keyboard drives Herdr</span>':'<span class="mode t">TYPE MODE</span><span class="sub">the keyboard types again</span>'}
-    const p=seg(t,since,since+.25);put(el,180,45,{ax:0,s:p<1?lerp(1.3,1,steps(eout(p),4)):1,o,z:160})};
+    since=at;const p=seg(t,since,since+.25);put(el,180,y,{ax:0,s:p<1?lerp(1.3,1,steps(eout(p),4)):1,o,z:160})};
 }
 function variantJ(S){
   const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
@@ -612,8 +612,10 @@ function variantJ(S){
     {keys:[['t',T(17.2)]],label:'NEW TAB',at:[720,250],state:{tabs:2,layout:'one',focus:0,zoom:false,fresh:true},cmd:1},
     {keys:[['p',T(18.5)]],label:'PALETTE',at:[1470,330],state:{palette:true},cmd:1},
     {keys:[['esc',T(19.7)]],label:'CLOSE',at:[960,380],state:{palette:false}},
-    {keys:[['i',T(20.6)]],label:'BACK TO TYPING',at:[240,872],labelAt:[480,770],state:{whistle:false}}];
-  const run=makeCommandRun(S,hz,seqs,{from:5.25,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.45});
+    {keys:[['i',T(20.6)]],label:'BACK TO TYPING',at:[1110,440],state:{whistle:false}}];
+  // the demo block (badge row + terminal) is centred vertically: badge row at HUDY, terminal centred at WY
+  const WY=580,HUDY=117,DY=WY-505;seqs.forEach(q=>{q.at=[q.at[0],q.at[1]+DY];if(q.labelAt)q.labelAt=[q.labelAt[0],q.labelAt[1]+DY]});
+  const run=makeCommandRun(S,hz,seqs,{from:5.25,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.45,hudY:HUDY,bannerY:WY});
   const END={cx:960,cy:500,radii:[[720,260],[840,320],[960,370]],tilt:-.1,avoid:[470,410]};
   const els=[['t-big','WHISTLE',330],['t-box','MODE',520],['t-head','Drive Herdr from the <em>keyboard.</em>',705],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]].map(([c,h,y])=>[add(S,$('div','abs '+c,h)),y]);
   const title=(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.35,1,steps(eout(p),5)),o:p>0?1:0,z:150})});
@@ -636,15 +638,15 @@ function variantJ(S){
     if(t<5.25){const q=t<3.15?{s:1,o:1}:past(t,3.15);hs=q.s;ho=q.o}
     else if(t<6.0)hs=lerp(.05,1,backOut(seg(t,5.25,6.0)));
     else if(t>=FL2){const q=past(t,FL2);hs=q.s;ho=q.o}
-    put(hz.el,960+sh,505+sh,{s:hs,o:ho,z:50});
+    put(hz.el,960+sh,(t<5.25?540:WY)+sh,{s:hs,o:ho,z:50});
     warp(t,()=>true);stars(t,5.6,1e9,(x,y)=>t>FL2+.5&&hideEnd(x,y));
     const hot=new Set(seqs.flatMap(q=>q.keys).filter(([k,at])=>t>=at-.45&&t<at+.15).map(([k])=>k));
-    const g={t,phase:t,cx:lerp(960,END.cx,fin)+sh,cy:lerp(505,END.cy,fin)+sh,radii:lerpRadii(HALO_FULL,END.radii,fin),tilt:lerp(0,END.tilt,fin),
+    const g={t,phase:t,cx:lerp(960,END.cx,fin)+sh,cy:lerp(WY,END.cy,fin)+sh,radii:lerpRadii(HALO_FULL,END.radii,fin),tilt:lerp(0,END.tilt,fin),
       rs:1,born:-10,o:t>=HANDOFF?1:0,hot,src,spiral:true,morph:eio(seg(t,HANDOFF,HANDOFF+.95)),morphFront:true,win:[780,410],
       avoid:t<FL2?[800,430]:fin>.99?END.avoid:null,avoidK:seg(t,6.2,6.7)};
     orb.update(g);
     run(t,{from:k=>orb.pos(k,g)});
-    mode(t,t<whistleAt,t>=5.9&&t<FL2?1:0);
+    mode(t,t<whistleAt,t>=5.9&&t<FL2?1:0,HUDY,t<whistleAt?5.9:whistleAt);
     title(t,[FL2+1.0,FL2+1.4,FL2+1.9,FL2+2.5]);
   };
 }
