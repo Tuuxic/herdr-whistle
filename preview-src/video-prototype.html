@@ -14,6 +14,8 @@
   Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
   Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
   Round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` lands on the bar's badge
+  Round 14: N = M with the end card held 2 s longer; victory-hold fits the cadence to however many bars follow the drop
+  Round 13: victory-long, the Orbit groove runs 1.5 bars past the drop before the B♭ – C – D cadence
   Round 12: Orbit endings after the 2nd Ctrl+Space (resolve / victory / echo)
   Round 11: the music's clock follows the video (every key press a beat, every command a bar); clicks / level / orbit / combo
   Round 10: three songs on the Build form (hero / drive / lofi); reactive and pulse dropped
@@ -610,7 +612,7 @@ function makeModeHud(S){
       el.innerHTML=whistle?'<span class="mode">WHISTLE MODE</span><span class="sub">the keyboard drives Herdr</span>':'<span class="mode t">TYPE MODE</span><span class="sub">the keyboard types again</span>'}
     since=at;const p=seg(t,since,since+.25);put(el,180,y,{ax:0,s:p<1?lerp(1.3,1,steps(eout(p),4)):1,o,z:160})};
 }
-function variantJ(S,end='J'){
+function variantJ(S,end='J',dur=32){
   const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
   const ORB=[...'hjkl',...'wvszpqt',...'a/?mioxung','esc'],HANDOFF=5.4;
   const warp=makeWarp(S,R,{t0:3.15,ramp:.7,cruise:4.8,stop:5.9,word:false,claim:ORB,handoff:HANDOFF}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
@@ -677,7 +679,7 @@ function variantJ(S,end='J'){
   // sound cues: what happens when, by name; a palette turns them into sounds
   const cues=[];const cue=(t,ev,x={})=>cues.push({t,ev,...x});
   [...'npm test'].forEach((_,i)=>cue(.4+(i+1)/14,'type',{i}));
-  cue(3.15,'music',{start:3.15,drop:FL2,end:32});
+  cue(3.15,'music',{start:3.15,drop:FL2,end:dur});
   cue(2.0,'rise');cue(2.85,'ctrl');cue(3.05,'space');cue(3.15,'boom');cue(3.15,'warp');cue(5.25,'arrive');cue(HANDOFF,'orbit');cue(5.9,'badge');
   let ki=0;seqs.forEach((sq,si)=>{sq.keys.forEach(([k,at])=>{cue(at-.55,'fly',{k,i:ki});cue(at,'press',{k,i:ki++})});
     if(sq.cmd)cue(sq.last,'cmd',{i:si});else cue(sq.last,sq.keys[0][0]==='i'?'typemode':'close')});
@@ -773,6 +775,18 @@ const ORBIT_ENDS={
       if(bar===1){const c=j<2?BB:CC;if(j%2===0){X.p(t,I.bass,c.r);X.d(t,'kick_000',.6)}c.t.slice(0,3).forEach(m=>X.p(t,I.bell,m+12,.9));
         if(j%2===1)X.d(t,'snare_011',.25);if(j===3)X.d(B.t8,'snare_011',.2);return}
       if(bar===2&&j===0){chordHit(X,I,t,D_M);X.d(t,'cymbal_002',.35);X.p(t,I.mel,81);X.p(t+B.len,I.mel,86,1.2)}}},
+  'victory-long':{label:'Orbit · victory, later: the groove runs on, the cadence lands in the last beats',
+    after:(B,X,I,base)=>{const{t,j}=B,bar=Math.floor(B.n/4);
+      if(bar===0||(bar===1&&j<2)){base(B);return}
+      if(bar===1){const c=j===2?BB:CC;X.p(t,I.bass,c.r);X.d(t,'kick_000',.6);c.t.slice(0,3).forEach(m=>X.p(t,I.bell,m+12,.9));
+        X.d(B.t8,'snare_011',.2);if(j===3)X.d(t,'snare_011',.25);return}
+      if(bar===2&&j===0){chordHit(X,I,t,D_M);X.d(t,'cymbal_002',.35);X.p(t,I.mel,81);X.p(t+B.len,I.mel,86,1.2)}}},
+  'victory-hold':{label:'Orbit · victory, fitted: groove until two bars from the end, then B♭ – C, then D major',
+    after:(B,X,I,base)=>{const{t,j}=B,bar=Math.floor(B.n/4),nb=Math.round(X.nAfter/4),cad=Math.max(1,nb-2);
+      if(bar<cad){base(B);return}
+      if(bar===cad){const c=j<2?BB:CC;if(j%2===0){X.p(t,I.bass,c.r);X.d(t,'kick_000',.6)}c.t.slice(0,3).forEach(m=>X.p(t,I.bell,m+12,.9));
+        if(j%2===1)X.d(t,'snare_011',.25);if(j===3)X.d(B.t8,'snare_011',.2);return}
+      if(bar===cad+1&&j===0){chordHit(X,I,t,D_M);X.d(t,'cymbal_002',.35);X.p(t,I.mel,81);X.p(t+B.len,I.mel,86,1.2)}}},
   echo:{label:'Orbit · echo: one hit, then the demo\'s key notes replay as a bell run',
     after:(B,X,I)=>{const{t}=B;
       if(B.drop){chordHit(X,I,t,X.home);X.d(t,'cymbal_002',.3);
@@ -792,7 +806,7 @@ function musicEvents(kind,{start,drop,end},cues){
   const chordAt=t=>{let c=home;for(const g of segs)if(g.t<=t+1e-6)c=g.ch;return c};
   const X={orbit:orbit-.1,drop,end,home,titles:at('title'),played:[],d:(t,n,v)=>ev(t,n,v),p:(t,I,m,v=1)=>{if(m!=null)ev(t,I.n,I.vol*v,st(m-I.base))}};
   const beats=grid(cues,{start,drop,end});
-  let nAfter=0;
+  let nAfter=0;X.nAfter=beats.filter(B=>B.t>=drop-1e-6&&B.t<=end-.6).length;
   beats.forEach(B=>{if(B.t>end-.6)return;B.L=level(B.t);B.ch=chordAt(B.t);
     if(G.after&&B.t>=drop-1e-6){B.n=nAfter++;G.after(B,X,G.I,b=>G.beat(b,X,G.I))}else G.beat(B,X,G.I)});
   // the last chord rings out
@@ -866,7 +880,7 @@ const SOUND=(()=>{
 })();
 
 // ---------- player + switcher ----------
-const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29],J:['I + smooth transitions + mode badge',variantJ,32],K:['J · counter rolls to ∞',S=>variantJ(S,'K'),32],L:['J · "7 of ∞"',S=>variantJ(S,'L'),32],M:['J · endless burst from the orbit',S=>variantJ(S,'M'),32]},KEYS=Object.keys(VARIANTS);
+const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29],J:['I + smooth transitions + mode badge',variantJ,32],K:['J · counter rolls to ∞',S=>variantJ(S,'K'),32],L:['J · "7 of ∞"',S=>variantJ(S,'L'),32],M:['J · endless burst from the orbit',S=>variantJ(S,'M'),32],N:['M · end card holds 2 s longer (room for the victory cadence)',S=>variantJ(S,'M',34),34]},KEYS=Object.keys(VARIANTS);
 const qs=new URLSearchParams(location.search),stage=document.getElementById('stage'),bar=document.getElementById('bar');
 const scrub=document.getElementById('scrub'),tm=document.getElementById('tm'),play=document.getElementById('play');
 if(qs.get('clean'))bar.style.display='none';
@@ -891,7 +905,7 @@ addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='
 addEventListener('resize',fit);fit();
 const draw=x=>{update(x);stage.classList.toggle('blinkoff',Math.floor(x*2)%2===1)};
 window.renderAt=x=>{setPaused(true);t=x;draw(x)};
-const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'orbit-resolve');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
+const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'orbit-victory-hold');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'N');t=t0;setPaused(paused);
 function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2){t=0;SOUND.resync(0)}SOUND.tick(t)}
   sfxHint.style.display=SOUND.unlocked()?'none':'';
   draw(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
