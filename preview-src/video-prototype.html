@@ -14,6 +14,8 @@
   Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
   Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
   Round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` lands on the bar's badge
+  Round 11: the music's clock follows the video (every key press a beat, every command a bar); clicks / level / orbit / combo
+  Round 10: three songs on the Build form (hero / drive / lofi); reactive and pulse dropped
   Round 9: music driven by the action (build: a layer per command; reactive: chord per command, note per key; pulse: speeds up with the combo); UI palette at 55%
   Round 8: UI palette variations (soft / tuned / minimal) and a beat-locked music bed (dropped: felt unrelated to the action); N cycles music
   Round 7: sound (8bit-sfx palettes, S cycles them; regenerate with `node video-prototype-sfx-bake.mjs <8bit-sfx dir>`); K/L/M try endings that say the combos never run out
@@ -692,57 +694,81 @@ const AMP=[76,79,81,84,86,88,91,93,96,98,100];
 // ---------- music: one-shots from 8bit-sfx sequenced into a bed. Bars fit exactly between the two flashes, so the drop lands on the second Ctrl+Space ----------
 // base notes (midi) of the samples: bass_133 E2=40, pad_007 C2=36, pad_009 A3=57, pluck_001 F4=65
 const CHORDS=[{r:45,lo:33,hi:60,arp:[69,72,76,81]},{r:41,lo:29,hi:57,arp:[65,69,72,77]},{r:48,lo:36,hi:55,arp:[72,76,79,84]},{r:43,lo:31,hi:59,arp:[67,71,74,79]}]; // Am F C G
-const MUSIC={off:{label:'no music'},
-  build:{label:'Build · a layer joins with every command'},
-  reactive:{label:'Reactive · each command changes the chord, each key plays a note'},
-  pulse:{label:'Pulse · a heartbeat that speeds up with the combo'},
+// a chord: bass root r (C2..G2) and four tones around octave 4
+const QUAL={M:[0,4,7,12],m:[0,3,7,12],M7:[0,4,7,11],m7:[0,3,7,10],'7':[0,4,7,10]};
+const chord=(pc,q)=>{let r=36+pc;if(r>43)r-=12;return{r,t:QUAL[q].map(x=>60+pc+x)}};
+// The video is fixed; the music's clock follows it. Every key press is a beat, the gaps between presses set the tempo
+// (it breathes between ~110 and ~135 BPM), and every command starts a bar, so layers join on a downbeat. The first key of
+// a two-key command (w) falls on beat 3: a pickup into the bar its command starts.
+function grid(cues,{start,drop,end}){
+  const at=e=>cues.filter(c=>c.ev===e).map(c=>c.t),presses=at('press'),cmds=at('cmd'),tm=at('typemode')[0];
+  const anchors=[start,...presses,drop,end],beats=[];let prev=null;
+  for(let a=0;a<anchors.length-1;a++){const t0=anchors[a],t1=anchors[a+1],gap=t1-t0;
+    // beats per gap: 2, 4, 8, 12 or 16, keeping the beat in 0.33–0.6 s and as close as possible to the last tempo
+    const ok=[2,4,8,12,16].filter(n=>gap/n>=.33&&gap/n<=.6),ref=prev??.5;
+    const n=ok.length?ok.sort((x,y)=>Math.abs(Math.log(gap/x/ref))-Math.abs(Math.log(gap/y/ref)))[0]:Math.max(1,Math.round(gap/.5));
+    prev=gap/n;for(let k=0;k<n;k++)beats.push(t0+gap*k/n)}
+  const near=(x,ts)=>ts.some(y=>Math.abs(x-y)<1e-6),bar0=[start,...cmds,tm,drop];
+  // bars: a new one on every command; between commands, group in 4s counted back from the next command, so a lone pickup lands on beat 3
+  const js=new Array(beats.length);let k0=0;
+  for(let k=1;k<=beats.length;k++)if(k===beats.length||near(beats[k],bar0)){const n=k-k0,lead=n%4;for(let q=0;q<n;q++)js[k0+q]=q<lead?q+(4-lead):(q-lead)%4;
+    if(lead){for(let q=0;q<lead;q++)js[k0+q]=q}k0=k}
+  return beats.map((t,k)=>{const nx=beats[k+1]??t+.5;return{t,t8:(t+nx)/2,len:nx-t,j:js[k],down:js[k]===0,half:nx-t<.42,press:near(t,presses),drop:Math.abs(t-drop)<1e-6}})}
+const SONGS={
+  clicks:{label:'Clicks · no song, a kick and hat keep time under the clicks',
+    beat:(B,X)=>{if(B.L<0)return;if(B.t<X.orbit){if(B.down)X.d(B.t,'kick_016',.5);return}
+      X.d(B.t,'kick_016',B.down?.6:.3);X.d(B.t8,'hihat_000',.12);if(B.drop)X.d(B.t,'cymbal_013',.35)}},
+  level:{label:'Level start · bright NES major, triangle bass, square melody on every key',home:chord(0,'M'),prog:[chord(0,'M'),chord(9,'m'),chord(5,'M'),chord(7,'M'),chord(0,'M'),chord(5,'M'),chord(7,'M')],
+    I:{bass:{n:'bass_133',base:40,vol:.45},arp:{n:'lead_007',base:84,vol:.06},mel:{n:'lead_012',base:66,vol:.15},hit:{n:'lead_007',base:84,vol:.1}},
+    beat:(B,X,I)=>{const{t,t8,j,L,ch}=B;
+      if(t<X.orbit){if(B.down)X.d(t,'kick_035',.55);return}
+      if(L<0){X.p(t,I.arp,ch.t[j%3]+12,.8);return}                                        // type mode: a quiet pulse
+      X.p(t,I.bass,B.down||L>=2?ch.r+(j%2?7:0):null);                                        // bass: downbeats, then quarters root–fifth
+      if(L>=1&&(B.down||(L>=4&&j===2)))X.d(t,'kick_035',.7);
+      if(L>=3)X.d(B.half?t:t8,'hihat_000',.13);
+      if(L>=4&&(B.half?j===2:j%2===1))X.d(t,'snare_010',.28);
+      if(L>=5||L===0)X.p(t,I.arp,ch.t[[0,2,1,2][j]]+12);if(L>=5)X.p(t8,I.arp,ch.t[[2,1,3,1][j]]+12,.8);
+      if(B.press)X.p(t,I.mel,ch.t[[2,3,1,3][j]]+12);                                         // every key press sings a chord tone
+      if(B.drop)X.d(t,'cymbal_013',.35)}},
+  orbit:{label:'Orbit · D minor space theme, glassy bells, 808 and a held square bass',home:chord(2,'m'),prog:[chord(2,'m'),chord(10,'M'),chord(7,'m'),chord(9,'M'),chord(2,'m'),chord(10,'M'),chord(9,'M')],
+    I:{bell:{n:'pluck_013',base:84,vol:.07},bass:{n:'bass_004',base:39,vol:.3},mel:{n:'reed_011',base:73,vol:.14},ping:{n:'pluck_013',base:84,vol:.12}},
+    beat:(B,X,I)=>{const{t,t8,j,L,ch}=B;
+      if(t<X.orbit){if(B.down)X.d(t,'kick_000',.5);return}
+      if(L<0){if(j%2===0)X.p(t,I.bell,ch.t[j%3]+12,.8);return}
+      X.p(t,I.bell,ch.t[[0,1,2,1][j]]+12);if(L>=5)X.p(t8,I.bell,ch.t[[2,3,1,2][j]]+12,.7);    // bells: quarters, then 8ths
+      if(L>=1&&B.down)X.d(t,'kick_000',.6);
+      if(L>=2&&B.down)X.p(t,I.bass,ch.r);
+      if(L>=3)X.d(B.half?t:t8,'hihat_005',.1);
+      if(L>=4&&(B.half?j===2:j%2===1))X.d(t,'snare_011',.25);
+      if(B.press)X.p(t,L>=6?I.mel:I.ping,ch.t[[3,2,1,2][j]]+(L>=6?0:12));
+      if(B.drop)X.d(t,'cymbal_002',.3)}},
+  combo:{label:'Combo · A major fighting-game drive, orchestra hits on the commands',home:chord(9,'M'),prog:[chord(9,'M'),chord(5,'M'),chord(7,'M'),chord(9,'M'),chord(5,'M'),chord(7,'M'),chord(4,'M')],
+    I:{orch:{n:'chord_002',base:57,vol:.22},bass:{n:'bass_021',base:48,vol:.26},brass:{n:'brass_069',base:64,vol:.1}},
+    beat:(B,X,I)=>{const{t,t8,j,L,ch}=B;
+      if(t<X.orbit){X.d(t,'kick_035',B.down?.6:.3);return}                                   // the warp: four on the floor, quiet
+      if(L<0){if(B.down)X.p(t,I.orch,ch.t[0],.4);return}
+      if(B.down&&L>=1||B.drop)X.p(t,I.orch,ch.t[0]);                                         // every command lands with a hit
+      if(L>=1)X.d(t,'kick_035',B.down?.7:.45);
+      if(L>=2){X.p(t,I.bass,ch.r);X.p(t8,I.bass,ch.r+12,.8)}
+      if(L>=3){X.d(t8,'hihat_000',.12);if(L>=6)X.d(t,'hihat_000',.06)}
+      if(L>=4&&(B.half?j===2:j%2===1))X.d(t,'snare_005',.22);
+      if(L>=5)X.p(t8,I.brass,ch.t[[0,2,1,2][j]],.9);
+      if(B.press&&L>=1)X.p(t,I.brass,ch.t[3]);
+      if(B.drop)X.d(t,'cymbal_013',.35)}},
 };
-// music follows the video's cues: nothing plays on a fixed loop that ignores the action
-const E_CH={r:40,lo:28,hi:56,arp:[64,68,71,76]},PROG=[CHORDS[0],CHORDS[1],CHORDS[2],CHORDS[3],CHORDS[0],CHORDS[1],E_CH]; // per command: Am F C G Am F E → back to Am
+const MUSIC={off:{label:'no music'},...SONGS};
 function musicEvents(kind,{start,drop,end},cues){
-  if(kind==='off'||!MUSIC[kind])return[];
-  const out=[],fade=t=>clamp((end-t)/1.6,0,1),ev=(t,n,vol,rate=1)=>{if(t>=0&&t<end)out.push({t,n,vol:vol*fade(t),rate,bus:'m'})};
-  const at=e=>cues.filter(c=>c.ev===e).map(c=>c.t),cmds=at('cmd'),presses=cues.filter(c=>c.ev==='press'),orbit=at('orbit')[0],tm=at('typemode')[0];
-  const level=t=>t>=drop?7:t>=tm?-1:cmds.filter(x=>x<=t).length;   // combo so far; -1 = back in type mode
-  const pad=(t,ch,v=1)=>{ev(t,'pad_007',.22*v,st(ch.lo-36));ev(t,'pad_009',.16*v,st(ch.hi-57))};
-  const bass=(t,ch,v=.5,oct=0)=>ev(t,'bass_133',v,st(ch.r-40+oct));
-  const note=(t,m,v=.2)=>ev(t,'pluck_001',v,st(m-65));
-  // chord segments: Am when the orbit forms, a new chord on every command, Am again (soft) in type mode, Am on the drop
-  const segs=[{t:orbit,ch:CHORDS[0],v:.8},...cmds.map((t,i)=>({t,ch:PROG[i],v:1,hit:1})),{t:tm,ch:CHORDS[0],v:.5,hit:1},{t:drop,ch:CHORDS[0],v:1.1,hit:1},{t:end,end:1}];
-  const chordAt=t=>{let c=segs[0];for(const g of segs)if(!g.end&&g.t<=t)c=g;return c};
-  const pads=()=>segs.slice(0,-1).forEach((g,i)=>{for(let x=g.t;x<segs[i+1].t-.3;x+=2.1)pad(x,g.ch,g.v)});
-  if(kind==='build'){
-    const bar=(drop-start)/11,beat=bar/4,nb=Math.ceil((end-start)/bar);
-    pads();
-    for(let b=0;b<nb;b++)for(let q=0;q<8;q++){const t=start+b*bar+q*beat/2,x=q/2,L=level(t),ch=chordAt(t).ch;
-      if(t<orbit){if(q===0)ev(t,'kick_016',.55);continue}           // the warp: a low pulse only
-      if(t>=end-bar)break;
-      if(L<0){if(q%2===0)note(t,ch.arp[[0,1,2,1][x]],.1);continue}   // type mode: the arp alone, quiet
-      if(L===0){if(q%4===0)note(t,ch.arp[q/4],.12);continue}         // orbit formed, nothing done yet
-      if(x===0||(L>=4&&x===2)||(L>=6&&x===2.5))ev(t,'kick_016',.7);  // 1 command: kick
-      if(L>=2&&[0,1.5,2,3.5].includes(x))bass(t,ch,.45,x===2&&L>=5?12:0);  // 2: bass
-      if(L>=3&&q%2===1)ev(t,'hihat_000',.15);                        // 3: hats
-      if(L>=4&&(x===1||x===3))ev(t,'snare_010',.3);                  // 4: backbeat
-      if(L>=5)note(t,ch.arp[[0,1,2,1,3,2,1,2][q]],.16);              // 5: arp
-      if(L>=6&&q%2===0)ev(t,'hihat_000',.07)}                        // 6+: everything
-    note(end-bar,81,.22);
-  }
-  if(kind==='reactive'){
-    pads();
-    segs.forEach(g=>{if(!g.hit)return;bass(g.t,g.ch,.5);g.ch.arp.slice(0,3).forEach((m,k)=>note(g.t+k*.04,m,.12))});
-    bass(orbit,CHORDS[0],.4);
-    let n=0,lastCh=null;presses.forEach(c=>{const ch=chordAt(c.t+.01).ch;if(ch!==lastCh){n=0;lastCh=ch}note(c.t,ch.arp[(n++)%4]+12,.14)});
-    ev(drop,'kick_016',.8);[0,1,2,3].forEach(k=>note(drop+1.0+k*.45,[69,72,76,81][k],.16));
-  }
-  if(kind==='pulse'){
-    pads();
-    let t=orbit,k=0;
-    while(t<end-1){const L=level(t);if(L<0){t=drop;k=0;continue}
-      const iv=lerp(.6,.3,L/7),ch=chordAt(t).ch;
-      ev(t,'kick_016',k%2?.4:.65);if(k%2)ev(t,'hihat_000',.13);
-      if(k%4===0)bass(t,ch,.42);if(L>=3&&k%2===0)note(t+iv/2,ch.arp[(k/2)%4],.13);
-      t+=iv;k++}
-  }
+  const G=SONGS[kind];if(!G)return[];
+  const out=[],fade=t=>clamp((end-t)/1.6,0,1),ev=(t,n,vol,rate=1)=>{if(t>=0&&t<end&&n)out.push({t,n,vol:vol*fade(t),rate,bus:'m'})};
+  const at=e=>cues.filter(c=>c.ev===e).map(c=>c.t),cmds=at('cmd'),orbit=at('orbit')[0],tm=at('typemode')[0];
+  const level=t=>t>=drop-1e-6?7:t>=tm-1e-6?-1:cmds.filter(x=>x<=t+1e-6).length;
+  const home=G.home||chord(0,'M'),segs=[{t:-1,ch:home},...cmds.map((t,i)=>({t,ch:G.prog?G.prog[i]:home})),{t:tm,ch:home},{t:drop,ch:home}];
+  const chordAt=t=>{let c=home;for(const g of segs)if(g.t<=t+1e-6)c=g.ch;return c};
+  const X={orbit:orbit-.1,d:(t,n,v)=>ev(t,n,v),p:(t,I,m,v=1)=>{if(m!=null)ev(t,I.n,I.vol*v,st(m-I.base))}};
+  const beats=grid(cues,{start,drop,end});
+  beats.forEach(B=>{if(B.t>end-.6)return;B.L=level(B.t);B.ch=chordAt(B.t);G.beat(B,X,G.I)});
+  // the last chord rings out
+  if(G.I){const last=beats.filter(B=>B.t<=end-1.6).pop();const I=Object.values(G.I)[0];[0,1,2].forEach(k=>X.p(last.t+k*.06,I,home.t[k]+12,.9))}
   return out}
 
 const SFX={
@@ -837,7 +863,7 @@ addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='
 addEventListener('resize',fit);fit();
 const draw=x=>{update(x);stage.classList.toggle('blinkoff',Math.floor(x*2)%2===1)};
 window.renderAt=x=>{setPaused(true);t=x;draw(x)};
-const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'build');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
+const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'clicks');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
 function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2){t=0;SOUND.resync(0)}SOUND.tick(t)}
   sfxHint.style.display=SOUND.unlocked()?'none':'';
   draw(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
