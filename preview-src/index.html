@@ -1,47 +1,221 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Whistle preview</title>
 <link rel="stylesheet" href="poster.css">
 <style>
-:root{--accent:#b9a3e3;--accent-deep:#5e4b8b;--glow:rgba(185,163,227,.07);--chrome:#16181c}
-.mini{position:absolute;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid var(--accent);border-bottom-width:6px;background:#1d1a26;color:var(--fg);font-size:18px;font-weight:700;box-shadow:0 0 18px rgba(185,163,227,.3)}
-.star{position:absolute;line-height:1;text-shadow:0 0 12px rgba(185,163,227,.7)}
-/* whistle 1.0's bar and hints, drawn in HTML */
-.wbar{display:flex;align-items:center;gap:14px;height:40px;background:var(--chrome);border:2px solid #3a3d43;font-size:17px}
-.badge{height:100%;display:flex;align-items:center;padding:0 16px;font-weight:800;letter-spacing:.5px}
-.badge.w{background:var(--accent);color:#101114}.badge.t{border:2px solid var(--accent);color:var(--accent);height:calc(100% - 4px);margin-left:2px}
-.wbar .lbl{color:var(--muted)}
-.hints{background:var(--chrome);border:2px solid var(--accent);padding:12px 16px 14px;font-size:17px;box-shadow:0 0 30px rgba(185,163,227,.18)}
-.hints .top{display:flex;gap:14px;margin-bottom:10px}.hints .k{color:var(--accent);font-weight:800}
-.hints .grid{display:grid;grid-template-columns:repeat(2,auto);gap:6px 36px;justify-content:start}
-.hints .esc{margin-left:auto;color:var(--dim);font-size:14px}
-.step{position:absolute;display:flex;flex-direction:column;gap:12px}
-.num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--accent);color:#101114;font-weight:800;font-size:19px}
-.cap.s{height:52px;min-width:52px;font-size:19px;padding:0 12px}
-.cap.s.hot{min-width:110px}
-.cap2{font-size:17px;color:var(--muted);line-height:25px}.cap2 b{color:var(--fg)}
-.arrow{position:absolute;font-size:30px;color:var(--dim)}
-.call{position:absolute;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--accent);color:#101114;font-weight:800;font-size:20px;box-shadow:0 0 0 5px rgba(18,20,23,.9),0 0 24px rgba(185,163,227,.6)}
-.ring{position:absolute;border:3px solid var(--accent);box-shadow:0 0 24px rgba(185,163,227,.45)}
-.legend{position:absolute;display:flex;flex-direction:column;gap:18px;font-size:20px;color:var(--muted)}
-.legend div{display:flex;align-items:center;gap:16px}.legend b{color:var(--fg)}
+:root{--accent:#b9a3e3;--accent-deep:#5e4b8b;--deep:#5e4b8b;--glow:rgba(185,163,227,.07);--chrome:#16181c}
+.a{position:absolute;left:0;top:0}
+.c{transform:translate(-50%,-50%)}
+/* keycaps, sized by --s (the video's orbit keys) */
+.k{position:absolute;display:flex;align-items:center;justify-content:center;height:var(--s);min-width:var(--s);padding:0 calc(var(--s)*.22);
+  font-size:calc(var(--s)*.4);font-weight:700;color:var(--fg);background:#1d1a26;white-space:nowrap;
+  border:max(2px,calc(var(--s)*.045)) solid var(--accent);border-bottom-width:calc(var(--s)*.13);box-shadow:0 0 calc(var(--s)*.35) rgba(185,163,227,.3)}
+.k.hot{background:var(--accent);color:#101114;border-color:#fff;box-shadow:0 0 calc(var(--s)*.7) rgba(185,163,227,.8)}
+.k.ghost{border-color:#3a3550;color:#55506a;background:#17161c;box-shadow:none}
+.k.wht{border-color:var(--fg);background:#181a1e;box-shadow:none}
+.k.in{position:relative;transform:none}
+.px{width:6px;height:6px;background:var(--accent);box-shadow:6px 0 var(--accent),-6px 0 var(--accent),0 6px var(--accent),0 -6px var(--accent)}
+.px.w{background:#fff;box-shadow:6px 0 #fff,-6px 0 #fff,0 6px #fff,0 -6px #fff}
+.dot{position:absolute;width:5px;height:5px;background:var(--accent)}
+.streak{height:3px;transform-origin:0 50%}
+.plus{font-size:26px;color:var(--dim)}
+/* a Herdr window in WHISTLE mode, drawn in HTML: whistle's bar lit, the w hints open with v picked */
+.hz-title{height:30px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--chrome);border-bottom:2px solid #24272c;color:var(--muted);font-size:12px;font-weight:700}
+.hz-tab{padding:0 9px;border:2px solid var(--accent);color:var(--accent);font-weight:500;margin-left:18px}
+.pane{position:absolute;border:2px solid #24272c;background:#0e0f12;padding:8px 11px;overflow:hidden;line-height:20px;white-space:pre}
+.pane.f{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pane .pr{color:var(--accent)}.pane .o{color:#6c6e73}
+.cur{display:inline-block;width:8px;height:15px;background:#c9cbd0;vertical-align:-3px}
+.hz-bar{height:34px;display:flex;align-items:center;gap:14px;background:var(--chrome);border-top:2px solid #24272c;font-size:14px}
+.hz-bar .badge{height:100%;display:flex;align-items:center;padding:0 14px;font-weight:800;letter-spacing:.5px;background:var(--accent);color:#101114}
+.hz-bar .lbl{color:var(--muted)}
+.pop{font-size:62px;font-weight:800;letter-spacing:-1px;white-space:nowrap;text-shadow:6px 6px 0 var(--deep),0 0 34px rgba(185,163,227,.5)}
+.hw{background:#101114;border:2px solid var(--accent);box-shadow:14px 14px 0 var(--deep),0 0 70px rgba(185,163,227,.25);display:flex;flex-direction:column;font-size:15px;color:#c9cbd0}
+.hw .hz-title{height:32px;font-size:13px}
+.hw .main{flex:1;position:relative}
+.hw .pane{line-height:22px;padding:10px 13px}
+.hw .hints{position:absolute;left:10px;right:10px;bottom:10px;background:var(--chrome);border:2px solid var(--accent);padding:10px 14px 12px;font-size:15px;box-shadow:0 0 30px rgba(185,163,227,.25);z-index:2}
+.hw .hints .top{display:flex;gap:12px;margin-bottom:8px}.hw .hints .k2{color:var(--accent);font-weight:800}
+.hw .hints .grid{display:grid;grid-template-columns:repeat(2,auto);gap:4px 30px;justify-content:start}
+.hw .hints .esc{margin-left:auto;color:var(--dim);font-size:12px}
+.hw .hints .on{background:var(--accent);color:#101114;padding:0 6px;margin:0 -6px}.hw .hints .on .k2{color:#101114}
+.hw .hz-bar{height:38px;font-size:15px}
 </style></head><body>
-<div class="left" style="top:0;bottom:0;display:flex;flex-direction:column;justify-content:center">
+<div class="left" style="top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;z-index:10">
   <div class="title" style="margin-top:0"><span class="plain">WHISTLE</span><span class="box">MODE</span></div>
   <div class="head">Drive Herdr from the <em>keyboard.</em></div>
   <div class="body"><b>Ctrl+Space</b> and the keyboard takes over. Jump between panes, split and zoom, switch tabs and spaces, open any panel or command, all without touching the mouse.</div>
   <div class="chips"><span class="chip solid">HERDR MOD</span></div>
 </div>
-<div class="url">github.com/<b>Tuuxic/herdr-whistle</b></div>
-<div class="shot" style="left:830px;top:170px;width:710px;height:382px"><img src="shot.png" style="left:0;top:0;transform:scale(.37);transform-origin:0 0"></div>
-  <div style="position:absolute;left:826px;top:470px;width:690px">
-    <div class="hints"><div class="top"><span class="k">w</span><span>Panes</span><span class="esc">Esc cancels</span></div>
-      <div class="grid"><span><span class="k">v</span> → Split right</span><span><span class="k">q</span> → Close pane</span><span><span class="k">s</span> → Split down</span><span><span class="k">z</span> → Zoom pane</span></div></div>
-    <div class="wbar" style="margin-top:6px"><span class="badge w">WHISTLE</span><span class="lbl">Terminal · claude</span></div>
-  </div><div class="motif" style="position:absolute;left:840px;top:640px;width:700px;height:220px">
-    <div style="position:absolute;left:0;top:76px;display:flex;align-items:center;gap:8px">
-      <span class="cap">CTRL</span><span style="font-size:26px;color:var(--dim)">+</span><span style="position:relative;display:inline-flex"><span class="cap hot" style="min-width:118px">SPACE</span><span class="tag" style="left:50%;top:-44px;transform:translateX(-50%)">WHISTLE</span></span>
-      <span style="font-size:28px;color:var(--dim);margin-left:4px">→</span>
-    </div>
-    
-    <span class="mini" style="left:336px;top:26px;transform:rotate(-8deg);opacity:1">h</span><span class="mini" style="left:410px;top:0px;transform:rotate(6deg);opacity:1">p</span><span class="mini" style="left:374px;top:98px;transform:rotate(5deg);opacity:0.9">j</span><span class="mini" style="left:476px;top:54px;transform:rotate(-6deg);opacity:1">s</span><span class="mini" style="left:324px;top:150px;transform:rotate(-4deg);opacity:0.75">k</span><span class="mini" style="left:442px;top:120px;transform:rotate(10deg);opacity:1">?</span><span class="mini" style="left:544px;top:6px;transform:rotate(8deg);opacity:0.8">t</span><span class="mini" style="left:516px;top:128px;transform:rotate(-10deg);opacity:0.85">l</span><span class="mini" style="left:580px;top:80px;transform:rotate(4deg);opacity:0.65">w</span><span class="mini" style="left:614px;top:150px;transform:rotate(-6deg);opacity:0.5">a</span><span class="mini" style="left:504px;top:180px;transform:rotate(6deg);opacity:0.55">m</span><span class="mini" style="left:644px;top:30px;transform:rotate(-8deg);opacity:0.45">/</span><span class="star" style="left:394px;top:58px;font-size:22px;color:var(--accent)">✦</span><span class="star" style="left:464px;top:6px;font-size:16px;color:var(--fg)">✧</span><span class="star" style="left:556px;top:104px;font-size:20px;color:var(--fg)">⋆</span><span class="star" style="left:604px;top:0px;font-size:14px;color:var(--accent)">✦</span><span class="star" style="left:324px;top:96px;font-size:14px;color:var(--accent)">✧</span><span class="star" style="left:434px;top:182px;font-size:16px;color:var(--fg)">✦</span><span class="star" style="left:664px;top:110px;font-size:14px;color:var(--accent)">⋆</span><span class="star" style="left:564px;top:190px;font-size:12px;color:var(--fg)">✦</span><span class="star" style="left:654px;top:182px;font-size:16px;color:var(--accent)">✧</span><span class="dot" style="left:364px;top:8px"></span><span class="dot" style="left:504px;top:30px"></span><span class="dot" style="left:420px;top:160px"></span><span class="dot" style="left:594px;top:60px"></span><span class="dot" style="left:550px;top:170px"></span><span class="dot" style="left:684px;top:70px"></span><span class="dot" style="left:632px;top:128px"></span><span class="dot" style="left:472px;top:96px"></span>
-  </div>
+<div class="url" style="z-index:10">github.com/<b>Tuuxic/herdr-whistle</b></div>
+<!-- the right side, in the promo video's look: a Herdr window showing whistle at work (centred on the 1/3 line),
+     and Ctrl+Space on the 2/3 line with keycaps warping out of it -->
+<div class="a px w" style="left: 1344.23px; top: 750.924px; opacity: 0.755066; transform: scale(0.551082); z-index: 1;"></div>
+<div class="a px" style="left: 1270.05px; top: 702.494px; opacity: 0.938654; transform: scale(0.637657); z-index: 1;"></div>
+<div class="dot" style="left: 1412.7px; top: 721.364px; opacity: 0.358984; transform: scale(0.779241); z-index: 1;"></div>
+<div class="a px w" style="left: 1048.35px; top: 864.826px; opacity: 0.840943; transform: scale(0.93409); z-index: 1;"></div>
+<div class="dot" style="left: 1012.72px; top: 57.4969px; opacity: 0.485387; transform: scale(0.663572); z-index: 1;"></div>
+<div class="dot" style="left: 913.679px; top: 472.471px; opacity: 0.509557; transform: scale(0.548567); z-index: 1;"></div>
+<div class="a px" style="left: 1464.93px; top: 331.662px; opacity: 0.990729; transform: scale(0.663186); z-index: 1;"></div>
+<div class="dot" style="left: 1113.44px; top: 239.878px; opacity: 0.819535; transform: scale(1.02729); z-index: 1;"></div>
+<div class="dot" style="left: 1208.78px; top: 780.663px; opacity: 0.440759; transform: scale(0.881629); z-index: 1;"></div>
+<div class="dot" style="left: 1258.99px; top: 329.969px; opacity: 0.746122; transform: scale(0.504876); z-index: 1;"></div>
+<div class="a px" style="left: 1528.33px; top: 354.198px; opacity: 0.918492; transform: scale(0.649517); z-index: 1;"></div>
+<div class="a px w" style="left: 953.167px; top: 806.973px; opacity: 0.998886; transform: scale(0.508235); z-index: 1;"></div>
+<div class="a px" style="left: 1086.81px; top: 737.825px; opacity: 0.779493; transform: scale(0.546066); z-index: 1;"></div>
+<div class="a px" style="left: 880.752px; top: 716.163px; opacity: 0.514734; transform: scale(1.05802); z-index: 1;"></div>
+<div class="dot" style="left: 857.642px; top: 715.933px; opacity: 0.535395; transform: scale(0.819902); z-index: 1;"></div>
+<div class="a px" style="left: 1470.95px; top: 819.07px; opacity: 0.971716; transform: scale(0.921492); z-index: 1;"></div>
+<div class="a px w" style="left: 1230.54px; top: 141.112px; opacity: 0.694147; transform: scale(0.593001); z-index: 1;"></div>
+<div class="a px w" style="left: 1011.6px; top: 745.513px; opacity: 0.402034; transform: scale(0.696016); z-index: 1;"></div>
+<div class="a px" style="left: 1432.27px; top: 631.71px; opacity: 0.413442; transform: scale(0.674308); z-index: 1;"></div>
+<div class="dot" style="left: 1547.25px; top: 340.339px; opacity: 0.833699; transform: scale(0.561328); z-index: 1;"></div>
+<div class="dot" style="left: 1415.47px; top: 897.18px; opacity: 0.422404; transform: scale(0.71707); z-index: 1;"></div>
+<div class="a px" style="left: 1126.26px; top: 87.7074px; opacity: 0.946573; transform: scale(0.686761); z-index: 1;"></div>
+<div class="dot" style="left: 1402.78px; top: 87.853px; opacity: 0.415427; transform: scale(0.807166); z-index: 1;"></div>
+<div class="a px" style="left: 1448.41px; top: 232.945px; opacity: 0.41559; transform: scale(0.7183); z-index: 1;"></div>
+<div class="dot" style="left: 1324.22px; top: 273.872px; opacity: 0.505893; transform: scale(0.651987); z-index: 1;"></div>
+<div class="a px" style="left: 1568.35px; top: 631.677px; opacity: 0.832491; transform: scale(0.523205); z-index: 1;"></div>
+<div class="a px w" style="left: 1290.02px; top: 643.212px; opacity: 0.444025; transform: scale(0.700179); z-index: 1;"></div>
+<div class="dot" style="left: 1074.53px; top: 630.989px; opacity: 0.735768; transform: scale(1.02115); z-index: 1;"></div>
+<div class="a px w" style="left: 1407.77px; top: 300.759px; opacity: 0.460536; transform: scale(0.524948); z-index: 1;"></div>
+<div class="a px" style="left: 992.545px; top: 859.647px; opacity: 0.377407; transform: scale(0.966331); z-index: 1;"></div>
+<div class="dot" style="left: 1265.53px; top: 303.194px; opacity: 0.853468; transform: scale(1.08221); z-index: 1;"></div>
+<div class="dot" style="left: 959.131px; top: 290.598px; opacity: 0.528182; transform: scale(0.676239); z-index: 1;"></div>
+<div class="dot" style="left: 1402.02px; top: 43.6071px; opacity: 0.694724; transform: scale(0.662374); z-index: 1;"></div>
+<div class="dot" style="left: 1004.8px; top: 652.052px; opacity: 0.716797; transform: scale(0.863145); z-index: 1;"></div>
+<div class="a px" style="left: 1330.19px; top: 432.126px; opacity: 0.479512; transform: scale(0.563841); z-index: 1;"></div>
+<div class="a px w" style="left: 1102.44px; top: 496.385px; opacity: 0.745881; transform: scale(0.772474); z-index: 1;"></div>
+<div class="a px" style="left: 1173.57px; top: 393.366px; opacity: 0.582246; transform: scale(0.651416); z-index: 1;"></div>
+<div class="dot" style="left: 1150.57px; top: 524.155px; opacity: 0.583252; transform: scale(0.647137); z-index: 1;"></div>
+<div class="a px" style="left: 1420.41px; top: 102.064px; opacity: 0.798271; transform: scale(0.577884); z-index: 1;"></div>
+<div class="a px w" style="left: 923.769px; top: 952.905px; opacity: 0.686048; transform: scale(0.734988); z-index: 1;"></div>
+<div class="a" style="left: 800px; top: 0px; width: 800px; height: 1000px; background: radial-gradient(520px 460px at 400px 667px, rgba(185, 163, 227, 0.16), transparent 70%); z-index: 0;"></div>
+<div class="a streak" style="left: 1246.51px; top: 692.193px; width: 46.2049px; transform: rotate(0.837543rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.293381; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.72691582523423px; left: 1283.34px; top: 733.088px; transform: translate(-50%, -50%) rotate(14.4977deg); opacity: 0.366726; z-index: 2;"></div>
+<div class="a streak" style="left: 1155.56px; top: 685.348px; width: 30.9181px; transform: rotate(2.4675rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.243024; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.002333473988784px; left: 1124.84px; top: 709.891px; transform: translate(-50%, -50%) rotate(3.39665deg); opacity: 0.303781; z-index: 2;"></div>
+<div class="a streak" style="left: 1129.3px; top: 663.049px; width: 48.317px; transform: rotate(3.25646rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.300338; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.928752606760035px; left: 1072.41px; top: 656.485px; transform: translate(-50%, -50%) rotate(-9.35369deg); opacity: 0.375423; z-index: 2;"></div>
+<div class="a streak" style="left: 1139.01px; top: 665.453px; width: 35.8898px; transform: rotate(3.19159rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.259402; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.096025979197739px; left: 1094.72px; top: 663.237px; transform: translate(-50%, -50%) rotate(5.39306deg); opacity: 0.324252; z-index: 2;"></div>
+<div class="a streak" style="left: 1120.38px; top: 668.269px; width: 59.3036px; transform: rotate(3.10744rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.336529; z-index: 1;"></div>
+<div class="k ghost" style="--s: 16.377020212583854px; left: 1051.29px; top: 670.629px; transform: translate(-50%, -50%) rotate(-11.7653deg); opacity: 0.420662; z-index: 2;"></div>
+<div class="a streak" style="left: 1238.87px; top: 709.186px; width: 149.025px; transform: rotate(1.27669rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.632082; z-index: 1;"></div>
+<div class="k " style="--s: 53.216308132406866px; left: 1291.33px; top: 882.37px; transform: translate(-50%, -50%) rotate(6.77402deg); opacity: 0.790102; z-index: 2;">t</div>
+<div class="a streak" style="left: 1153.34px; top: 650.793px; width: 30.0648px; transform: rotate(3.7318rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.240213; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.000011609195811px; left: 1121.39px; top: 629.386px; transform: translate(-50%, -50%) rotate(-2.03417deg); opacity: 0.300267; z-index: 2;"></div>
+<div class="a streak" style="left: 1249.36px; top: 653.163px; width: 30.0086px; transform: rotate(5.7877rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.240028; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.000000205804096px; left: 1283.15px; top: 634.901px; transform: translate(-50%, -50%) rotate(7.96663deg); opacity: 0.300036; z-index: 2;"></div>
+<div class="a streak" style="left: 1092.02px; top: 668.012px; width: 100.551px; transform: rotate(3.1184rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.472402; z-index: 1;"></div>
+<div class="k " style="--s: 27.778242959070166px; left: 974.834px; top: 670.731px; transform: translate(-50%, -50%) rotate(-1.72132deg); opacity: 0.590503; z-index: 2;"></div>
+<div class="a streak" style="left: 1150.03px; top: 707.687px; width: 120.491px; transform: rotate(2.00151rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.538089; z-index: 1;"></div>
+<div class="k " style="--s: 36.667645064576334px; left: 1090.54px; top: 837.164px; transform: translate(-50%, -50%) rotate(10.8039deg); opacity: 0.672611; z-index: 2;">o</div>
+<div class="a streak" style="left: 1189.58px; top: 705.515px; width: 67.0393px; transform: rotate(1.69314rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.362012; z-index: 1;"></div>
+<div class="k " style="--s: 17.797681092780063px; left: 1180.09px; top: 782.652px; transform: translate(-50%, -50%) rotate(-14.8861deg); opacity: 0.452515; z-index: 2;"></div>
+<div class="a streak" style="left: 1173.79px; top: 709.781px; width: 155.011px; transform: rotate(1.76365rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.651799; z-index: 1;"></div>
+<div class="k " style="--s: 57.2599028849874px; left: 1137.49px; top: 895.636px; transform: translate(-50%, -50%) rotate(-0.114667deg); opacity: 0.814749; z-index: 2;">u</div>
+<div class="a streak" style="left: 1253.53px; top: 682.075px; width: 36.1137px; transform: rotate(0.507542rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.260139; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.103466368263287px; left: 1292.49px; top: 703.74px; transform: translate(-50%, -50%) rotate(0.0814661deg); opacity: 0.325174; z-index: 2;"></div>
+<div class="a streak" style="left: 1138.52px; top: 636.985px; width: 75.861px; transform: rotate(3.97785rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.391072; z-index: 1;"></div>
+<div class="k " style="--s: 19.82210483730708px; left: 1079.71px; top: 571.859px; transform: translate(-50%, -50%) rotate(-14.8637deg); opacity: 0.48884; z-index: 2;"></div>
+<div class="a streak" style="left: 1109.16px; top: 699.392px; width: 168.189px; transform: rotate(2.26343rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.695212; z-index: 1;"></div>
+<div class="k " style="--s: 66.86171742249088px; left: 976.147px; top: 859.698px; transform: translate(-50%, -50%) rotate(13.0167deg); opacity: 0.869015; z-index: 2;">l</div>
+<div class="a streak" style="left: 1270.37px; top: 638.291px; width: 83.6391px; transform: rotate(5.52324rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.416693; z-index: 1;"></div>
+<div class="k " style="--s: 21.96442840055262px; left: 1340.55px; top: 571.595px; transform: translate(-50%, -50%) rotate(-14.3617deg); opacity: 0.520867; z-index: 2;"></div>
+<div class="a streak" style="left: 1205.92px; top: 629.21px; width: 62.6327px; transform: rotate(4.7845rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.347496; z-index: 1;"></div>
+<div class="k ghost" style="--s: 16.947792003168242px; left: 1211.17px; top: 556.597px; transform: translate(-50%, -50%) rotate(11.1871deg); opacity: 0.43437; z-index: 2;"></div>
+<div class="a streak" style="left: 1180.25px; top: 638.897px; width: 32.4372px; transform: rotate(4.36593rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.248029; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.016443236823548px; left: 1166.38px; top: 600.477px; transform: translate(-50%, -50%) rotate(2.72046deg); opacity: 0.310036; z-index: 2;"></div>
+<div class="a streak" style="left: 1144.63px; top: 676.811px; width: 32.9255px; transform: rotate(2.8088rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.249637; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.02369094065046px; left: 1105.56px; top: 690.316px; transform: translate(-50%, -50%) rotate(5.79468deg); opacity: 0.312046; z-index: 2;"></div>
+<div class="a streak" style="left: 1229.93px; top: 709.671px; width: 108.431px; transform: rotate(1.30223rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.498362; z-index: 1;"></div>
+<div class="k " style="--s: 31.028244617847136px; left: 1263.64px; top: 832.165px; transform: translate(-50%, -50%) rotate(-3.86007deg); opacity: 0.622952; z-index: 2;">t</div>
+<div class="a streak" style="left: 1131.4px; top: 692.032px; width: 71.291px; transform: rotate(2.45786rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.376017; z-index: 1;"></div>
+<div class="k " style="--s: 18.719565151756264px; left: 1067.43px; top: 744.161px; transform: translate(-50%, -50%) rotate(-9.0432deg); opacity: 0.470022; z-index: 2;"></div>
+<div class="a streak" style="left: 1160.42px; top: 702.289px; width: 70.6528px; transform: rotate(2.03715rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.373915; z-index: 1;"></div>
+<div class="k " style="--s: 18.57480674401062px; left: 1123.64px; top: 775.351px; transform: translate(-50%, -50%) rotate(8.21948deg); opacity: 0.467394; z-index: 2;"></div>
+<div class="a streak" style="left: 1131.07px; top: 674.751px; width: 47.7986px; transform: rotate(2.91388rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.298631; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.876932388822688px; left: 1075.81px; top: 687.556px; transform: translate(-50%, -50%) rotate(-7.87758deg); opacity: 0.373289; z-index: 2;"></div>
+<div class="a streak" style="left: 1172.38px; top: 632.851px; width: 56.6377px; transform: rotate(4.34866rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.327748; z-index: 1;"></div>
+<div class="k ghost" style="--s: 15.96420360393009px; left: 1148.82px; top: 570.967px; transform: translate(-50%, -50%) rotate(9.10535deg); opacity: 0.409685; z-index: 2;"></div>
+<div class="a streak" style="left: 1279.53px; top: 701.938px; width: 134.708px; transform: rotate(0.89539rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.584921; z-index: 1;"></div>
+<div class="k " style="--s: 44.34958072331095px; left: 1380.39px; top: 827.839px; transform: translate(-50%, -50%) rotate(1.74549deg); opacity: 0.731151; z-index: 2;">/</div>
+<div class="a streak" style="left: 1094.89px; top: 688.285px; width: 120.12px; transform: rotate(2.64611rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.536864; z-index: 1;"></div>
+<div class="k " style="--s: 36.48173252452468px; left: 969.96px; top: 755.803px; transform: translate(-50%, -50%) rotate(-14.0387deg); opacity: 0.67108; z-index: 2;">w</div>
+<div class="a streak" style="left: 1227.83px; top: 638.54px; width: 38.4159px; transform: rotate(5.16876rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.267723; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.196062762013815px; left: 1248.52px; top: 596.409px; transform: translate(-50%, -50%) rotate(2.74986deg); opacity: 0.334654; z-index: 2;"></div>
+<div class="a streak" style="left: 1113.83px; top: 655.567px; width: 73.3028px; transform: rotate(3.43149rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.382644; z-index: 1;"></div>
+<div class="k " style="--s: 19.190670095496507px; left: 1032.55px; top: 631.322px; transform: translate(-50%, -50%) rotate(-7.84427deg); opacity: 0.478306; z-index: 2;"></div>
+<div class="a streak" style="left: 1114.59px; top: 697.28px; width: 114.587px; transform: rotate(2.39493rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.518639; z-index: 1;"></div>
+<div class="k " style="--s: 33.80608328946978px; left: 1015.6px; top: 788.884px; transform: translate(-50%, -50%) rotate(-4.96905deg); opacity: 0.648299; z-index: 2;">p</div>
+<div class="a streak" style="left: 1165.9px; top: 697.961px; width: 50.4953px; transform: rotate(2.05775rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.307514; z-index: 1;"></div>
+<div class="k ghost" style="--s: 15.162792231415688px; left: 1138.01px; top: 750.627px; transform: translate(-50%, -50%) rotate(-3.01418deg); opacity: 0.384393; z-index: 2;"></div>
+<div class="a streak" style="left: 1250.81px; top: 641.159px; width: 52.1774px; transform: rotate(5.46664rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.313055; z-index: 1;"></div>
+<div class="k ghost" style="--s: 15.361490041667212px; left: 1292.85px; top: 596.416px; transform: translate(-50%, -50%) rotate(-3.68658deg); opacity: 0.391319; z-index: 2;"></div>
+<div class="a streak" style="left: 1333.76px; top: 679.863px; width: 163.256px; transform: rotate(0.305862rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.678961; z-index: 1;"></div>
+<div class="k " style="--s: 63.15482828194727px; left: 1525.57px; top: 740.432px; transform: translate(-50%, -50%) rotate(12.9678deg); opacity: 0.848701; z-index: 2;">x</div>
+<div class="a streak" style="left: 1316.82px; top: 657.862px; width: 119.855px; transform: rotate(6.07759rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.535993; z-index: 1;"></div>
+<div class="k " style="--s: 36.3499569121439px; left: 1455.5px; top: 628.941px; transform: translate(-50%, -50%) rotate(8.64269deg); opacity: 0.669991; z-index: 2;">h</div>
+<div class="a streak" style="left: 1112.34px; top: 671.382px; width: 70.8881px; transform: rotate(3.03058rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.37469; z-index: 1;"></div>
+<div class="k " style="--s: 18.62791732815247px; left: 1030.78px; top: 680.473px; transform: translate(-50%, -50%) rotate(1.21814deg); opacity: 0.468363; z-index: 2;"></div>
+<div class="a streak" style="left: 1257.04px; top: 660.542px; width: 32.7276px; transform: rotate(6.06601rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.248985; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.020594181264947px; left: 1297.22px; top: 651.678px; transform: translate(-50%, -50%) rotate(-10.5188deg); opacity: 0.311231; z-index: 2;"></div>
+<div class="a streak" style="left: 1190.48px; top: 698.701px; width: 39.6093px; transform: rotate(1.71973rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.271654; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.255607949806848px; left: 1183.34px; top: 746.33px; transform: translate(-50%, -50%) rotate(-0.738369deg); opacity: 0.339568; z-index: 2;"></div>
+<div class="a streak" style="left: 1173.1px; top: 707.898px; width: 89.2383px; transform: rotate(1.84089rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.435138; z-index: 1;"></div>
+<div class="k " style="--s: 23.713973305108322px; left: 1145.5px; top: 807.614px; transform: translate(-50%, -50%) rotate(7.43748deg); opacity: 0.543922; z-index: 2;"></div>
+<div class="a streak" style="left: 1202.57px; top: 700.129px; width: 43.4582px; transform: rotate(1.53258rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.284333; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.501376179820971px; left: 1204.56px; top: 752.25px; transform: translate(-50%, -50%) rotate(-14.439deg); opacity: 0.355416; z-index: 2;"></div>
+<div class="a streak" style="left: 1146.95px; top: 699.2px; width: 72.967px; transform: rotate(2.20369rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.381538; z-index: 1;"></div>
+<div class="k " style="--s: 19.110477403345286px; left: 1097.01px; top: 767.28px; transform: translate(-50%, -50%) rotate(-4.55129deg); opacity: 0.476923; z-index: 2;"></div>
+<div class="a streak" style="left: 1255.09px; top: 673.096px; width: 30.2751px; transform: rotate(0.21039rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.240906; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.000209524849948px; left: 1292.91px; top: 681.173px; transform: translate(-50%, -50%) rotate(-13.6517deg); opacity: 0.301133; z-index: 2;"></div>
+<div class="a streak" style="left: 1222.32px; top: 706.252px; width: 75.9885px; transform: rotate(1.32528rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.391491; z-index: 1;"></div>
+<div class="k " style="--s: 19.854507008133936px; left: 1243.68px; top: 791.518px; transform: translate(-50%, -50%) rotate(0.970646deg); opacity: 0.489364; z-index: 2;"></div>
+<div class="a streak" style="left: 1282.96px; top: 654.77px; width: 69.6269px; transform: rotate(5.96685rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.370536; z-index: 1;"></div>
+<div class="k " style="--s: 18.34682683285985px; left: 1359.59px; top: 629.686px; transform: translate(-50%, -50%) rotate(11.7551deg); opacity: 0.46317; z-index: 2;"></div>
+<div class="a streak" style="left: 1240.44px; top: 697.832px; width: 55.5042px; transform: rotate(1.01609rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.324014; z-index: 1;"></div>
+<div class="k ghost" style="--s: 15.800598737050944px; left: 1274.66px; top: 753.073px; transform: translate(-50%, -50%) rotate(-8.84479deg); opacity: 0.405017; z-index: 2;"></div>
+<div class="a streak" style="left: 1306.85px; top: 677.552px; width: 103.921px; transform: rotate(0.242508rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.483506; z-index: 1;"></div>
+<div class="k " style="--s: 29.126317898630962px; left: 1424.7px; top: 706.704px; transform: translate(-50%, -50%) rotate(0.652085deg); opacity: 0.604382; z-index: 2;"></div>
+<div class="a streak" style="left: 1190.07px; top: 632.098px; width: 51.2504px; transform: rotate(4.57687rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.310001; z-index: 1;"></div>
+<div class="k ghost" style="--s: 15.250046541094967px; left: 1181.91px; top: 572.251px; transform: translate(-50%, -50%) rotate(2.7975deg); opacity: 0.387502; z-index: 2;"></div>
+<div class="a streak" style="left: 1068.84px; top: 662.077px; width: 144.475px; transform: rotate(3.25278rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.617094; z-index: 1;"></div>
+<div class="k " style="--s: 50.27555206630064px; left: 895.278px; top: 642.7px; transform: translate(-50%, -50%) rotate(6.39587deg); opacity: 0.771368; z-index: 2;">/</div>
+<div class="a streak" style="left: 1202.3px; top: 711.841px; width: 125.419px; transform: rotate(1.55202rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.554322; z-index: 1;"></div>
+<div class="k " style="--s: 39.20371140844734px; left: 1205.09px; top: 860.756px; transform: translate(-50%, -50%) rotate(8.2253deg); opacity: 0.692903; z-index: 2;">k</div>
+<div class="a streak" style="left: 1238.41px; top: 641.502px; width: 39.1936px; transform: rotate(5.35844rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.270285; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.23397262893307px; left: 1267.15px; top: 603.388px; transform: translate(-50%, -50%) rotate(1.78558deg); opacity: 0.337856; z-index: 2;"></div>
+<div class="a streak" style="left: 1180.87px; top: 694.945px; width: 31.6588px; transform: rotate(1.90987rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.245464; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.00761716440754px; left: 1167.55px; top: 732.727px; transform: translate(-50%, -50%) rotate(-0.0800313deg); opacity: 0.30683; z-index: 2;"></div>
+<div class="a streak" style="left: 1084.22px; top: 676.514px; width: 118.344px; transform: rotate(2.9272rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.531017; z-index: 1;"></div>
+<div class="k " style="--s: 35.60480694462987px; left: 947.714px; top: 706.237px; transform: translate(-50%, -50%) rotate(9.41628deg); opacity: 0.663771; z-index: 2;">u</div>
+<div class="a streak" style="left: 1166.4px; top: 642.672px; width: 32.2956px; transform: rotate(4.0951rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.247562; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.014587402688095px; left: 1142.84px; top: 609.479px; transform: translate(-50%, -50%) rotate(14.1425deg); opacity: 0.309452; z-index: 2;"></div>
+<div class="a streak" style="left: 1303.13px; top: 651.874px; width: 103.564px; transform: rotate(5.93151rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.482327; z-index: 1;"></div>
+<div class="k " style="--s: 28.980215034077943px; left: 1416.68px; top: 610.209px; transform: translate(-50%, -50%) rotate(-11.3239deg); opacity: 0.602909; z-index: 2;"></div>
+<div class="a streak" style="left: 1222.37px; top: 694.906px; width: 33.3414px; transform: rotate(1.18149rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.251007; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.030905956403167px; left: 1238.22px; top: 733.541px; transform: translate(-50%, -50%) rotate(-2.62135deg); opacity: 0.313759; z-index: 2;"></div>
+<div class="a streak" style="left: 1143.28px; top: 658.85px; width: 33.3149px; transform: rotate(3.41528rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.25092; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.030418914474676px; left: 1103.1px; top: 647.57px; transform: translate(-50%, -50%) rotate(-4.39208deg); opacity: 0.31365; z-index: 2;"></div>
+<div class="a streak" style="left: 1284.83px; top: 672.953px; width: 67.6288px; transform: rotate(0.153559rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.363954; z-index: 1;"></div>
+<div class="k " style="--s: 17.91952085247609px; left: 1362.29px; top: 684.942px; transform: translate(-50%, -50%) rotate(9.13079deg); opacity: 0.454942; z-index: 2;"></div>
+<div class="a streak" style="left: 1157.23px; top: 690.82px; width: 39.4552px; transform: rotate(2.30238rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.271147; z-index: 1;"></div>
+<div class="k ghost" style="--s: 14.247475988057603px; left: 1125.17px; top: 726.54px; transform: translate(-50%, -50%) rotate(6.58852deg); opacity: 0.338933; z-index: 2;"></div>
+<div class="a streak" style="left: 1277.82px; top: 689.523px; width: 78.1267px; transform: rotate(0.584414rad); background: linear-gradient(90deg, transparent, rgba(185, 163, 227, 0.75)); opacity: 0.398535; z-index: 1;"></div>
+<div class="k " style="--s: 20.411560877601428px; left: 1353.19px; top: 739.383px; transform: translate(-50%, -50%) rotate(-8.97301deg); opacity: 0.498169; z-index: 2;"></div>
+<div class="a hw" style="left: 880px; top: 138px; width: 640px; height: 390px; z-index: 4;"><div class="hz-title">Herdr<span class="hz-tab">app</span></div>
+   <div class="main"><div style="position:absolute;inset:8px">
+     <div class="pane" style="left:0;top:0;width:50%;height:100%"><span class="pr">~/app $</span> npm test
+<span class="o">[ok] 42 passing</span>
+<span class="pr">~/app $</span> </div>
+     <div class="pane f" style="left:50%;top:0;width:50%;height:100%"><span class="pr">~/app $</span> <span class="cur"></span></div></div>
+     <div class="hints"><div class="top"><span class="k2">w</span><span>Panes</span><span class="esc">Esc cancels</span></div>
+      <div class="grid"><span class="on"><span class="k2">v</span> → Split right</span><span><span class="k2">q</span> → Close pane</span><span><span class="k2">s</span> → Split down</span><span><span class="k2">z</span> → Zoom pane</span></div></div></div>
+   <div class="hz-bar"><span class="badge">WHISTLE</span><span class="lbl">Terminal · pane 2</span></div></div>
+<div class="k wht" style="--s: 58px; left: 1316px; top: 253.2px; transform: translate(-50%, -50%) rotate(0deg); opacity: 1; z-index: 6;">w</div>
+<div class="k hot" style="--s: 66px; left: 1390px; top: 249.2px; transform: translate(-50%, -50%) rotate(5deg); opacity: 1; z-index: 6;">v</div>
+<div class="a pop c" style="left: 1360px; top: 317.2px; font-size: 34px; z-index: 7;">SPLIT RIGHT</div>
+<div class="a" style="left: 1200px; top: 667px; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; z-index: 6;">
+<div class="k in wht" style="--s: 64px; opacity: 1; z-index: 2;">CTRL</div><div class="plus">+</div>
+<div class="k in hot" style="--s: 64px; opacity: 1; z-index: 2; min-width: 134.4px; border-color: var(--deep);">SPACE<div class="tag" style="position: absolute; left: 50%; top: -51.2px; transform: translateX(-50%);">WHISTLE</div></div></div>
 </body></html>
