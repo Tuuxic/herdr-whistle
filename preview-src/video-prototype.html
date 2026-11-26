@@ -61,7 +61,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 .pane.f{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .pane .pr{color:#7d8088}.herdr.w .pane .pr{color:var(--accent)}
 .pane .o{color:#6c6e73}
-.cur{display:inline-block;width:11px;height:20px;background:#c9cbd0;vertical-align:-4px;animation:blink 1s steps(1) infinite}
+.cur{display:inline-block;width:11px;height:20px;background:#c9cbd0;vertical-align:-4px}
+#stage.blinkoff .cur{opacity:0}
+.pane:not(.foc) .cur{visibility:hidden}  /* one cursor: the focused pane's */  /* the cursor blinks on the video's clock, so rendered frames match playback */
 @keyframes blink{50%{opacity:0}}
 .hz-bar{height:46px;display:flex;align-items:center;gap:16px;background:var(--chrome);border-top:2px solid #24272c;font-size:17px}
 .hz-bar .badge{height:100%;display:flex;align-items:center;padding:0 20px;font-weight:800;letter-spacing:.5px;background:#2a2d32;color:var(--muted)}
@@ -159,7 +161,7 @@ function makeHerdr(S,w,h){
     const A=rects(s),B=from?rects(from):A;
     panes.forEach((pn,i)=>{const r=A[i].map((v,j)=>lerp(B[i][j],v,p));
       pn.style.left=r[0]*100+'%';pn.style.top=r[1]*100+'%';pn.style.width=r[2]*100+'%';pn.style.height=r[3]*100+'%';pn.style.opacity=r[4];
-      pn.classList.toggle('f',w&&i===f);setHTML('p'+i,pn,body[i](s.typed||'',s.fresh))});
+      pn.classList.toggle('f',w&&i===f);pn.classList.toggle('foc',i===f);setHTML('p'+i,pn,body[i](s.typed||'',s.fresh))});
     hints.style.display=s.hints?'block':'none';pal.style.display=s.palette?'block':'none';
   }};
 }
@@ -669,9 +671,10 @@ play.onclick=()=>setPaused(!paused);document.getElementById('rst').onclick=()=>{
 scrub.oninput=()=>{t=+scrub.value;setPaused(true)};
 addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='ArrowRight')step(1);else if(e.key===' '){e.preventDefault();setPaused(!paused)}else if(e.key==='r'){t=0;setPaused(false)}});
 addEventListener('resize',fit);fit();
-window.renderAt=x=>{setPaused(true);t=x;update(x)};
+const draw=x=>{update(x);stage.classList.toggle('blinkoff',Math.floor(x*2)%2===1)};
+window.renderAt=x=>{setPaused(true);t=x;draw(x)};
 const t0=t;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'A');t=t0;setPaused(paused);
 function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2)t=0}
-  update(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
+  draw(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script></body></html>
