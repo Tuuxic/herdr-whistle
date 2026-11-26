@@ -11,6 +11,8 @@
     E Warp → Combo → Orbit (~23 s) - warp into WHISTLE, combo among the stars, orbit + title finale
   Round 3, E's flow, slower, with D's orbiting keys flying into place (~30 s):
     F ending: the orbit opens around a centred title     G ending: the orbit circles Ctrl+Space, title left
+  Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
+  Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
   Space pause/play · R restart · drag the scrubber · ?t=7 to start paused at 7 s ·
   ?clean=1 hides the bar (for screen recording) · window.renderAt(t) draws one frame.
   Never merge this file.
@@ -79,6 +81,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 .t-url{font-size:22px;color:var(--muted)}.t-url b{color:var(--fg)}
 
 /* B's HUD */
+.pop.sm{font-size:60px;text-shadow:5px 5px 0 var(--deep),0 0 30px rgba(185,163,227,.5)}
 .pop{font-size:92px;font-weight:800;letter-spacing:-1px;white-space:nowrap;text-shadow:7px 7px 0 var(--deep),0 0 40px rgba(185,163,227,.5)}
 .hud{font-size:30px;font-weight:800;letter-spacing:1px;white-space:nowrap}.hud b{color:var(--accent);font-size:56px}
 .banner{font-size:72px;font-weight:800;padding:18px 40px;background:var(--fg);color:#101114;box-shadow:14px 14px 0 var(--deep);white-space:nowrap}
@@ -274,11 +277,18 @@ function makeOrbit(S,R){
   // g: {t,phase,cx,cy,radii,tilt,rs,born,o,hot:Set}
   const at=(k,g)=>{const a=k.a0+k.sp*g.phase,dep=Math.sin(a),[rx,ry]=g.radii[k.ri],b=eout(seg(g.t,g.born+k.d,g.born+.9+k.d));
     let x=Math.cos(a)*rx*g.rs,y=dep*ry*g.rs;const c=Math.cos(g.tilt),s=Math.sin(g.tilt);[x,y]=[x*c-y*s,x*s+y*c];
-    return{x:g.cx+x*b,y:g.cy+y*b,dep,b,s:lerp(.2,1,b)*lerp(.7,1.15,(dep+1)/2)*Math.max(g.rs,.35)}};
+    const r={x:g.cx+x*b,y:g.cy+y*b,dep,b,s:lerp(.2,1,b)*lerp(.7,1.15,(dep+1)/2)*Math.max(g.rs,.35)};
+    if(g.src&&g.morph<1){const q=g.src[k.k],m=g.morph;
+      if(g.spiral){const rs=Math.hypot(q.x-g.cx,q.y-g.cy),as=Math.atan2(q.y-g.cy,q.x-g.cx),rt=Math.hypot(r.x-g.cx,r.y-g.cy),at2=Math.atan2(r.y-g.cy,r.x-g.cx);
+        let da=Math.atan2(Math.sin(at2-as),Math.cos(at2-as));if(Math.sign(da)!==Math.sign(k.sp))da+=2*Math.PI*Math.sign(k.sp);
+        const rr=lerp(rs,rt,m),aa=as+da*m;r.x=g.cx+Math.cos(aa)*rr;r.y=g.cy+Math.sin(aa)*rr}
+      else{r.x=lerp(q.x,r.x,m);r.y=lerp(q.y,r.y,m)}
+      r.s=lerp(q.s,r.s,m)}
+    return r};
   return{pos:(label,g)=>at(keys.find(x=>x.k===label),g),
     update(g){keys.forEach(k=>{const p=at(k,g),hot=g.hot&&g.hot.has(k.k);k.el.classList.toggle('hot',!!hot);
       const over=g.avoid&&!hot&&Math.abs(p.x-g.cx)<g.avoid[0]&&Math.abs(p.y-g.cy)<g.avoid[1];
-      put(k.el,p.x,p.y,{s:p.s*(hot?1.35:1),r:hot?0:k.tilt+Math.sin(g.t*2+k.a0)*6,o:p.b>0?(hot?1:lerp(.45,1,(p.dep+1)/2))*g.o*(over?.15:1):0,z:hot?120:(p.dep>0?60:40)+Math.round(p.dep*20)})})}};
+      put(k.el,p.x,p.y,{s:p.s*(hot?1.35:1),r:hot?0:k.tilt+Math.sin(g.t*2+k.a0)*6,o:p.b>0?(hot?1:lerp(.45,1,(p.dep+1)/2))*g.o*(over?lerp(1,.15,g.avoidK??1):1):0,z:hot?120:(p.dep>0?60:40)+Math.round(p.dep*20)})})}};
 }
 function makeStars(S,R,n){
   const st=Array.from({length:n},()=>({el:add(S,$('div','abs '+(R()<.3?'px w':R()<.5?'px':'dot'))),x:R()*W,y:R()*H,ph:R()*6,d:R()*1.4,s:.5+R()*.8}));
@@ -290,28 +300,34 @@ function makeBlocks(S,R,rect){
   return(t,start)=>b.forEach(k=>put(k.el,k.x,k.y,{o:t>=start+k.d&&t<start+.8+k.d*.5?1:0,z:95}));
 }
 // keycap hyperspace; with word, seven keys stop and spell WHISTLE at wordY
-function makeWarp(S,R,{t0,cruise,stop,word,wordY=380}){
+function makeWarp(S,R,{t0,cruise,stop,word,wordY=380,claim=[],handoff}){
+  const HO=handoff??stop;
   const v=t=>t<t0?0:t<t0+1.2?1.3*eio(seg(t,t0,t0+1.2)):t<cruise?1.3:1.3*(1-eio(seg(t,cruise,stop)));
   const D=t=>{let d=0;for(let u=t0;u<Math.min(t,stop);u+=1/120)d+=v(u)/120;return d},DS=D(stop);
   const pool='hjklvszpqtaoimnuxgcbdfry/?;[]',WORD='WHISTLE';
-  const parts=Array.from({length:120},(_,i)=>{const w=word&&i<7,th=w?(-Math.PI/2+(i-3)*.55):R()*Math.PI*2;
-    return{w,i,th,r0:60+R()*140,z0:w?((.55+i*.03+DS)%1):R(),el:add(S,$('span','abs cap orb xl',w?WORD[i].toLowerCase():pool[Math.floor(R()*pool.length)])),
+  const nc=claim.length;
+  const parts=Array.from({length:120},(_,i)=>{const w=word&&i<7,c=!w&&i<nc,th=w?(-Math.PI/2+(i-3)*.55):c?i/nc*Math.PI*2+R()*.2:R()*Math.PI*2;
+    return{w,c,i,th,r0:c?90+R()*60:60+R()*140,z0:w?((.55+i*.03+DS)%1):c?((.3+(i%5)*.08+D(HO))%1):R(),el:add(S,$('span','abs cap orb xl',w?WORD[i].toLowerCase():c?claim[i]:pool[Math.floor(R()*pool.length)])),
       st:add(S,$('div','abs streak')),px:add(S,$('div','abs '+(R()<.4?'px w':'px'))),tw:R()*6}});
   const pos=(p,dd)=>{const z=((p.z0-dd)%1+1)%1,dep=.06+z*.94;return{x:960+Math.cos(p.th)*p.r0/dep,y:540+Math.sin(p.th)*p.r0/dep,s:clamp(.16/dep,0,1.6),z,dep}};
-  return(t,hide=()=>false)=>{
+  const run=(t,hide=()=>false)=>{
     const dd=D(t),vel=v(t),land=t>=stop,arrive=seg(t,t0+.2,t0+1);
     parts.forEach(p=>{const q=pos(p,land?DS:dd);
       if(p.w&&land){const f=steps(eout(seg(t,stop,stop+.6+p.i*.06)),6),tx=960+(p.i-3)*190;
         p.el.textContent=t>=stop+.4+p.i*.06?WORD[p.i]:WORD[p.i].toLowerCase();p.el.classList.toggle('hot',t>=stop+1+p.i*.07);
         put(p.el,lerp(q.x,tx,f),lerp(q.y,wordY,f)-(f===1?Math.max(0,Math.sin((t-stop-.7-p.i*.06)*14))*20*(1-seg(t,stop+.7,stop+1.3)):0),{s:lerp(q.s,1,f),z:120});
         p.st.style.opacity=0;p.px.style.opacity=0;return}
-      const vis=q.dep>.09&&t>=t0+.1&&arrive>q.z*.5,fade=land?seg(t,stop,stop+.5):0;
+      if(p.c&&t>=HO){p.el.style.opacity=0;p.st.style.opacity=0;p.px.style.opacity=0;return}
+      const vis=q.dep>.09&&t>=t0+.1&&arrive>q.z*.5,fade=nc&&HO<stop?(t>=HO?seg(t,HO,HO+.35):0):land?seg(t,stop,stop+.5):0;
       put(p.el,q.x,q.y,{s:q.s*(1-fade),r:(p.th*57)%20-10,o:vis?clamp((1-q.z)*2)*(1-fade):0,z:60+Math.round((1-q.z)*40)});
       const len=vel*clamp(28/q.dep,0,420);p.st.style.width=len+'px';
       put(p.st,q.x-Math.cos(p.th)*len/2,q.y-Math.sin(p.th)*len/2,{r:p.th*180/Math.PI,o:vis&&len>8?clamp((1-q.z)*2)*.8:0,z:55});
       put(p.px,q.x,q.y,{o:fade>0&&!hide(q.x,q.y)?fade*(Math.sin(t*3+p.tw)>-.2?1:.3):0,z:12});
     });
   };
+  // where a claimed key freezes at the stop, in orbit-cap scale (an xl cap is 150 px, an orbit cap 64)
+  run.claimPos=i=>{const q=pos(parts[i],D(HO));return{x:q.x,y:q.y,s:q.s*150/64}};
+  return run;
 }
 // B's combo: Herdr state per key, the input row, pops, the combo counter, the banner.
 // o: {from, base, hud:[a,b], rowOut, banner:[a,b], fly}; from(a) gives where a key flies in from.
@@ -444,8 +460,131 @@ function variantFinal(ending){return S=>{
 }}
 const variantF=variantFinal('center'),variantG=variantFinal('left');
 
+// ---------- round 4: H = F, with the warp's keys becoming the orbit and each command's keys shown where it acts ----------
+// one command: its keys fly out of the orbit to where the command acts; its name appears under them
+function makeCommandRun(S,hz,seqs,o){
+  const fly=o.fly||.45,acts=[];
+  seqs.forEach((sq,i)=>{sq.caps=sq.keys.map(([k])=>add(S,$('span','abs cap hot',k.length>1?k.toUpperCase():k)));
+    if(sq.label)sq.lab=add(S,$('div','abs pop sm',sq.label));
+    const last=sq.keys[sq.keys.length-1][1],next=seqs[i+1];sq.last=last;sq.end=Math.min(last+1.4,next?next.keys[0][1]-fly-.1:1e9);
+    sq.keys.slice(0,-1).forEach(([k,at])=>acts.push({at,hints:1}));acts.push({at:last,...sq.state,cmd:sq.cmd})});
+  const hud=add(S,$('div','abs hud')),banner=add(S,$('div','abs banner'));banner.innerHTML=`${seqs.filter(q=>q.cmd).length} COMMANDS · <em>0 CLICKS</em>`;
+  const stateAt=u=>{const d=acts.filter(a=>u>=a.at),st={...o.base};d.forEach((a,i)=>{const{at,cmd,hints,...rest}=a;Object.assign(st,rest);st.hints=hints&&i===d.length-1});return st};
+  return(t,{from})=>{
+    if(t>=o.from){const done=acts.filter(a=>t>=a.at),lc=[...done].reverse().find(a=>a.layout||a.focus!=null||a.zoom!=null);
+      hz.set(stateAt(t),lc&&stateAt(lc.at-1e-3),lc?steps(seg(t,lc.at,lc.at+.24),4):1)}
+    seqs.forEach(sq=>{const[tx,ty]=sq.at,n=sq.caps.length,gap=104,out=steps(seg(t,sq.end,sq.end+.3),3);
+      sq.keys.forEach(([k,at],j)=>{const el=sq.caps[j],sx=tx-(n-1)*gap/2+j*gap;
+        el.classList.toggle('hot',t<at+.5);
+        if(t<at-fly||t>sq.end+.3){el.style.opacity=0;return}
+        if(t<at){const f=from(k),p=steps(eout(seg(t,at-fly,at)),5);put(el,lerp(f.x,sx,p),lerp(f.y,ty,p),{s:lerp(1,1.3,p),z:175});return}
+        put(el,sx,ty,{s:1.3*(t<at+.12?1.25:1),o:1-out,z:175})});
+      if(sq.lab){const p=seg(t,sq.last,sq.last+.12);put(sq.lab,tx,ty+96,{s:p<1?lerp(1.6,1,p):1,o:t>=sq.last&&t<sq.end+.3?1-out:0,z:170})}});
+    const cmds=seqs.filter(q=>q.cmd&&t>=q.last),last=cmds[cmds.length-1];
+    hud.innerHTML=`COMBO <b>×${cmds.length}</b>`;put(hud,1880,45,{ax:1,s:last?1+.35*(1-seg(t,last.last,last.last+.25)):1,o:t>=o.hud[0]&&t<o.hud[1]?1:0,z:160});
+    const bp=seg(t,o.banner[0],o.banner[0]+.25);put(banner,960,500,{s:bp>0?lerp(1.5,1,steps(bp,4)):1,o:bp>0&&t<o.banner[1]?1:0,z:180});
+  };
+}
+function variantH(S){
+  const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
+  const wipeIn=makeBlocks(S,R),wipeOut=makeBlocks(S,R,[180,95,1740,915]);
+  const ORB=[...'hjkl',...'wvszpqt',...'a/?mioxung','esc'];
+  const warp=makeWarp(S,R,{t0:3.4,cruise:5.0,stop:6.2,word:false,claim:ORB}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
+  const combo=makeCombo(S),flash=add(S,$('div','flash'));
+  // where each command acts, in stage pixels (window centred at 960,505)
+  const seqs=[
+    {keys:[['w',8.6],['v',9.4]],label:'SPLIT RIGHT',at:[1420,440],state:{layout:'v',focus:1},cmd:1},
+    {keys:[['w',11.0],['s',11.8]],label:'SPLIT DOWN',at:[1420,620],state:{layout:'vs',focus:2},cmd:1},
+    {keys:[['h',13.3]],label:'← FOCUS',at:[800,440],state:{focus:0},cmd:1},
+    {keys:[['l',14.6]],label:'FOCUS →',at:[1420,260],state:{focus:1},cmd:1},
+    {keys:[['z',15.9]],label:'ZOOM',at:[1110,440],state:{zoom:true},cmd:1},
+    {keys:[['t',17.2]],label:'NEW TAB',at:[720,250],state:{tabs:2,layout:'one',focus:0,zoom:false,fresh:true},cmd:1},
+    {keys:[['p',18.5]],label:'PALETTE',at:[1470,330],state:{palette:true},cmd:1},
+    {keys:[['esc',19.7]],label:'CLOSE',at:[960,380],state:{palette:false}},
+    {keys:[['i',20.6]],label:'BACK TO TYPING',at:[460,700],state:{whistle:false}}];
+  const run=makeCommandRun(S,hz,seqs,{from:6.2,base:{whistle:true,typed:'npm test'},hud:[8.6,24.0],banner:[21.4,24.0],fly:.45});
+  const END={cx:960,cy:500,radii:[[720,260],[840,320],[960,370]],tilt:-.1,avoid:[470,370]};
+  const els=[['t-big','WHISTLE',330],['t-box','MODE',520],['t-head','Drive Herdr from the <em>keyboard.</em>',705],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]].map(([c,h,y])=>[add(S,$('div','abs '+c,h)),y]);
+  const title=(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.35,1,steps(eout(p),5)),o:p>0?1:0,z:150})});
+  const hideEnd=(x,y)=>Math.abs(x-960)<480&&y>230&&y<870;
+  const src={};ORB.forEach((k,i)=>src[k]=warp.claimPos(i));
+  return t=>{
+    const second=t>=10,fl=second?24.6:3.15,sh=shake(t,fl,.35,12);
+    bg.style.opacity=t>=3.3?1:0;flashAt(flash,t,fl);
+    const fin=eio(seg(t,24.9,25.8));
+    if(!second){const ce=seg(t,2.0,2.35);put(combo.el,960,lerp(1200,560,steps(eout(ce),5)),{s:1.8,o:ce>0&&t<3.5?1:0,z:160});combo.set(seg(t,2.85,2.95),seg(t,3.05,3.15))}
+    else{const ce=seg(t,23.8,24.1),y0=lerp(1200,940,steps(eout(ce),5));
+      put(combo.el,960,lerp(y0,820,fin),{s:lerp(1.3,1,fin),o:ce>0?1:0,z:160});combo.set(t<24.9?seg(t,24.35,24.45):0,t<24.9?seg(t,24.47,24.55):0)}
+    if(t<6.2)hz.set({whistle:t>=3.15,typed:typing(t,.4,'npm test')});
+    const land=seg(t,6.2,7.0);
+    put(hz.el,960+sh,505+sh,{s:t<4.1?1:t<7.2?steps(eout(land),6):1,o:t<4.1||(t>=6.2&&land>0&&t<25.4)?1:0,z:50});
+    wipeIn(t,3.3);wipeOut(t,24.6);
+    warp(t,()=>true);stars(t,6.0,1e9,(x,y)=>t>25.4&&hideEnd(x,y));
+    const hot=new Set(seqs.flatMap(q=>q.keys).filter(([k,at])=>t>=at-.45&&t<at+.15).map(([k])=>k));
+    const g={t,phase:t,cx:lerp(960,END.cx,fin)+sh,cy:lerp(505,END.cy,fin)+sh,radii:lerpRadii(HALO_FULL,END.radii,fin),tilt:lerp(0,END.tilt,fin),
+      rs:1,born:-10,o:t>=6.2?1:0,hot,src,morph:steps(eout(seg(t,6.2,7.8)),8),
+      avoid:t<24.6?[800,430]:fin>.99?END.avoid:null,avoidK:seg(t,7.4,8.0)};
+    orb.update(g);
+    run(t,{from:k=>orb.pos(k,g)});
+    title(t,[25.6,26.0,26.5,27.1]);
+  };
+}
+
+// ---------- round 5: I = H, faster warp→terminal (keys spiral into orbit), zoom-past instead of block wipes, centred second Ctrl+Space ----------
+function variantI(S){
+  const R=rng(17),bg=add(S,$('div','grid-bg')),hz=makeHerdr(S,1560,820);
+  const ORB=[...'hjkl',...'wvszpqt',...'a/?mioxung','esc'],HANDOFF=5.4;
+  const warp=makeWarp(S,R,{t0:3.3,cruise:4.8,stop:5.9,word:false,claim:ORB,handoff:HANDOFF}),stars=makeStars(S,R,80),orb=makeOrbit(S,R);
+  const combo=makeCombo(S),flash=add(S,$('div','flash'));
+  const O=-1.0,T=x=>x+O;
+  const seqs=[
+    {keys:[['w',T(8.6)],['v',T(9.4)]],label:'SPLIT RIGHT',at:[1420,440],state:{layout:'v',focus:1},cmd:1},
+    {keys:[['w',T(11.0)],['s',T(11.8)]],label:'SPLIT DOWN',at:[1420,620],state:{layout:'vs',focus:2},cmd:1},
+    {keys:[['h',T(13.3)]],label:'← FOCUS',at:[800,440],state:{focus:0},cmd:1},
+    {keys:[['l',T(14.6)]],label:'FOCUS →',at:[1420,260],state:{focus:1},cmd:1},
+    {keys:[['z',T(15.9)]],label:'ZOOM',at:[1110,440],state:{zoom:true},cmd:1},
+    {keys:[['t',T(17.2)]],label:'NEW TAB',at:[720,250],state:{tabs:2,layout:'one',focus:0,zoom:false,fresh:true},cmd:1},
+    {keys:[['p',T(18.5)]],label:'PALETTE',at:[1470,330],state:{palette:true},cmd:1},
+    {keys:[['esc',T(19.7)]],label:'CLOSE',at:[960,380],state:{palette:false}},
+    {keys:[['i',T(20.6)]],label:'BACK TO TYPING',at:[460,700],state:{whistle:false}}];
+  const run=makeCommandRun(S,hz,seqs,{from:5.3,base:{whistle:true,typed:'npm test'},hud:[T(8.6),T(23.9)],banner:[T(21.4),T(23.9)],fly:.45});
+  const END={cx:960,cy:500,radii:[[720,260],[840,320],[960,370]],tilt:-.1,avoid:[470,370]};
+  const els=[['t-big','WHISTLE',330],['t-box','MODE',520],['t-head','Drive Herdr from the <em>keyboard.</em>',705],['t-url','github.com/<b>Tuuxic/herdr-whistle</b>',1020]].map(([c,h,y])=>[add(S,$('div','abs '+c,h)),y]);
+  const title=(t,ts)=>els.forEach(([el,y],i)=>{const p=seg(t,ts[i],ts[i]+.3);put(el,960,y,{s:p<=0?1:lerp(1.35,1,steps(eout(p),5)),o:p>0?1:0,z:150})});
+  const hideEnd=(x,y)=>Math.abs(x-960)<480&&y>230&&y<870;
+  const src={};ORB.forEach((k,i)=>src[k]=warp.claimPos(i));
+  const P2=T(24.0),FL2=T(24.8);   // the second Ctrl+Space rises at P2, lands at FL2
+  // the window rushing past the camera, in steps
+  const past=(t,at)=>{const p=steps(seg(t,at,at+.45),6);return{s:lerp(1,2.8,p*p),o:1-p}};
+  return t=>{
+    const second=t>=10,fl=second?FL2:3.15,sh=shake(t,fl,.35,12);
+    bg.style.opacity=t>=3.2?1:0;flashAt(flash,t,fl);
+    const fin=eio(seg(t,FL2+.3,FL2+1.2));
+    // Ctrl+Space, big in the centre, both times; the second one then shrinks into the title
+    const ce=second?seg(t,P2,P2+.35):seg(t,2.0,2.35),yIn=lerp(1200,560,steps(eout(ce),5));
+    if(!second){put(combo.el,960,yIn,{s:1.8,o:ce>0&&t<3.5?1:0,z:160});combo.set(seg(t,2.85,2.95),seg(t,3.05,3.15))}
+    else{put(combo.el,960,lerp(yIn,820,fin),{s:lerp(1.8,1,fin),o:ce>0?1:0,z:160});combo.set(t<FL2+.3?seg(t,FL2-.3,FL2-.2):0,t<FL2+.3?seg(t,FL2-.15,FL2-.05):0)}
+    if(t<5.3)hz.set({whistle:t>=3.15,typed:typing(t,.4,'npm test')});
+    // in: the window flies in from deep space while the warp is still slowing down, overshooting a touch
+    const land=seg(t,5.3,5.95),settle=seg(t,5.95,6.15);
+    let hs=1,ho=1;
+    if(t<5.3){const q=past(t,3.2);hs=q.s;ho=q.o}
+    else if(t<6.15)hs=land<1?lerp(.05,1.05,steps(eout(land),8)):lerp(1.05,1,settle);
+    else if(t>=FL2){const q=past(t,FL2);hs=q.s;ho=q.o}
+    put(hz.el,960+sh,505+sh,{s:hs,o:ho,z:50});
+    warp(t,()=>true);stars(t,5.6,1e9,(x,y)=>t>FL2+.5&&hideEnd(x,y));
+    const hot=new Set(seqs.flatMap(q=>q.keys).filter(([k,at])=>t>=at-.45&&t<at+.15).map(([k])=>k));
+    const g={t,phase:t,cx:lerp(960,END.cx,fin)+sh,cy:lerp(505,END.cy,fin)+sh,radii:lerpRadii(HALO_FULL,END.radii,fin),tilt:lerp(0,END.tilt,fin),
+      rs:1,born:-10,o:t>=HANDOFF?1:0,hot,src,spiral:true,morph:steps(eout(seg(t,HANDOFF,HANDOFF+.9)),14),
+      avoid:t<FL2?[800,430]:fin>.99?END.avoid:null,avoidK:seg(t,6.1,6.6)};
+    orb.update(g);
+    run(t,{from:k=>orb.pos(k,g)});
+    title(t,[FL2+1.0,FL2+1.4,FL2+1.9,FL2+2.5]);
+  };
+}
+
 // ---------- player + switcher ----------
-const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30]},KEYS=Object.keys(VARIANTS);
+const VARIANTS={A:['Orbit',variantA,15],B:['Combo',variantB,15],C:['Warp',variantC,15],D:['Orbit → Combo → Warp',variantD,25],E:['Warp → Combo → Orbit',variantE,23],F:['Final · centred title',variantF,30],G:['Final · title left',variantG,30],H:['F + warp-to-orbit + keys at the action',variantH,31],I:['H + fast pull into orbit',variantI,29]},KEYS=Object.keys(VARIANTS);
 const qs=new URLSearchParams(location.search),stage=document.getElementById('stage'),bar=document.getElementById('bar');
 const scrub=document.getElementById('scrub'),tm=document.getElementById('tm'),play=document.getElementById('play');
 if(qs.get('clean'))bar.style.display='none';
