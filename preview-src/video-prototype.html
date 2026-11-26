@@ -14,6 +14,7 @@
   Round 4: H = F, the warp's keys become the orbit; each command's keys land where it acts, its name under them
   Round 5: I = H, terminal flies in as the warp slows, keys spiral into orbit; zoom-past instead of block wipes; centred 2nd Ctrl+Space
   Round 6: J = I, smooth press→zoom and zoom→orbit, a WHISTLE MODE badge during the demo, `i` lands on the bar's badge
+  Round 12: Orbit endings after the 2nd Ctrl+Space (resolve / victory / echo)
   Round 11: the music's clock follows the video (every key press a beat, every command a bar); clicks / level / orbit / combo
   Round 10: three songs on the Build form (hero / drive / lofi); reactive and pulse dropped
   Round 9: music driven by the action (build: a layer per command; reactive: chord per command, note per key; pulse: speeds up with the combo); UI palette at 55%
@@ -740,7 +741,7 @@ const SONGS={
       if(L>=2&&B.down)X.p(t,I.bass,ch.r);
       if(L>=3)X.d(B.half?t:t8,'hihat_005',.1);
       if(L>=4&&(B.half?j===2:j%2===1))X.d(t,'snare_011',.25);
-      if(B.press)X.p(t,L>=6?I.mel:I.ping,ch.t[[3,2,1,2][j]]+(L>=6?0:12));
+      if(B.press){const m=ch.t[[3,2,1,2][j]]+(L>=6?0:12);X.p(t,L>=6?I.mel:I.ping,m);X.played.push(m%12+72)}
       if(B.drop)X.d(t,'cymbal_002',.3)}},
   combo:{label:'Combo · A major fighting-game drive, orchestra hits on the commands',home:chord(9,'M'),prog:[chord(9,'M'),chord(5,'M'),chord(7,'M'),chord(9,'M'),chord(5,'M'),chord(7,'M'),chord(4,'M')],
     I:{orch:{n:'chord_002',base:57,vol:.22},bass:{n:'bass_021',base:48,vol:.26},brass:{n:'brass_069',base:64,vol:.1}},
@@ -756,6 +757,31 @@ const SONGS={
       if(B.press&&L>=1)X.p(t,I.brass,ch.t[3]);
       if(B.drop)X.d(t,'cymbal_013',.35)}},
 };
+// Orbit endings (from the second Ctrl+Space on); before it, they are all the Orbit theme
+const D_M=chord(2,'M'),BB=chord(10,'M'),CC=chord(0,'M');
+const chordHit=(X,I,t,c,v=1)=>{X.d(t,'kick_000',.75*v);X.p(t,I.bass,c.r);c.t.slice(0,3).forEach((m,k)=>X.p(t+k*.03,I.bell,m+12,1.3*v))};
+const ORBIT_ENDS={
+  resolve:{label:'Orbit · resolve: one hit, bells fall away, ocarina sings the title',
+    after:(B,X,I)=>{const{t,j}=B,k=(t-X.drop)/(X.end-X.drop);
+      if(B.drop){chordHit(X,I,t,X.home);X.d(t,'cymbal_002',.3);
+        X.titles.forEach((tt,i)=>X.p(tt,I.mel,[74,77,81,86][i],i===3?1.3:1));
+        const fin=X.titles[3]+1.0;chordHit(X,I,fin,X.home,.6);return}
+      if(t<X.titles[3]+.9)X.p(t,I.bell,X.home.t[[3,2,1,2][j]]+12,.7*(1-k))}},
+  victory:{label:'Orbit · victory: one bar of groove, then B♭ – C – D major',
+    after:(B,X,I,base)=>{const{t,j}=B,bar=Math.floor(B.n/4);
+      if(bar===0){base(B);return}
+      if(bar===1){const c=j<2?BB:CC;if(j%2===0){X.p(t,I.bass,c.r);X.d(t,'kick_000',.6)}c.t.slice(0,3).forEach(m=>X.p(t,I.bell,m+12,.9));
+        if(j%2===1)X.d(t,'snare_011',.25);if(j===3)X.d(B.t8,'snare_011',.2);return}
+      if(bar===2&&j===0){chordHit(X,I,t,D_M);X.d(t,'cymbal_002',.35);X.p(t,I.mel,81);X.p(t+B.len,I.mel,86,1.2)}}},
+  echo:{label:'Orbit · echo: one hit, then the demo\'s key notes replay as a bell run',
+    after:(B,X,I)=>{const{t}=B;
+      if(B.drop){chordHit(X,I,t,X.home);X.d(t,'cymbal_002',.3);
+        const st8=B.len/2;X.played.forEach((m,i)=>X.p(t+B.len*2+i*st8,I.bell,m+12,1.1));
+        const fin=t+B.len*2+X.played.length*st8+st8;chordHit(X,I,fin,X.home,.6);X.p(fin,I.mel,74,1.2)}
+      else if(B.down&&t<X.titles[3])X.p(t,I.bass,X.home.r,.7)}},
+};
+Object.entries(ORBIT_ENDS).forEach(([k,e])=>SONGS['orbit-'+k]={...SONGS.orbit,...e});
+SONGS.orbit.label='Orbit · groove: everything on after the drop (round 11)';
 const MUSIC={off:{label:'no music'},...SONGS};
 function musicEvents(kind,{start,drop,end},cues){
   const G=SONGS[kind];if(!G)return[];
@@ -764,11 +790,13 @@ function musicEvents(kind,{start,drop,end},cues){
   const level=t=>t>=drop-1e-6?7:t>=tm-1e-6?-1:cmds.filter(x=>x<=t+1e-6).length;
   const home=G.home||chord(0,'M'),segs=[{t:-1,ch:home},...cmds.map((t,i)=>({t,ch:G.prog?G.prog[i]:home})),{t:tm,ch:home},{t:drop,ch:home}];
   const chordAt=t=>{let c=home;for(const g of segs)if(g.t<=t+1e-6)c=g.ch;return c};
-  const X={orbit:orbit-.1,d:(t,n,v)=>ev(t,n,v),p:(t,I,m,v=1)=>{if(m!=null)ev(t,I.n,I.vol*v,st(m-I.base))}};
+  const X={orbit:orbit-.1,drop,end,home,titles:at('title'),played:[],d:(t,n,v)=>ev(t,n,v),p:(t,I,m,v=1)=>{if(m!=null)ev(t,I.n,I.vol*v,st(m-I.base))}};
   const beats=grid(cues,{start,drop,end});
-  beats.forEach(B=>{if(B.t>end-.6)return;B.L=level(B.t);B.ch=chordAt(B.t);G.beat(B,X,G.I)});
+  let nAfter=0;
+  beats.forEach(B=>{if(B.t>end-.6)return;B.L=level(B.t);B.ch=chordAt(B.t);
+    if(G.after&&B.t>=drop-1e-6){B.n=nAfter++;G.after(B,X,G.I,b=>G.beat(b,X,G.I))}else G.beat(B,X,G.I)});
   // the last chord rings out
-  if(G.I){const last=beats.filter(B=>B.t<=end-1.6).pop();const I=Object.values(G.I)[0];[0,1,2].forEach(k=>X.p(last.t+k*.06,I,home.t[k]+12,.9))}
+  if(G.I&&!G.after){const last=beats.filter(B=>B.t<=end-1.6).pop();const I=Object.values(G.I)[0];[0,1,2].forEach(k=>X.p(last.t+k*.06,I,home.t[k]+12,.9))}
   return out}
 
 const SFX={
@@ -863,7 +891,7 @@ addEventListener('keydown',e=>{if(e.key==='ArrowLeft')step(-1);else if(e.key==='
 addEventListener('resize',fit);fit();
 const draw=x=>{update(x);stage.classList.toggle('blinkoff',Math.floor(x*2)%2===1)};
 window.renderAt=x=>{setPaused(true);t=x;draw(x)};
-const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'clicks');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
+const t0=t;SOUND.setPalette(SFX[qs.get('sfx')]?qs.get('sfx'):'ui');sfxSel.value=SOUND.palette;SOUND.setMusic(MUSIC[qs.get('music')]?qs.get('music'):'orbit-resolve');musSel.value=SOUND.music;load(KEYS.includes(qs.get('variant'))?qs.get('variant'):'M');t=t0;setPaused(paused);
 function frame(now){const dt=(now-last)/1000;last=now;if(!paused){t+=dt;if(t>DUR+1.2){t=0;SOUND.resync(0)}SOUND.tick(t)}
   sfxHint.style.display=SOUND.unlocked()?'none':'';
   draw(Math.min(t,DUR));scrub.value=t;tm.textContent=Math.min(t,DUR).toFixed(1)+'s';requestAnimationFrame(frame)}
